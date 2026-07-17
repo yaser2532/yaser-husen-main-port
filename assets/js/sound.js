@@ -9,7 +9,7 @@
         if (audioCtx) return;
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.setValueAtTime(0.04, audioCtx.currentTime); // default low master volume to be pleasant
+        masterGain.gain.setValueAtTime(0.25, audioCtx.currentTime); // default master volume for interactive sounds
         masterGain.connect(audioCtx.destination);
     }
 
@@ -17,7 +17,7 @@
     function toggleMute() {
         isMuted = !isMuted;
         if (masterGain) {
-            masterGain.gain.setValueAtTime(isMuted ? 0 : 0.04, audioCtx ? audioCtx.currentTime : 0);
+            masterGain.gain.setValueAtTime(isMuted ? 0 : 0.25, audioCtx ? audioCtx.currentTime : 0);
         }
         
         // Also mute/unmute the HTML5 background music element if it exists
