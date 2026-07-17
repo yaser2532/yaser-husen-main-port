@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Yaser Husen | Data Analyst & AI Integration Specialist Portfolio">
+    <title>Yaser Husen | Data Analyst & AI Integration Specialist</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Dancing+Script:wght@700&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+
+<body>
+
+    <!-- Interactive Background Glow Element -->
+    <div class="mouse-glow" id="mouse-glow"></div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo">Dev.<span class="logo-accent">YH</span></div>
+            <ul class="nav-links">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#profile-expertise" class="nav-link">Expertise</a></li>
+                <li><a href="#about-me" class="nav-link">About</a></li>
+                <li><a href="#projects" class="nav-link">Projects</a></li>
+                <li><a href="#creative-lab" class="nav-link">Creative Lab</a></li>
+                <li><a href="#certificates" class="nav-link">Certificates</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="burger">
+                <div class="line1"></div>
+                <div class="line2"></div>
+                <div class="line3"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header / Hero Section -->
+    <header id="home">
+        <div class="overlay"></div>
+        <div class="header-content scroll-reveal fade-up">
+            <h1 class="hero-title"><span id="tp-name"></span><span id="name-cursor" class="typing-cursor"></span></h1>
+            <h2 class="hero-subtitle"><span id="tp-subtitle"></span><span id="subtitle-cursor"
+                    class="typing-cursor hidden"></span></h2>
+
+            <div id="hero-details" class="hero-details-container">
+                <!-- Small About Me Tile -->
+                <div class="hero-about-tile glass-card">
+                    <p><span id="tp-about"></span><span id="about-cursor" class="typing-cursor hidden"></span></p>
+                </div>
+
+                <!-- Special Traits -->
+                <div class="hero-traits-list">
+                    <span class="trait-tag">Python & AI Workflows</span>
+                    <span class="trait-tag">Advanced SQL</span>
+                    <span class="trait-tag">Data Storytelling</span>
+                    <span class="trait-tag">High-Velocity Execution</span>
+                </div>
+            </div>
+
+            <div class="hero-actions">
+                <a href="#profile-expertise" class="cta-button">Explore My Work <i
+                        class="fa-solid fa-arrow-right"></i></a>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-body-content">
+
+    <!-- Profile & Detailed Expertise Section -->
+    <section id="profile-expertise" class="section-padding scroll-reveal fade-up">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Core Focus Areas</span>
+                <h2 class="section-title">Profile & Expertise</h2>
+                <p class="section-desc">Bridging data science and artificial intelligence to build modern, high-velocity
+                    solutions.</p>
+            </div>
+
+            <div class="profile-grid">
+                <!-- Profile Image Side -->
+                <div class="profile-showcase scroll-reveal fade-left">
+                    <div class="profile-card-wrapper">
+                        <img src="assets/images/g-img.png" alt="Yaser Husen Profile" class="profile-details-img">
+                        <div class="profile-card-glow"></div>
+                        <div class="status-indicator">
+                            <span class="pulse-dot"></span>
+                            <span class="status-txt">Online & Active</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expertise Grid Side -->
+                <div class="expertise-showcase scroll-reveal fade-right">
+                    <h3 class="expertise-title-accent">Core Focus Areas</h3>
+                    <div class="expertise-cards-grid">
+
+                        <!-- Card 1: Data Analysis -->
+                        <div class="expertise-card glass-card">
+                            <div class="expertise-icon">📊</div>
+                            <h4>Data Analysis</h4>
+                            <p>Uncovering trends, cleaning complex datasets, and applying statistical models to drive
+                                actionable business decisions.</p>
+                        </div>
+
+                        <!-- Card 2: Data Storytelling -->
+                        <div class="expertise-card glass-card">
+                            <div class="expertise-icon">📖</div>
+                            <h4>Data Storytelling</h4>
+                            <p>Translating analytical findings into visually striking dashboards and clear narratives
+                                that align stakeholders.</p>
+                        </div>
+
+                        <!-- Card 3: Advanced SQL -->
+                        <div class="expertise-card glass-card">
+                            <div class="expertise-icon">🗄️</div>
+                            <h4>Advanced SQL</h4>
+                            <p>Writing highly optimized queries, building indexing strategies, and managing complex
+                                schema designs for high performance.</p>
+                        </div>
+
+                        <!-- Card 4: Python & AI Integration -->
+                        <div class="expertise-card glass-card">
+                            <div class="expertise-icon">🤖</div>
+                            <h4>Python AI Integration</h4>
+                            <p>Deploying Large Language Models (LLMs), designing prompt pipelines, and embedding custom
+                                agents directly into Python workflows.</p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Me Section -->
+    <section id="about-me" class="section-padding scroll-reveal fade-up">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">About Me</span>
+                <h2>The Mindset Behind the Code</h2>
+            </div>
+
+            <div class="about-grid">
+                <div class="about-text scroll-reveal fade-left">
+                    <h3 class="highlight-text">"I am effective and fast with my work with the help of AI."</h3>
+                    <p>
+                        I am a forward-thinking developer leveraging the cutting edge of Artificial Intelligence to
+                        build robust software solutions. My workflow is optimized through a symbiotic relationship with
+                        Large Language Models, allowing me to deliver high-quality code at exceptional speeds which is
+                        as reliable as it is efficient.
+                    </p>
+                    <p>
+                        Beyond data and artificial intelligence, I craft user experiences that feel alive. Combining
+                        aesthetics with clean structural layout, I build high-performance components using vanilla JS
+                        and CSS to ensure top lighthouse scores and SEO-friendly indexability.
+                    </p>
+
+                    <!-- Quick Stats -->
+                    <div class="stats-row">
+                        <div class="stat-card glass-card">
+                            <h4 class="stat-number" data-target="99">0%</h4>
+                            <p class="stat-label">Lighthouse UX Score</p>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <h4 class="stat-number" data-target="45">0+</h4>
+                            <p class="stat-label">SQL Schema Queries</p>
+                        </div>
+                        <div class="stat-card glass-card">
+                            <h4 class="stat-number" data-target="25">0+</h4>
+                            <p class="stat-label">AI Agents Built</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-visual scroll-reveal fade-right">
+                    <!-- Decorative Graphic Placeholder -->
+                    <div class="code-block-visual">
+                        <code>
+                            <span class="keyword">const</span> <span class="var">skills</span> = [<br>
+                            &nbsp;&nbsp;<span class="keyword">'Bilingual/Native-level English'</span>,<br>
+                            &nbsp;&nbsp;<span class="keyword">'Python & JavaScript'</span>,<br>
+                            &nbsp;&nbsp;<span class="keyword">'Data Analysis'</span>,<br>
+                            &nbsp;&nbsp;<span class="keyword">'Full-stack Development'</span>,<br>
+                            &nbsp;&nbsp;<span class="keyword">'Team working'</span>,<br>
+                            &nbsp;&nbsp;<span class="keyword">'Vertex AI'</span>,<br>
+                            &nbsp;&nbsp;<span class="keyword">'LLM Fine-tuning'</span>,<br>
+                            &nbsp;&nbsp;<span class="keyword">'Cloud Architecture'</span><br>
+                            ];
+                        </code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="section-padding scroll-reveal fade-up">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Showcase</span>
+                <h2>Featured Projects</h2>
+                <p class="section-desc">A curated selection of projects demonstrating artificial intelligence pipelines,
+                    data analysis, and advanced SQL development.</p>
+            </div>
+
+            <!-- Category Filters -->
+            <div class="project-filters">
+                <button class="filter-btn active" data-filter="all">All Projects</button>
+                <button class="filter-btn" data-filter="ai-data">AI & Data Science</button>
+                <button class="filter-btn" data-filter="ui-saas">Web Apps</button>
+                <button class="filter-btn" data-filter="interactive">Creative Labs</button>
+            </div>
+
+            <div class="projects-grid">
+                <!-- AEEA Platform -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="ai-data">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">Adaptive AI</span>
+                            <span class="badge">Nash Bid</span>
+                            <span class="badge">Node routing</span>
+                        </div>
+                        <div class="project-graphic p-aeea">
+                            <div class="mock-flow">
+                                <span class="flow-node node-a"><i class="fa-solid fa-square-root-variable"></i></span>
+                                <span class="flow-connector"><span class="flow-dot"></span></span>
+                                <span class="flow-node node-b"><i class="fa-solid fa-scale-balanced"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>AEEA Platform</h3>
+                        <p>Adaptive Entropy-Equilibrium Architecture platform. An autonomous self-organizing AI pipeline that negotiates, scores, and stabilizes information routing.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-diagram-project"></i> AI Architecture</span>
+                            <a href="https://aeea-web-eight.vercel.app/" class="project-link has-text" target="_blank"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- AEEA + AMLT Simulator -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="interactive">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">React SPA</span>
+                            <span class="badge">Simulation</span>
+                            <span class="badge">Telemetry</span>
+                        </div>
+                        <div class="project-graphic p-amlt">
+                            <div class="mock-dash">
+                                <div class="dash-bar" style="height: 50%"></div>
+                                <div class="dash-bar" style="height: 75%"></div>
+                                <div class="dash-bar" style="height: 90%"></div>
+                                <div class="dash-bar" style="height: 60%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>AEEA + AMLT Simulator</h3>
+                        <p>Interactive process simulator visualizing entropy equilibrium, homeokinesis, hot/cold memory migrations, and real-time algorithmic telemetry.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-chart-line"></i> Process Telemetry</span>
+                            <a href="https://amlt-demo-simulator-ov6a.vercel.app/" class="project-link has-text" target="_blank"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- ATTF Data Cleaning Platform -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="ai-data">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">ATTF Engine</span>
+                            <span class="badge">Data Audit</span>
+                            <span class="badge">Data Quality</span>
+                        </div>
+                        <div class="project-graphic p-attf">
+                            <div class="mock-code-lines">
+                                <div class="mock-line add" style="width: 80%"></div>
+                                <div class="mock-line add" style="width: 60%"></div>
+                                <div class="mock-line add" style="width: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>ATTF Data Cleaning Platform</h3>
+                        <p>Adaptive Tit-for-Tat Framework dataset preprocessing platform. Optimizes dataset fingerprinting and selection to improve downstream AI training efficiency.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-broom"></i> Data Engineering</span>
+                            <a href="https://attf-data-cleaning-platform.vercel.app/" class="project-link has-text" target="_blank"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Gym Website -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="ui-saas">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">Vanilla HTML5</span>
+                            <span class="badge">CSS3</span>
+                        </div>
+                        <div class="project-graphic p-gym">
+                            <div class="mock-ux-elements">
+                                <div class="ux-btn-gradient"
+                                    style="background: linear-gradient(135deg, #ff8c00, #ff4d8d);">Join Gym Pro</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>Gym website</h3>
+                        <p>A custom gym website built with modern web technologies which provides a comprehensive
+                            fitness experience and detailed plans for any future events.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-dumbbell"></i> Fitness Landing Page</span>
+                            <a href="https://gympro-for-bros.netlify.app/" class="project-link" target="_blank"><i
+                                    class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Vertex AI Chatbot -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="ai-data">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">Vertex AI</span>
+                            <span class="badge">GCP RAG</span>
+                        </div>
+                        <div class="project-graphic p-chatbot">
+                            <div class="mock-dash">
+                                <div class="dash-bar" style="height: 40%"></div>
+                                <div class="dash-bar" style="height: 70%"></div>
+                                <div class="dash-bar" style="height: 85%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>Vertex AI Chatbot</h3>
+                        <p>A custom RAG (Retrieval-Augmented Generation) chatbot built on Google Cloud Platform using
+                            Vertex AI for enterprise knowledge retrieval.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-robot"></i> AI Conversational Agent</span>
+                            <a href="#" class="project-link"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Automated Code Reviewer -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="ai-data">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">Python</span>
+                            <span class="badge">Git Diff</span>
+                        </div>
+                        <div class="project-graphic p-reviewer">
+                            <div class="mock-code-lines">
+                                <div class="mock-line add"></div>
+                                <div class="mock-line del"></div>
+                                <div class="mock-line add"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>Automated Code Reviewer</h3>
+                        <p>An LLM-powered CLI tool that analyzes Git diffs and provides security suggestions and
+                            optimization tips automatically.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-code"></i> CLI Developer Tool</span>
+                            <a href="#" class="project-link"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Cloud Infrastructure Manager -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="ai-data">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">Docker</span>
+                            <span class="badge">Python</span>
+                        </div>
+                        <div class="project-graphic p-webhook-hub">
+                            <div class="mock-flow">
+                                <span class="flow-node node-a"><i class="fa-solid fa-server"></i></span>
+                                <span class="flow-connector"><span class="flow-dot"></span></span>
+                                <span class="flow-node node-b"><i class="fa-solid fa-cubes"></i></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>Cloud Infrastructure Manager</h3>
+                        <p>A Python-based dashboard for visualizing and managing Docker containers across multiple cloud
+                            instances.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-network-wired"></i> Docker Dash</span>
+                            <a href="#" class="project-link"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Sentiment Analysis API -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="ai-data">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">REST API</span>
+                            <span class="badge">NLP Model</span>
+                        </div>
+                        <div class="project-graphic p-saas-billing">
+                            <div class="mock-dash">
+                                <div class="dash-bar" style="height: 60%"></div>
+                                <div class="dash-bar" style="height: 80%"></div>
+                                <div class="dash-bar" style="height: 40%"></div>
+                                <div class="dash-bar" style="height: 95%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>Sentiment Analysis API</h3>
+                        <p>A high-performance REST API capable of processing real-time social media streams to detect
+                            market sentiment trends.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-magnifying-glass-chart"></i> Data
+                                API</span>
+                            <a href="#" class="project-link"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Birthday Wishes Generator (Interactive Lab) -->
+                <article class="project-card glass-card scroll-reveal fade-up" data-category="interactive">
+                    <div class="project-img-container">
+                        <div class="project-overlay-glow"></div>
+                        <div class="project-tech-badges">
+                            <span class="badge">Three.js 3D</span>
+                            <span class="badge">Web Audio</span>
+                        </div>
+                        <div class="project-graphic p-birthday-lab">
+                            <div class="mock-ux-elements">
+                                <div class="birthday-cake-icon">🎂🕯️</div>
+                                <span class="status-txt pulse-glow">Interactive Lab</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="project-details">
+                        <h3>Birthday Wishes Generator</h3>
+                        <p>Fully interactive birthday wishes web app featuring a realistic 3D cake, blowable candles, 3D
+                            gift box shake, star maps, and fortune teller.</p>
+                        <div class="project-footer">
+                            <span class="project-type"><i class="fa-solid fa-wand-magic-sparkles"></i> 3D Interactive
+                                Lab</span>
+                            <a href="#creative-lab" class="project-link has-text"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Creative Lab (Birthday Wishes Generator) -->
+    <section id="creative-lab" class="section-padding scroll-reveal fade-up">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Interactive Laboratory</span>
+                <h2>Creative Lab</h2>
+                <p class="section-desc">Try out experimental interactive builds. Build a custom birthday card for your
+                    friend, launch the 3D generator, and share it!</p>
+            </div>
+
+            <div class="creative-lab-showcase">
+                <!-- Birthday Onboarding Card inside Portfolio -->
+                <div class="onboard-card glass-card scroll-reveal fade-up">
+                    <div class="onboard-icon">🎂</div>
+                    <h3 class="onboard-title">Birthday Wishes Generator</h3>
+                    <p class="onboard-sub">Configure a personalized immersive birthday wishes deck below.</p>
+
+                    <div class="input-group-grid">
+                        <div class="input-group">
+                            <label for="inputName">Friend's Name</label>
+                            <input type="text" id="inputName" placeholder="e.g. Priya, Rahul, Aanya…" maxlength="30"
+                                autocomplete="off" />
+                        </div>
+
+                        <div class="input-group">
+                            <label for="inputDOB">Date of Birth</label>
+                            <input type="date" id="inputDOB" />
+                        </div>
+                    </div>
+
+                    <div class="input-group block-upload">
+                        <label>Upload 4 Memory Photos 📸</label>
+                        <label class="photo-upload-label" for="photoUploadInput">
+                            <span class="photo-upload-icon">📁</span>
+                            <span id="uploadLabel">Select up to 4 photos from your device</span>
+                            <input type="file" id="photoUploadInput" accept="image/*" multiple
+                                onchange="handlePhotoUploads(this)" style="display:none;" />
+                        </label>
+                        <div class="upload-previews">
+                            <img class="upload-preview-img" src="" alt="" style="display:none;" />
+                            <img class="upload-preview-img" src="" alt="" style="display:none;" />
+                            <img class="upload-preview-img" src="" alt="" style="display:none;" />
+                            <img class="upload-preview-img" src="" alt="" style="display:none;" />
+                        </div>
+                    </div>
+
+                    <button class="cta-button bday-start-btn" id="btnStart" onclick="startWishing()">
+                        <span>Launch 3D Celebration</span> <i class="fa-solid fa-cake-candles"></i>
+                    </button>
+
+                    <p class="privacy-note">✨ Privacy Guaranteed: All photo data remains local to your browser session.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Certifications Section -->
+    <section id="certificates" class="section-padding scroll-reveal fade-up">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">Credentials</span>
+                <h2 class="section-title">Certifications</h2>
+                <p class="section-intro">Professional credentials and verified engineering achievements.</p>
+            </div>
+
+            <div class="certificates-grid">
+
+                <!-- Certificate 1 -->
+                <div class="cert-card glass-card scroll-reveal fade-up">
+                    <div class="cert-img-wrapper">
+                        <img src="assets/images/explore-generative-ai-with-the-vertex-ai-gemini-api.png"
+                            alt="Google Cloud Professional Certificate" class="cert-img">
+                    </div>
+                    <div class="cert-info">
+                        <h3>Explore Generative AI with the Vertex AI Gemini API</h3>
+                        <p>Issued: Nov 2025 | Google Cloud</p>
+                    </div>
+                </div>
+
+                <!-- Certificate 2 -->
+                <div class="cert-card glass-card scroll-reveal fade-up">
+                    <div class="cert-img-wrapper">
+                        <img src="assets/images/prompt-design-in-vertex-ai-skill-badge.png" alt="Prompt Design in Vertex AI"
+                            class="cert-img">
+                    </div>
+                    <div class="cert-info">
+                        <h3>Prompt Design in Vertex AI</h3>
+                        <p>Issued: Nov 2025 | Google Cloud</p>
+                    </div>
+                </div>
+
+                <!-- Certificate 3 -->
+                <div class="cert-card glass-card scroll-reveal fade-up">
+                    <div class="cert-img-wrapper">
+                        <img src="assets/images/gen-ai-applications.png" alt="Generative AI Applications" class="cert-img">
+                    </div>
+                    <div class="cert-info">
+                        <h3>Generation AI Agent: Transforming your organisation</h3>
+                        <p>Issued: Nov 2025 | Google Cloud</p>
+                    </div>
+                </div>
+
+                <!-- Certificate 4 -->
+                <div class="cert-card glass-card scroll-reveal fade-up">
+                    <div class="cert-img-wrapper">
+                        <div class="cert-fallback-icon"><i class="fa-solid fa-code"></i></div>
+                    </div>
+                    <div class="cert-info">
+                        <h3>Python for Data Science</h3>
+                        <p>Issued: Jun 2026 | TechAcademy</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- secret desk - message me -->
+    <section id="secret-desk">
+        <div class="container desk-layout">
+
+            <!-- 1. Wall Switch (Positioned on the Left) -->
+            <div class="switch-container scroll-reveal fade-left" style="padding: 0.8rem 1rem;">
+                <label class="modern-switch">
+                    <input type="checkbox" id="lamp-toggle">
+                    <span class="switch-track">
+                        <span class="switch-thumb"></span>
+                    </span>
+                </label>
+            </div>
+
+            <!-- 2. The Lamp Scene (Hanging in Center) -->
+            <div class="lamp-scene scroll-reveal fade-up">
+                <div class="lamp-swing-arm" id="lamp-swing-arm">
+                    <div class="lamp-structure">
+                        <div class="lamp-shade"></div>
+                        <div class="lamp-bulb"></div>
+                    </div>
+                </div>
+
+                <!-- Blurred Light & Reflection -->
+                <div class="light-beam-visual"></div>
+                <div class="light-floor-reflection" id="lamp-reflection"></div>
+
+                <!-- Interactive Content -->
+                <div class="desk-content-wrapper">
+                    <p class="secret-text">Let's build something bright.</p>
+                    <a href="mailto:yhusen336@gmail.com?subject=Inquiry%20about%20your%20services&body=Hello,%20I%20have%20a%20question%20regarding..."
+                        class="message-btn">
+                        Message Me
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer & Contact Form -->
+    <!-- Footer Section (Compact & Right-Aligned Button) -->
+    <footer id="contact" class="scroll-reveal fade-in-section" style="padding: 1rem 0;">
+        <div class="container" style="display: flex; justify-content: flex-end; align-items: center; padding: 0 2rem;">
+            <button class="cta-button" id="contact-trigger-btn" style="cursor: pointer; padding: 0.8rem 1.8rem; font-size: 0.95rem;">
+                <span>Contact Me</span> <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </footer>
+
+    </div> <!-- end .page-body-content -->
+
+
+    <!-- ===================== IMMERSIVE 3D BIRTHDAY LAB OVERLAY ===================== -->
+    <div id="birthday-overlay" class="screen">
+
+        <!-- Close overlay button -->
+        <button id="close-birthday-lab" aria-label="Exit Birthday Lab">&times; Exit Lab</button>
+
+        <!-- Background Overlay / Video -->
+        <div class="bg-overlay"></div>
+        <video class="bg-video" autoplay muted loop playsinline>
+            <source src="assets/video/bg.mp4" type="video/mp4">
+        </video>
+
+        <!-- Background Music -->
+        <audio id="bgMusic" src="assets/audio/bg.mp3" loop preload="auto"></audio>
+
+        <!-- Floating Emojis Canvas/Layer -->
+        <div class="floating-emojis" id="floatingEmojis"></div>
+
+        <!-- Birthday Sub navigation -->
+        <nav class="bday-navbar glass">
+            <div class="bday-nav-container">
+                <div class="bday-nav-logo">🎉 <span id="navName"></span>'s Day</div>
+                <div class="bday-nav-links">
+                    <a href="#bday-home" class="bday-nav-link active" data-section="bday-home">Home</a>
+                    <a href="#bday-gallery" class="bday-nav-link" data-section="bday-gallery">Gallery</a>
+                    <a href="#bday-note" class="bday-nav-link" data-section="bday-note">Note</a>
+                    <a href="#bday-wishes" class="bday-nav-link" data-section="bday-wishes">Wishes</a>
+                    <a href="#bday-candles" class="bday-nav-link" data-section="bday-candles">Candles</a>
+                    <a href="#bday-stats" class="bday-nav-link" data-section="bday-stats">Stats</a>
+                    <a href="#bday-gift" class="bday-nav-link" data-section="bday-gift">Gift</a>
+                    <a href="#bday-fortune" class="bday-nav-link" data-section="bday-fortune">Fortune</a>
+                    <a href="#bday-zodiac" class="bday-nav-link" data-section="bday-zodiac">Zodiac</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Immersive Birthday Content wrapper -->
+        <div class="bday-content-scroll">
+
+            <!-- Hero section -->
+            <section id="bday-home" class="bday-sec">
+                <div class="bday-hero-card glass">
+                    <div class="hb-heading" id="hbHeading">
+                        <span class="hb-happy">Happy</span>
+                        <span class="hb-birthday">Birthday</span>
+                        <span class="hb-name-display" id="hbNameDisplay"></span>
+                    </div>
+                    <div class="age-badge glass" id="ageBadge"></div>
+                    <p class="hero-sub">✨ Today is all about</p>
+                    <h1 class="hero-name" id="heroName"></h1>
+                    <p class="hero-tagline" id="heroTagline">Wishing the most magical birthday to someone truly
+                        extraordinary.</p>
+                    <div class="hero-date glass" id="heroDate"></div>
+
+                    <div class="hero-btns">
+                        <button class="bday-btn-primary celebrate-btn" id="celebrateBtn" onclick="triggerCelebrate()">🎊
+                            Celebrate!</button>
+                        <button class="bday-btn-outline" onclick="openGalleryShow()">View Memory Gallery 📸</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Gallery Section -->
+            <section id="bday-gallery" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">✨ Moments</span>
+                    <h2 class="bday-title">Memory <em>Gallery</em></h2>
+                    <p class="bday-desc">A little scattered gallery built just for <span class="dynamic-name"></span>
+                    </p>
+                </div>
+
+                <div class="gif-scattered">
+                    <div class="gif-card glass gif-pos-1">
+                        <img src="assets/images/gif1.gif" alt="Celebration GIF" class="gif-img" />
+                        <div class="gif-caption">Celebrate! 🎉</div>
+                    </div>
+                    <div class="gif-card glass gif-pos-2">
+                        <img src="assets/images/gif2.gif" alt="Celebration GIF" class="gif-img" />
+                        <div class="gif-caption">You're Amazing 🌟</div>
+                    </div>
+                    <div class="gif-card glass gif-pos-3">
+                        <img src="assets/images/gif3.gif" alt="Celebration GIF" class="gif-img" />
+                        <div class="gif-caption">Keep Shining ✨</div>
+                    </div>
+                    <div class="gif-card glass gif-pos-4">
+                        <img src="assets/images/gif4.gif" alt="Celebration GIF" class="gif-img" />
+                        <div class="gif-caption">Stay Awesome 🎂</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Love Note Section -->
+            <section id="bday-note" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">💌 From the Heart</span>
+                    <h2 class="bday-title">A Special <em>Note</em></h2>
+                </div>
+
+                <div class="note-container">
+                    <div class="note-card glass">
+                        <div class="note-decoration">❝</div>
+                        <p class="note-text" id="noteText"></p>
+                        <div class="note-sig" id="noteSig"></div>
+                        <div class="note-hearts">
+                            <span>💖</span><span>💕</span><span>💗</span>
+                        </div>
+                    </div>
+
+                    <div class="note-edit-panel glass">
+                        <h3>✏️ Personalise Your Note</h3>
+                        <textarea id="customNote" placeholder="Write your personal message here…" rows="5"></textarea>
+                        <button class="bday-btn-primary small" onclick="saveNote()">Save Note 💾</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Wishes Grid -->
+            <section id="bday-wishes" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">🌟 For You</span>
+                    <h2 class="bday-title">Birthday <em>Wishes</em></h2>
+                    <p class="bday-desc">Sending all the positive energy to <span class="dynamic-name"></span></p>
+                </div>
+                <div class="wishes-grid" id="wishesGrid"></div>
+            </section>
+
+            <!-- 3D Cake & Candle Blowing -->
+            <section id="bday-candles" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">🕯️ Interactive Cake</span>
+                    <h2 class="bday-title">Blow Out the <em>Candles</em></h2>
+                    <p class="bday-desc">Click/tap candles directly or turn on your microphone and blow!</p>
+                </div>
+                <div class="cake-wrap">
+                    <canvas id="cakeCanvas" width="420" height="380" title="Click candles to blow them out!"></canvas>
+                    <div class="mic-btn-wrap">
+                        <button class="bday-btn-outline mic-btn" id="micBtn" onclick="startMicBlow()">🎤 Use Mic to
+                            Blow</button>
+                        <p class="mic-hint" id="micHint"></p>
+                    </div>
+                    <div class="candle-msg" id="candleMsg"></div>
+                </div>
+            </section>
+
+            <!-- Age Stats -->
+            <section id="bday-stats" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">⏳ Your Life So Far</span>
+                    <h2 class="bday-title">Age in <em>Fun Stats</em></h2>
+                    <p class="bday-desc">Live ticking timeline metrics since your birth moment</p>
+                </div>
+                <div class="bday-stats-grid" id="statsGrid">
+                    <div class="bday-stat-card glass">
+                        <div class="stat-icon">❤️</div>
+                        <div class="stat-val" id="statHeartbeats">0</div>
+                        <div class="stat-label">Heartbeats</div>
+                    </div>
+                    <div class="bday-stat-card glass">
+                        <div class="stat-icon">🌬️</div>
+                        <div class="stat-val" id="statBreaths">0</div>
+                        <div class="stat-label">Breaths Taken</div>
+                    </div>
+                    <div class="bday-stat-card glass">
+                        <div class="stat-icon">⏰</div>
+                        <div class="stat-val" id="statHours">0</div>
+                        <div class="stat-label">Hours Lived</div>
+                    </div>
+                    <div class="bday-stat-card glass">
+                        <div class="stat-icon">📅</div>
+                        <div class="stat-val" id="statDays">0</div>
+                        <div class="stat-label">Days on Earth</div>
+                    </div>
+                    <div class="bday-stat-card glass">
+                        <div class="stat-icon">😴</div>
+                        <div class="stat-val" id="statSleep">0</div>
+                        <div class="stat-label">Hours of Sleep</div>
+                    </div>
+                    <div class="bday-stat-card glass">
+                        <div class="stat-icon">😂</div>
+                        <div class="stat-val" id="statLaughs">0</div>
+                        <div class="stat-label">Times Laughed</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3D Gift Opening -->
+            <section id="bday-gift" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">🎁 Unwrap a Surprise</span>
+                    <h2 class="bday-title">Open Your <em>Gift</em></h2>
+                    <p class="bday-desc">Click or tap the box to open the surprise</p>
+                </div>
+                <div class="gift-wrap" id="giftWrap">
+                    <canvas id="giftCanvas" width="320" height="340" onclick="openGift()"
+                        title="Tap to open your gift!"></canvas>
+                    <div class="gift-burst" id="giftBurst"></div>
+                    <div class="gift-message glass" id="giftMessage"></div>
+                </div>
+            </section>
+
+            <!-- Fortune Teller -->
+            <section id="bday-fortune" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">🔮 The Universe Speaks</span>
+                    <h2 class="bday-title">Birthday <em>Fortune</em></h2>
+                    <p class="bday-desc">Tap the crystal ball to query your astrological future</p>
+                </div>
+                <div class="crystal-wrap">
+                    <div class="crystal-ball" id="crystalBall" onclick="revealFortune()">
+                        <div class="crystal-inner">
+                            <div class="crystal-smoke" id="crystalSmoke"></div>
+                            <div class="crystal-text" id="crystalText">✨</div>
+                        </div>
+                        <div class="crystal-shine"></div>
+                    </div>
+                    <div class="fortune-result glass" id="fortuneResult"></div>
+                </div>
+            </section>
+
+            <!-- Zodiac Constellation star map -->
+            <section id="bday-zodiac" class="bday-sec">
+                <div class="bday-sec-header">
+                    <span class="bday-tag">🌙 Written in the Stars</span>
+                    <h2 class="bday-title">Your <em>Zodiac Constellation</em></h2>
+                    <p class="bday-desc">How the night sky map corresponds to your date of birth</p>
+                </div>
+                <div class="zodiac-wrap">
+                    <div class="zodiac-card glass" id="zodiacCard">
+                        <canvas class="star-canvas" id="starCanvas" width="300" height="300"></canvas>
+                        <div class="zodiac-info">
+                            <div class="zodiac-symbol" id="zodiacSymbol"></div>
+                            <div class="zodiac-name" id="zodiacName"></div>
+                            <div class="zodiac-dates" id="zodiacDates"></div>
+                            <div class="zodiac-traits" id="zodiacTraits"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Share panel -->
+            <div class="share-panel-wrapper">
+                <div class="share-panel glass">
+                    <h3>📤 Share This Experience</h3>
+                    <p>Copy the custom onboarding URL below to share directly with <span class="dynamic-name"></span>!
+                    </p>
+                    <div class="share-url-box">
+                        <span id="shareUrl"></span>
+                        <button onclick="copyLink()" class="btn-copy">Copy Link 📋</button>
+                    </div>
+                    <div class="social-btns">
+                        <button onclick="shareWA()" class="btn-social wa">WhatsApp 💬</button>
+                        <button onclick="shareTelegram()" class="btn-social tg">Telegram ✈️</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Overlay Footer -->
+            <footer class="bday-footer">
+                <div class="footer-hearts">💖 Made with love by Yaser Husen 💖</div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- Gallery memory show overlay -->
+    <div id="galleryOverlay" class="gallery-overlay" style="display:none;">
+        <div class="gallery-overlay-bg"></div>
+        <div class="gallery-show-wrap">
+            <img id="galleryShowImg" class="gallery-show-img" src="" alt="" />
+            <div class="gallery-show-counter" id="galleryCounter"></div>
+        </div>
+    </div>
+
+    <!-- Contact Information Pop-up Modal -->
+    <div id="contact-modal" class="contact-modal-overlay">
+        <div class="contact-modal-card glass-card">
+            <button class="contact-modal-close" id="close-contact-modal" aria-label="Close Contact Info">&times;</button>
+            <div class="contact-modal-grid">
+                <!-- Left side: Contact Info -->
+                <div class="modal-info-side">
+                    <div class="contact-modal-header">
+                        <span class="modal-tag">Get In Touch</span>
+                        <h2>Let's build something exceptional</h2>
+                        <p class="modal-lead">Have an AI project to deploy, a database to optimize, or an analysis to conduct? Let's connect directly or drop me a message!</p>
+                    </div>
+                    <div class="contact-modal-body">
+                        <div class="info-list">
+                            <div class="info-item">
+                                <div class="info-icon"><i class="fa-solid fa-envelope"></i></div>
+                                <div class="info-text">
+                                    <span>Email Me</span>
+                                    <a href="mailto:yhusen336@gmail.com">yhusen336@gmail.com</a>
+                                </div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-icon"><i class="fa-solid fa-phone"></i></div>
+                                <div class="info-text">
+                                    <span>Call Me</span>
+                                    <a href="tel:+919345117102">+91 9345-117-102</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="social-links">
+                            <a href="https://github.com/yaser2532" target="_blank" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                            <a href="https://www.linkedin.com/in/yaser-husen-154a80378/" target="_blank" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                            <a href="https://x.com/husen_yase85815" target="_blank" aria-label="Twitter/X"><i class="fa-brands fa-x-twitter"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Right side: Contact Form -->
+                <div class="modal-form-side">
+                    <form class="contact-form" id="contact-form">
+                        <div class="form-group">
+                            <div class="input-wrap">
+                                <input type="text" id="name" required placeholder=" ">
+                                <label for="name">Your Name</label>
+                                <span class="input-line"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-wrap">
+                                <input type="email" id="email" required placeholder=" ">
+                                <label for="email">Your Email</label>
+                                <span class="input-line"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-wrap">
+                                <input type="text" id="subject" required placeholder=" ">
+                                <label for="subject">Subject</label>
+                                <span class="input-line"></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="input-wrap">
+                                <textarea id="message" required rows="4" placeholder=" "></textarea>
+                                <label for="message">Project Details / Message</label>
+                                <span class="input-line"></span>
+                            </div>
+                        </div>
+                        <button type="submit" class="cta-button btn-submit" id="submit-btn">
+                            <span>Send Message</span> <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                        <div class="form-status" id="form-status"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="assets/js/threescenes.js"></script>
+    <script src="assets/js/sound.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+
+</html>
