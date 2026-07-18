@@ -3,8 +3,8 @@
    ========================================================================== */
 :root {
     /* Color Palette - Unified Sleek Tech Aesthetic */
-    --bg-color: #050505; /* True Black tech background */
-    --bg-darker: #020202;
+    --bg-color: #010101; /* Deep cosmic black background */
+    --bg-darker: #000000; /* Absolute space black */
     --card-bg: rgba(15, 22, 42, 0.45); /* Glassmorphic card base */
     --card-bg-hover: rgba(23, 33, 61, 0.65);
     
@@ -51,7 +51,7 @@ html {
 
 body {
     background-color: var(--bg-color);
-    background-image: linear-gradient(180deg, #050505 0%, #0b0712 100%); /* Clean dark background with subtle purple tint */
+    background-image: linear-gradient(180deg, #010101 0%, #030206 100%); /* Deep, mysterious cosmic dark background */
     color: var(--text-secondary);
     font-family: var(--font-body);
     line-height: 1.6;
@@ -439,8 +439,8 @@ header::before {
     position: relative;
     z-index: 10;
     background-color: var(--bg-color);
-    background-image: linear-gradient(180deg, #050505 0%, #0b0712 100%);
-    box-shadow: 0 -1rem 3rem rgba(0, 0, 0, 0.85);
+    background-image: linear-gradient(180deg, #010101 0%, #030206 100%); /* Deep, mysterious cosmic space background */
+    box-shadow: 0 -1rem 3rem rgba(0, 0, 0, 0.95);
 }
 
 .header-content {
@@ -475,7 +475,7 @@ header::before {
     margin-bottom: 0.8rem;
     color: #ffffff;
     min-height: 5.5rem;
-    text-shadow: 0 0 1.25rem rgba(139, 92, 246, 0.6), 0 0 2.5rem rgba(6, 182, 212, 0.3);
+    text-shadow: 0 0 1.25rem rgba(139, 92, 246, 0.25), 0 0 2.5rem rgba(6, 182, 212, 0.12);
 }
 
 .hero-subtitle {
@@ -2869,6 +2869,10 @@ footer {
         bottom: auto;
     }
 
+    #navbar {
+        padding: 0.5rem 0rem;
+    }
+
     /* Mobile burger navigation menu */
     .nav-links {
         display: flex;
@@ -3280,4 +3284,26 @@ footer {
     .modal-form-side {
         padding: 1.5rem 1rem;
     }
+}
+
+/* ==========================================================================
+   Cosmic Background Canvas & Container
+   ========================================================================== */
+#cosmic-bg-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1; /* Sits behind sections (z-index 2) but above default page body backgrounds */
+    pointer-events: none; /* Let all mouse interactions pass through to elements below */
+    opacity: 0; /* Managed dynamically by scroll checking in JS */
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    background: transparent;
+}
+
+#cosmic-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
 }

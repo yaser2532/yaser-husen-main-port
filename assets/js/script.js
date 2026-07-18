@@ -670,6 +670,11 @@ document.addEventListener('DOMContentLoaded', () => {
         personAge  = calculateAge(sDOB);
         launchMainPage();
     }
+
+    // Initialize cosmic background starting from the about section
+    if (typeof initCosmicBackground === 'function') {
+        initCosmicBackground();
+    }
 });
 
 
@@ -1294,4 +1299,231 @@ function showToast(msg) {
   t.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ════════════════════════════════════════════════════════════
+//  DYNAMIC COSMIC SPACE BACKGROUND (STARS & NEBULA) WITH THREE.JS
+// ════════════════════════════════════════════════════════════
+function initCosmicBackground() {
+  const container = document.getElementById('cosmic-bg-container');
+  const canvas = document.getElementById('cosmic-canvas');
+  if (!container || !canvas || typeof THREE === 'undefined') return;
+
+  const scene = new THREE.Scene();
+  scene.background = null; // Transparent to blend with CSS gradient
+
+  // Camera - Perspective Camera for 3D depth parallax
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.z = 80;
+
+  // WebGL Renderer with alpha channel enabled
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  // Particle texture generator (creates a soft radial glow circle)
+  function createCircleTexture() {
+    const texCanvas = document.createElement('canvas');
+    texCanvas.width = 16;
+    texCanvas.height = 16;
+    const ctx = texCanvas.getContext('2d');
+    const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 16, 16);
+    
+    const texture = new THREE.CanvasTexture(texCanvas);
+    return texture;
+  }
+
+  const starTexture = createCircleTexture();
+
+  // Create starfields (2 independent layers for depth/parallax feel)
+  function createStarfield(count, size, range, opacity) {
+    const geo = new THREE.BufferGeometry();
+    const positions = [];
+    const colors = [];
+    
+    // Sleek space colors corresponding to the website aesthetics
+    const starColors = [
+      new THREE.Color(0xffffff), // Pure White
+      new THREE.Color(0xa7d8ff), // Neon Cyan-Blue
+      new THREE.Color(0xe0b5ff), // Bright Purple
+      new THREE.Color(0xfff3d1)  // Warm Gold
+    ];
+
+    for (let i = 0; i < count; i++) {
+      // Scatter randomly in a 3D box
+      positions.push(
+        (Math.random() - 0.5) * range * 2.2,
+        (Math.random() - 0.5) * range * 1.6,
+        (Math.random() - 0.5) * range
+      );
+      
+      const col = starColors[Math.floor(Math.random() * starColors.length)];
+      colors.push(col.r, col.g, col.b);
+    }
+
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size,
+      map: starTexture,
+      transparent: true,
+      opacity,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    return new THREE.Points(geo, mat);
+  }
+
+  // 2000 tiny far stars, 450 larger twinkling near stars (kept at high visibility)
+  const farStars = createStarfield(2000, 0.32, 220, 0.8);
+  const nearStars = createStarfield(450, 0.6, 160, 0.95);
+  scene.add(farStars);
+  scene.add(nearStars);
+
+  // Gaseous Nebula cloud texture generator
+  function createNebulaTexture(colorHex1, colorHex2) {
+    const texCanvas = document.createElement('canvas');
+    texCanvas.width = 512;
+    texCanvas.height = 512;
+    const ctx = texCanvas.getContext('2d');
+    ctx.clearRect(0, 0, 512, 512);
+
+    // Large radial gradient for soft smoke appearance
+    const grad = ctx.createRadialGradient(256, 256, 15, 256, 256, 240);
+    grad.addColorStop(0, colorHex1);
+    grad.addColorStop(0.5, colorHex2);
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(256, 256, 256, 0, Math.PI * 2);
+    ctx.fill();
+
+    const texture = new THREE.CanvasTexture(texCanvas);
+    return texture;
+  }
+
+  // Generate three custom color maps for the nebulas (reduced intensity for subtle drifting patches)
+  const nebulaTexPurple = createNebulaTexture('rgba(139, 92, 246, 0.12)', 'rgba(109, 40, 217, 0.04)'); // --accent-color matching purple
+  const nebulaTexCyan = createNebulaTexture('rgba(6, 182, 212, 0.09)', 'rgba(8, 145, 178, 0.02)');   // --accent-hover matching cyan
+  const nebulaTexMagenta = createNebulaTexture('rgba(236, 72, 153, 0.07)', 'rgba(190, 24, 74, 0.01)'); // Magenta highlights
+
+  const nebulaPlanes = [];
+  const nebulaSpecs = [
+    { tex: nebulaTexPurple, size: 85, pos: [-35, 15, -55], rotSpeed: 0.0006, driftX: 4, driftY: 3 },
+    { tex: nebulaTexCyan, size: 95, pos: [35, -8, -75], rotSpeed: -0.0005, driftX: 5, driftY: 2 },
+    { tex: nebulaTexMagenta, size: 75, pos: [-10, -25, -65], rotSpeed: 0.0003, driftX: 3, driftY: 4 },
+    { tex: nebulaTexPurple, size: 105, pos: [20, 25, -95], rotSpeed: -0.0002, driftX: 4, driftY: 3 }
+  ];
+
+  nebulaSpecs.forEach(spec => {
+    const geo = new THREE.PlaneGeometry(spec.size, spec.size);
+    const mat = new THREE.MeshBasicMaterial({
+      map: spec.tex,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      opacity: 0.45
+    });
+    const plane = new THREE.Mesh(geo, mat);
+    plane.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
+    plane.rotation.z = Math.random() * Math.PI * 2;
+    scene.add(plane);
+    nebulaPlanes.push({ mesh: plane, spec });
+  });
+
+  // Ambient lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+
+  // Cursor Parallax Tracker
+  let mouseX = 0, mouseY = 0;
+  let targetMouseX = 0, targetMouseY = 0;
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+  if (!isTouch) {
+    document.addEventListener('mousemove', (e) => {
+      targetMouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      targetMouseY = (e.clientY / window.innerHeight) * 2 - 1;
+    });
+  }
+
+  // Scroll Fade Trigger Logic
+  const triggerSection = document.getElementById('profile-expertise');
+  let isBackgroundActive = false;
+
+  function handleScrollOpacity() {
+    if (!triggerSection) return;
+    const triggerTop = triggerSection.getBoundingClientRect().top + window.scrollY;
+    
+    // Fade starts when the top of the trigger section starts entering the screen
+    const triggerPoint = triggerTop - window.innerHeight;
+    const fadeDistance = window.innerHeight * 0.6; // Fade completes over 60% viewport distance
+    const scrolled = window.scrollY;
+
+    if (scrolled > triggerPoint) {
+      const progress = Math.min(1, (scrolled - triggerPoint) / fadeDistance);
+      container.style.opacity = progress;
+      isBackgroundActive = true;
+    } else {
+      container.style.opacity = 0;
+      isBackgroundActive = false;
+    }
+  }
+
+  // Run immediately and hook to window scroll
+  handleScrollOpacity();
+  window.addEventListener('scroll', handleScrollOpacity);
+
+  // Dynamic animation render loop
+  let time = 0;
+  function animateScene() {
+    requestAnimationFrame(animateScene);
+
+    // Freeze render loop execution when scrolled above section to save performance
+    if (!isBackgroundActive) return;
+
+    time += 0.01;
+
+    // Slow orbital rotation of starfields
+    farStars.rotation.y = time * 0.004;
+    farStars.rotation.x = time * 0.001;
+    nearStars.rotation.y = -time * 0.007;
+
+    // Twinkling light fluctuations (brighter limits)
+    farStars.material.opacity = 0.65 + Math.sin(time * 1.6) * 0.15;
+    nearStars.material.opacity = 0.78 + Math.cos(time * 2.2) * 0.15;
+
+    // Swirl and shift gaseous cloud plane meshes
+    nebulaPlanes.forEach(p => {
+      p.mesh.rotation.z += p.spec.rotSpeed;
+      p.mesh.position.x = p.spec.pos[0] + Math.sin(time * 0.12 + p.spec.pos[2]) * p.spec.driftX;
+      p.mesh.position.y = p.spec.pos[1] + Math.cos(time * 0.10 + p.spec.pos[0]) * p.spec.driftY;
+    });
+
+    // Camera parallax dampening
+    mouseX += (targetMouseX - mouseX) * 0.06;
+    mouseY += (targetMouseY - mouseY) * 0.06;
+
+    camera.position.x = mouseX * 7;
+    camera.position.y = -mouseY * 5;
+    camera.lookAt(0, 0, -100);
+
+    renderer.render(scene, camera);
+  }
+  animateScene();
+
+  // Window Resize Listener
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 }
