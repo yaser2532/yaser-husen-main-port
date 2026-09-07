@@ -101,18 +101,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Establish random directional angles and offset distances to form an organic cluster
             const angle = Math.random() * Math.PI * 2;
-            const distance = 8 + Math.random() * 14; 
+            const distance = 6 + Math.random() * 8;
             
             dotsData.push({
                 currentX: targetX,
                 currentY: targetY,
-                ease: 0.05 + Math.random() * 0.05, 
+              ease: 0.08 + Math.random() * 0.04,
                 dx: Math.cos(angle) * distance,
                 dy: Math.sin(angle) * distance,
-                freqX: 1.2 + Math.random() * 1.8,
-                freqY: 1.2 + Math.random() * 1.8,
-                ampX: 3 + Math.random() * 5,
-                ampY: 3 + Math.random() * 5,
+              freqX: 0.7 + Math.random() * 0.8,
+              freqY: 0.7 + Math.random() * 0.8,
+              ampX: 1.5 + Math.random() * 2.5,
+              ampY: 1.5 + Math.random() * 2.5,
                 phaseX: Math.random() * Math.PI * 2,
                 phaseY: Math.random() * Math.PI * 2
             });
@@ -122,6 +122,12 @@ document.addEventListener('DOMContentLoaded', () => {
             targetX = e.clientX;
             targetY = e.clientY;
             if (!isVisible) {
+              currentX = targetX;
+              currentY = targetY;
+              dotsData.forEach(data => {
+                data.currentX = targetX + data.dx;
+                data.currentY = targetY + data.dy;
+              });
                 isVisible = true;
                 mouseGlow.style.opacity = '1';
                 dots.forEach(dot => dot.classList.add('active'));
@@ -132,19 +138,39 @@ document.addEventListener('DOMContentLoaded', () => {
             mouseGlow.style.opacity = '0';
             dots.forEach(dot => dot.classList.remove('active'));
             isVisible = false;
+            document.body.classList.remove('cursor-reading');
         });
 
         // Hover tracking using event delegation
+        const readableSelector = [
+            'a', 'button', 'input', 'textarea', 'select', 'label',
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'span',
+            '.logo', '.badge', '.trait-tag', '.section-tag', '.section-desc',
+            '.project-type', '.status-txt', '.stat-label', '.stat-number',
+            '.highlight-text', '.bday-tag', '.bday-title', '.bday-desc'
+        ].join(', ');
+
+        const getEventElement = (target) => target instanceof Element ? target : null;
+        const isReadableTarget = (target) => {
+            const element = getEventElement(target);
+            return Boolean(element && element.closest(readableSelector));
+        };
+
         document.addEventListener('mouseover', (e) => {
             const target = e.target;
-            if (target && target.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
+            document.body.classList.toggle('cursor-reading', isReadableTarget(target));
+            const element = getEventElement(target);
+            if (element && element.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
                 targetScale = 1.35;
             }
         });
 
         document.addEventListener('mouseout', (e) => {
             const target = e.target;
-            if (target && target.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
+            const nextTarget = e.relatedTarget;
+            document.body.classList.toggle('cursor-reading', isReadableTarget(nextTarget));
+            const element = getEventElement(target);
+            if (element && element.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
                 targetScale = 1.0;
             }
         });
@@ -161,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
             mouseGlow.style.transform = `translate3d(${glowXRem}rem, ${glowYRem}rem, 0) translate(-50%, -50%) scale(${currentScale})`;
             
             // Update individual dots in the cluster
-            const time = Date.now() * 0.001; 
+            const time = performance.now() * 0.001;
             
             for (let i = 0; i < NUM_DOTS; i++) {
                 const dot = dots[i];

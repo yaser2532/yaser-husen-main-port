@@ -169,6 +169,16 @@ button, input, textarea {
     height: 0.75rem;
 }
 
+/* Keep the cursor effect from washing out readable content. */
+.cursor-reading .mouse-glow,
+.cursor-reading .mouse-tracker-dot {
+    opacity: 0.16 !important;
+}
+
+.cursor-reading .mouse-glow {
+    opacity: 0.08 !important;
+}
+
 @media (hover: none) {
     .mouse-glow,
     .mouse-tracker-dot {
