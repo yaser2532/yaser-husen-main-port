@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const NUM_DOTS = 8;
         const dots = [];
         const dotsData = [];
+        let targetDotOpacity = 0;
 
         for (let i = 0; i < NUM_DOTS; i++) {
             const dot = document.createElement('div');
@@ -106,6 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dotsData.push({
                 currentX: targetX,
                 currentY: targetY,
+              currentOpacity: 0,
                 ease: 0.05 + Math.random() * 0.05, 
                 dx: Math.cos(angle) * distance,
                 dy: Math.sin(angle) * distance,
@@ -121,6 +123,15 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove', (e) => {
             targetX = e.clientX;
             targetY = e.clientY;
+
+            const readableTarget = e.target.closest(
+                'a, button, p, h1, h2, h3, h4, h5, h6, li, label, code, blockquote, ' +
+                'input, textarea, .trait-tag, .section-tag, .badge, .status-txt, ' +
+                '.project-type, .stat-label, .secret-text, .bday-title, .bday-desc'
+            );
+            document.body.classList.toggle('cursor-reading', Boolean(readableTarget));
+            targetDotOpacity = readableTarget ? 0 : 0.9;
+
             if (!isVisible) {
                 isVisible = true;
                 mouseGlow.style.opacity = '1';
@@ -130,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('mouseleave', () => {
             mouseGlow.style.opacity = '0';
-            dots.forEach(dot => dot.classList.remove('active'));
+            targetDotOpacity = 0;
             isVisible = false;
         });
 
@@ -176,11 +187,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 data.currentX += (targetDotX - data.currentX) * data.ease;
                 data.currentY += (targetDotY - data.currentY) * data.ease;
+                data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.12;
                 
                 const dotXRem = data.currentX / rootFontSize;
                 const dotYRem = data.currentY / rootFontSize;
                 
                 dot.style.transform = `translate3d(${dotXRem}rem, ${dotYRem}rem, 0) translate(-50%, -50%) scale(${currentScale})`;
+                dot.style.opacity = data.currentOpacity.toFixed(3);
             }
             
             requestAnimationFrame(animateGlow);
