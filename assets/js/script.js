@@ -187,8 +187,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        /* --- [B-03] Crew Mode & Swarm Control API --- */
+        /* --- [B-03] Crew Mode & Swarm Control API with Multi-Phase Choreography --- */
         let assignedTargets = null;
+        let currentPhase = 'idle'; // 'idle' | 'scout' | 'pull'
+        let currentPhaseMeta = null;
         let isTouchDevice = window.matchMedia('(hover: none)').matches;
         let lastPointerTime = performance.now();
         let lastTouchTime = performance.now();
@@ -203,7 +205,35 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         window.swarm = {
+            setPhase(phase, meta) {
+                currentPhase = phase || 'idle';
+                currentPhaseMeta = meta || null;
+                if (phase === 'scout') {
+                    if (!isVisible) {
+                        isVisible = true;
+                        mouseGlow.style.opacity = '0.7';
+                        dots.forEach(dot => dot.classList.add('active'));
+                    }
+                    targetDotOpacity = 0.95;
+                } else if (phase === 'pull') {
+                    if (meta && meta.targets) {
+                        assignedTargets = meta.targets;
+                    }
+                    targetDotOpacity = 0.95;
+                } else if (phase === 'idle') {
+                    assignedTargets = null;
+                    currentPhaseMeta = null;
+                }
+                ensureGlowLoop();
+            },
+            getPhase() {
+                return currentPhase;
+            },
+            getPhaseMeta() {
+                return currentPhaseMeta;
+            },
             assign(targets) {
+                currentPhase = 'pull';
                 assignedTargets = Array.isArray(targets) && targets.length ? targets : null;
                 if (!isVisible) {
                     isVisible = true;
@@ -214,7 +244,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 ensureGlowLoop();
             },
             release() {
+                currentPhase = 'idle';
                 assignedTargets = null;
+                currentPhaseMeta = null;
                 ensureGlowLoop();
             },
             getDots() {
@@ -224,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return dotsData;
             },
             isAssigned() {
-                return Boolean(assignedTargets);
+                return Boolean(assignedTargets) || currentPhase === 'pull';
             }
         };
 
@@ -268,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const time = performance.now() * 0.001;
 
             // [B-04] Touch idle orbit at lower third of viewport
-            if (isTouchDevice && !assignedTargets && (performance.now() - lastTouchTime > 2000)) {
+            if (isTouchDevice && !assignedTargets && (currentPhase === 'idle') && (performance.now() - lastTouchTime > 2000)) {
                 targetX = window.innerWidth * 0.5 + Math.cos(time * 0.8) * 35;
                 targetY = window.innerHeight * 0.78 + Math.sin(time * 0.6) * 20;
             }
@@ -282,7 +314,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const driftY = Math.cos(time * data.freqY + data.phaseY) * data.ampY;
                 
                 let targetDotX, targetDotY;
-                if (assignedTargets && assignedTargets.length > 0) {
+
+                if (currentPhase === 'scout') {
+                    // Scouting reconnaissance sweep across incoming section
+                    const tScout = time * 2.2;
+                    let cx = window.innerWidth * 0.5;
+                    let cy = window.innerHeight * 0.5;
+                    if (currentPhaseMeta && currentPhaseMeta.bounds) {
+                        const scrollYNow = window.scrollY || window.pageYOffset || 0;
+                        cy = (currentPhaseMeta.bounds.pageTop - scrollYNow) + (currentPhaseMeta.bounds.height * 0.4);
+                        cx = currentPhaseMeta.bounds.pageLeft + (currentPhaseMeta.bounds.width * 0.5);
+                    }
+                    const angle = tScout * (1.6 + (i % 3) * 0.5) + (i * Math.PI * 2 / NUM_DOTS);
+                    const rx = Math.min(window.innerWidth * 0.38, 240 + (i % 4) * 60);
+                    const ry = Math.min(window.innerHeight * 0.28, 150 + (i % 3) * 50);
+                    targetDotX = cx + Math.cos(angle) * rx + Math.sin(tScout * 2.5 + i) * 35;
+                    targetDotY = cy + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.0 + i) * 30;
+                } else if (assignedTargets && assignedTargets.length > 0) {
                     // Crew mode target [B-03]
                     const pt = assignedTargets[i % assignedTargets.length];
                     targetDotX = pt.x + driftX;
@@ -304,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // [PF-06, C-07] Sleep loop when idle for > 2s and settled
-            const isIdle = (performance.now() - lastPointerTime > 2000) && !assignedTargets && !isTouchDevice;
+            const isIdle = (performance.now() - lastPointerTime > 2000) && !assignedTargets && (currentPhase === 'idle') && !isTouchDevice;
             if (isIdle) {
                 let maxDelta = 0;
                 for (let i = 0; i < NUM_DOTS; i++) {
@@ -524,27 +572,128 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize navbar class on page load
     handleNavbarScroll();
 
+    /* --- Modern Butter-Smooth Momentum Scrolling Engine --- */
+    (function initSmoothMomentumScroll() {
+        // Step aside on coarse/touch devices to preserve 120Hz native touch momentum
+        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia('(hover: none)').matches;
+        if (isTouch) return;
+
+        let currentScrollY = window.scrollY || window.pageYOffset || 0;
+        let targetScrollY = currentScrollY;
+        let isScrolling = false;
+        let maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+        function updateMaxScroll() {
+            maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        }
+        window.addEventListener('resize', updateMaxScroll, { passive: true });
+
+        // Wheel interceptor with normalized delta & inertial decay
+        window.addEventListener('wheel', (e) => {
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.target.closest('#nano-chat-messages, .wishes-scroll-box, .modal-content, textarea')) return;
+
+            e.preventDefault();
+            updateMaxScroll();
+
+            let delta = e.deltaY;
+            if (e.deltaMode === 1) delta *= 32;
+            else if (e.deltaMode === 2) delta *= window.innerHeight;
+
+            targetScrollY = Math.max(0, Math.min(maxScroll, targetScrollY + delta * 0.95));
+
+            if (!isScrolling) {
+                isScrolling = true;
+                requestAnimationFrame(scrollLoop);
+            }
+        }, { passive: false });
+
+        function scrollLoop() {
+            const diff = targetScrollY - currentScrollY;
+            if (Math.abs(diff) > 0.4) {
+                currentScrollY += diff * 0.082;
+                window.scrollTo(0, currentScrollY);
+                requestAnimationFrame(scrollLoop);
+            } else {
+                currentScrollY = targetScrollY;
+                window.scrollTo(0, targetScrollY);
+                isScrolling = false;
+            }
+        }
+
+        window.addEventListener('scroll', () => {
+            if (!isScrolling) {
+                currentScrollY = window.scrollY || window.pageYOffset || 0;
+                targetScrollY = currentScrollY;
+            }
+        }, { passive: true });
+
+        // Keyboard navigation
+        window.addEventListener('keydown', (e) => {
+            if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
+
+            updateMaxScroll();
+            let keyDelta = 0;
+            if (e.key === 'ArrowDown') keyDelta = 110;
+            else if (e.key === 'ArrowUp') keyDelta = -110;
+            else if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) keyDelta = window.innerHeight * 0.78;
+            else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) keyDelta = -window.innerHeight * 0.78;
+            else if (e.key === 'Home') keyDelta = -currentScrollY;
+            else if (e.key === 'End') keyDelta = maxScroll - currentScrollY;
+
+            if (keyDelta !== 0) {
+                e.preventDefault();
+                targetScrollY = Math.max(0, Math.min(maxScroll, targetScrollY + keyDelta));
+                if (!isScrolling) {
+                    isScrolling = true;
+                    requestAnimationFrame(scrollLoop);
+                }
+            }
+        });
+
+        // Anchor links smooth glide
+        document.addEventListener('click', (e) => {
+            const anchor = e.target.closest('a[href^="#"]');
+            if (!anchor) return;
+            const hash = anchor.getAttribute('href');
+            if (!hash || hash === '#') return;
+            const targetEl = document.querySelector(hash);
+            if (targetEl) {
+                e.preventDefault();
+                updateMaxScroll();
+                const navHeight = 70;
+                const rect = targetEl.getBoundingClientRect();
+                const scrollOffset = rect.top + (window.scrollY || window.pageYOffset) - navHeight;
+                targetScrollY = Math.max(0, Math.min(maxScroll, scrollOffset));
+                if (!isScrolling) {
+                    isScrolling = true;
+                    requestAnimationFrame(scrollLoop);
+                }
+                history.pushState(null, '', hash);
+            }
+        });
+
+        window.glideScrollTo = function(y) {
+            updateMaxScroll();
+            targetScrollY = Math.max(0, Math.min(maxScroll, y));
+            if (!isScrolling) {
+                isScrolling = true;
+                requestAnimationFrame(scrollLoop);
+            }
+        };
+    })();
+
     window.addEventListener('scroll', () => {
         handleNavbarScroll();
 
-        // 3D page-flip scroll transition for hero section
+        // Smooth parallax fade for hero content on scroll (zero GPU composite strain)
         const scrolled = window.scrollY;
         const heroHeight = window.innerHeight;
-        const header = document.querySelector('header');
-        if (header) {
-            if (scrolled <= heroHeight) {
-                const percent = scrolled / heroHeight;
-                const rotateX = percent * -25;
-                const scale = 1 - (percent * 0.15);
-                const opacity = 1 - (percent * 0.95);
-                header.style.transform = `perspective(1000px) rotateX(${rotateX}deg) scale(${scale})`;
-                header.style.opacity = opacity;
-                header.style.visibility = 'visible';
-            } else {
-                header.style.transform = 'perspective(1000px) rotateX(-25deg) scale(0.85)';
-                header.style.opacity = 0;
-                header.style.visibility = 'hidden';
-            }
+        const headerContent = document.querySelector('.header-content');
+        if (headerContent && scrolled <= heroHeight) {
+            const percent = scrolled / heroHeight;
+            headerContent.style.opacity = (1 - percent * 0.92).toFixed(3);
+            headerContent.style.transform = `translate3d(0, ${(percent * 45).toFixed(1)}px, 0)`;
         }
 
         // Back to top visibility

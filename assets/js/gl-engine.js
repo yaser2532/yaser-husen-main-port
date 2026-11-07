@@ -94,114 +94,11 @@
     scene.add(goldLight);
 
     /* =========================================================================
-       3D-01: HERO CORE (Wireframe Icosahedron + 30 Floating Crystal Shards)
+       3D-01: HERO CORE SPHERICAL 3D MODEL REMOVED
+       Wireframe icosahedron and 32 crystal shards removed per user requirement
+       to optimize GPU refresh load and prevent high-memory stutter.
        ========================================================================= */
-    const heroGroup = new THREE.Group();
-    scene.add(heroGroup);
-
-    // Base radius scales with viewport
-    const heroRadius = Math.min(width * 0.16, 170);
-    
-    // Outer wireframe icosahedron
-    const icoGeom = new THREE.IcosahedronGeometry(heroRadius, 1);
-    const wireGeom = new THREE.WireframeGeometry(icoGeom);
-    const wireMat = new THREE.LineBasicMaterial({
-        color: COLOR_PURPLE,
-        transparent: true,
-        opacity: 0.65,
-        linewidth: 1
-    });
-    const wireMesh = new THREE.LineSegments(wireGeom, wireMat);
-    heroGroup.add(wireMesh);
-
-    // Inner glowing faceted icosahedron
-    const innerIcoGeom = new THREE.IcosahedronGeometry(heroRadius * 0.72, 0);
-    const innerIcoMat = new THREE.MeshPhongMaterial({
-        color: COLOR_PURPLE_DEEP,
-        emissive: 0x4a1885,
-        wireframe: false,
-        shininess: 90,
-        transparent: true,
-        opacity: 0.82
-    });
-    const innerIcoMesh = new THREE.Mesh(innerIcoGeom, innerIcoMat);
-    heroGroup.add(innerIcoMesh);
-
-    // Core gold energy ring
-    const ringGeom = new THREE.TorusGeometry(heroRadius * 0.88, 3.5, 12, 48);
-    const ringMat = new THREE.MeshBasicMaterial({
-        color: COLOR_GOLD,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.75
-    });
-    const ringMesh = new THREE.Mesh(ringGeom, ringMat);
-    ringMesh.rotation.x = Math.PI / 3;
-    heroGroup.add(ringMesh);
-
-    // Second turquoise counter-rotating ring
-    const ring2Geom = new THREE.TorusGeometry(heroRadius * 1.05, 2.5, 12, 48);
-    const ring2Mat = new THREE.MeshBasicMaterial({
-        color: COLOR_TURQUOISE,
-        wireframe: true,
-        transparent: true,
-        opacity: 0.65
-    });
-    const ring2Mesh = new THREE.Mesh(ring2Geom, ring2Mat);
-    ring2Mesh.rotation.y = Math.PI / 4;
-    heroGroup.add(ring2Mesh);
-
-    // 30 Floating Crystal Shards
-    const SHARD_COUNT = tier === 'low' ? 16 : 32;
-    const shards = [];
-    const shardGeom = new THREE.TetrahedronGeometry(Math.max(10, heroRadius * 0.09), 0);
-    
-    const shardMats = [
-        new THREE.MeshPhongMaterial({ color: COLOR_GOLD_BRIGHT, emissive: 0x735500, shininess: 80, transparent: true, opacity: 0.88 }),
-        new THREE.MeshPhongMaterial({ color: COLOR_PURPLE, emissive: 0x3d107a, shininess: 60, transparent: true, opacity: 0.82 }),
-        new THREE.MeshPhongMaterial({ color: COLOR_TURQUOISE, emissive: 0x0a524a, shininess: 100, transparent: true, opacity: 0.90 })
-    ];
-
-    for (let i = 0; i < SHARD_COUNT; i++) {
-        const mat = shardMats[i % shardMats.length];
-        const shard = new THREE.Mesh(shardGeom, mat);
-        
-        const orbitRadius = heroRadius * (1.15 + Math.random() * 0.65);
-        const theta = (i / SHARD_COUNT) * Math.PI * 2 + (Math.random() * 0.4);
-        const phi = (Math.random() - 0.5) * Math.PI * 0.85;
-        
-        shard.position.set(
-            orbitRadius * Math.cos(theta) * Math.cos(phi),
-            orbitRadius * Math.sin(phi),
-            orbitRadius * Math.sin(theta) * Math.cos(phi)
-        );
-        
-        shard.userData = {
-            baseRadius: orbitRadius,
-            speedTheta: (0.35 + Math.random() * 0.65) * (i % 2 === 0 ? 1 : -1),
-            speedPhi: (0.2 + Math.random() * 0.3) * (i % 3 === 0 ? 1 : -1),
-            rotSpeedX: Math.random() * 2.5,
-            rotSpeedY: Math.random() * 2.5,
-            theta: theta,
-            phi: phi
-        };
-        
-        heroGroup.add(shard);
-        shards.push(shard);
-    }
-
-    function updateHeroPosition() {
-        if (width >= 1024) {
-            // Right-aligned behind/beside hero text
-            heroGroup.position.set(width * 0.22, height * 0.04, -40);
-        } else if (width >= 768) {
-            heroGroup.position.set(width * 0.18, height * 0.08, -60);
-        } else {
-            // Centered on mobile behind hero title
-            heroGroup.position.set(0, height * 0.12, -90);
-        }
-    }
-    updateHeroPosition();
+    const heroGroup = null;
 
     /* =========================================================================
        3D-02: CYBER PERSPECTIVE GRID BACKDROP & COSMIC DUST
@@ -384,8 +281,6 @@
     let currentParallaxY = 0;
     let scrollY = window.scrollY || 0;
     let targetScrollY = scrollY;
-    let isHoveringHero = false;
-    let heroSpinVelocity = 1.0;
 
     // Track mouse move
     window.addEventListener('mousemove', (e) => {
@@ -395,13 +290,6 @@
         // Normalized -1 to +1
         targetParallaxX = (e.clientX / width - 0.5) * 2;
         targetParallaxY = -(e.clientY / height - 0.5) * 2;
-
-        // Check if cursor is over hero section
-        const heroEl = document.getElementById('home');
-        if (heroEl) {
-            const rect = heroEl.getBoundingClientRect();
-            isHoveringHero = (e.clientY >= rect.top && e.clientY <= rect.bottom);
-        }
     }, { passive: true });
 
     // Track scroll
@@ -419,8 +307,6 @@
         camera.aspect = width / height;
         camera.position.z = newCameraZ;
         camera.updateProjectionMatrix();
-
-        updateHeroPosition();
     });
 
     /* =========================================================================
@@ -455,42 +341,7 @@
         currentParallaxY += (targetParallaxY - currentParallaxY) * 0.06;
         scrollY += (targetScrollY - scrollY) * 0.10;
 
-        // 1. Hero Core High-Energy Animation [3D-01]
-        const targetSpin = isHoveringHero ? 4.2 : 1.0;
-        heroSpinVelocity += (targetSpin - heroSpinVelocity) * 0.08;
-
-        heroGroup.rotation.y += delta * 0.65 * heroSpinVelocity;
-        heroGroup.rotation.x += delta * 0.40 * (isHoveringHero ? 1.5 : 0.8);
-        ringMesh.rotation.z += delta * 1.8 * heroSpinVelocity;
-        ring2Mesh.rotation.z -= delta * 1.4 * heroSpinVelocity;
-
-        // Tilt toward cursor
-        heroGroup.rotation.y += currentParallaxX * 0.03;
-        heroGroup.rotation.x += -currentParallaxY * 0.03;
-
-        // React to scroll: drift back and rotate as visitor scrolls past hero
-        const heroScrollFactor = Math.min(scrollY / (height * 1.2), 1.0);
-        heroGroup.position.z = (width >= 1024 ? -40 : -90) - heroScrollFactor * 450;
-        heroGroup.position.y = (width >= 1024 ? height * 0.04 : height * 0.12) + heroScrollFactor * 220;
-        heroGroup.scale.setScalar(Math.max(0.4, 1.0 - heroScrollFactor * 0.5));
-
-        // Shards orbit
-        for (let i = 0; i < shards.length; i++) {
-            const shard = shards[i];
-            const ud = shard.userData;
-            
-            ud.theta += delta * ud.speedTheta * heroSpinVelocity;
-            ud.phi += delta * ud.speedPhi;
-            
-            shard.position.x = ud.baseRadius * Math.cos(ud.theta) * Math.cos(ud.phi);
-            shard.position.y = ud.baseRadius * Math.sin(ud.phi);
-            shard.position.z = ud.baseRadius * Math.sin(ud.theta) * Math.cos(ud.phi);
-            
-            shard.rotation.x += delta * ud.rotSpeedX * heroSpinVelocity;
-            shard.rotation.y += delta * ud.rotSpeedY * heroSpinVelocity;
-        }
-
-        // 2. Cyber Backdrop Perspective Drift [3D-02]
+        // 1. Cyber Backdrop Perspective Drift [3D-02]
         // Grid translates forward as scroll increases (infinite highway feeling)
         grid.position.z = (-gridDim * 0.35) + ((scrollY * 0.85) % (gridDim / gridDivs));
         grid.position.x = currentParallaxX * 35;
@@ -517,13 +368,19 @@
         bgStarfield.position.x = currentParallaxX * 15;
         bgStarfield.position.y = currentParallaxY * 10;
 
-        // 3. 3D Drones Positioning & Dynamics [3D-04]
-        // Synchronize with window.swarm if present, else follow cursor with orbit
-        const swarmActive = (window.swarm && typeof window.swarm.getDots === 'function');
-        const swarmAssigned = (window.swarm && typeof window.swarm.isAssigned === 'function' && window.swarm.isAssigned());
-        
-        // Convert screen (CSS px) to 3D world coordinates at z = 0
-        // Screen (0,0) is top-left; in 3D (0,0) is center, Y is positive UP
+        // 2. 3D DRONES CHOREOGRAPHY [Phase: scout, pull, idle]
+        // Coordinated with window.swarm and pull-build module
+        const swarmActive = Boolean(window.swarm);
+        const currentPhase = (swarmActive && typeof window.swarm.getPhase === 'function')
+            ? window.swarm.getPhase()
+            : (swarmActive && typeof window.swarm.isAssigned === 'function' && window.swarm.isAssigned() ? 'pull' : 'idle');
+        const phaseMeta = (swarmActive && typeof window.swarm.getPhaseMeta === 'function')
+            ? window.swarm.getPhaseMeta()
+            : null;
+        const dotsData = (swarmActive && typeof window.swarm.getDotsData === 'function')
+            ? window.swarm.getDotsData()
+            : null;
+
         const cursorWorldX = mouseScreenX - width * 0.5;
         const cursorWorldY = -(mouseScreenY - height * 0.5);
 
@@ -531,49 +388,81 @@
             const drone = drones[i];
             const ud = drone.userData;
 
-            // Spin rotor fin
-            ud.fin.rotation.y += delta * 22;
+            let targetX = cursorWorldX;
+            let targetY = cursorWorldY;
+            let targetZ = 40;
+            let rotorSpeed = 22;
 
-            let targetX, targetY, targetZ;
+            if (currentPhase === 'scout') {
+                // PHASE 1: RECONNAISSANCE FORMATION
+                // Dynamic 3D spiral & Lissajous sweeps across the screen & section bounds
+                rotorSpeed = 46; // High-speed reconnaissance RPM
+                const tScout = now * 0.0022;
 
-            if (swarmActive && swarmAssigned) {
-                // Crew mode / Bot-build phase: read coordinated target positions
-                const swarmDots = window.swarm.getDots();
-                if (swarmDots && swarmDots[i]) {
-                    const dotData = swarmDots[i];
-                    targetX = dotData.currentX - width * 0.5;
-                    targetY = -(dotData.currentY - height * 0.5);
-                    targetZ = 60 + Math.sin(now * 0.004 + i) * 15;
+                // Section target center or viewport center
+                let centerX = 0;
+                let centerY = 0;
+                if (phaseMeta && phaseMeta.bounds) {
+                    const scrollYNow = window.scrollY || window.pageYOffset || 0;
+                    const bScreenY = (phaseMeta.bounds.pageTop - scrollYNow) + (phaseMeta.bounds.height * 0.4);
+                    centerY = -(bScreenY - height * 0.5);
+                    centerX = (phaseMeta.bounds.pageLeft + phaseMeta.bounds.width * 0.5) - width * 0.5;
+                }
+
+                // Multi-axis organic sweep: each drone has individual angle & orbital eccentricity
+                const angle = tScout * (1.6 + (i % 3) * 0.5) + (i * Math.PI * 2 / NUM_DRONES);
+                const rx = Math.min(width * 0.42, 260 + (i % 4) * 70);
+                const ry = Math.min(height * 0.32, 160 + (i % 3) * 60);
+
+                targetX = centerX + Math.cos(angle) * rx + Math.sin(tScout * 2.8 + i * 1.5) * 50;
+                targetY = centerY + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.1 + i) * 45;
+                targetZ = 85 + Math.sin(angle * 2.2 + i) * 45;
+
+            } else if (currentPhase === 'pull') {
+                // PHASE 2: MECHANICAL ANCHOR & PULL
+                // Lock onto assigned element positions from dotsData
+                rotorSpeed = 34; // Deep mechanical load RPM
+                if (dotsData && dotsData[i] && !isNaN(dotsData[i].currentX)) {
+                    targetX = dotsData[i].currentX - width * 0.5;
+                    targetY = -(dotsData[i].currentY - height * 0.5);
+                    targetZ = 55 + Math.sin(now * 0.005 + i) * 12;
                 } else {
                     targetX = cursorWorldX;
                     targetY = cursorWorldY;
-                    targetZ = 40;
+                    targetZ = 45;
                 }
+
             } else {
-                // Normal follow cursor with organic orbit
-                const orbitSpeed = 1.2 + (i % 3) * 0.4;
-                const angle = ud.orbitAngle + now * 0.0015 * orbitSpeed;
+                // PHASE 3: IDLE FLUID ORBIT AROUND CURSOR / TOUCH
+                rotorSpeed = 20;
+                const orbitSpeed = 1.1 + (i % 3) * 0.35;
+                const angle = ud.orbitAngle + now * 0.0014 * orbitSpeed;
                 const ox = Math.cos(angle) * ud.orbitRadius;
                 const oy = Math.sin(angle * 1.3) * (ud.orbitRadius * 0.7);
-                
                 targetX = cursorWorldX + ox;
                 targetY = cursorWorldY + oy;
-                targetZ = 40 + Math.sin(angle * 2) * 20;
+                targetZ = 40 + Math.sin(angle * 2) * 16;
             }
 
-            // Spring follow
-            ud.worldX += (targetX - ud.worldX) * ud.spring;
-            ud.worldY += (targetY - ud.worldY) * ud.spring;
+            // Spin rotor fin
+            ud.fin.rotation.y += delta * rotorSpeed;
+
+            // Smooth spring lerp
+            const lerpFactor = (currentPhase === 'scout') ? 0.085 : ud.spring;
+            ud.worldX += (targetX - ud.worldX) * lerpFactor;
+            ud.worldY += (targetY - ud.worldY) * lerpFactor;
             ud.worldZ += (targetZ - ud.worldZ) * 0.12;
 
             drone.position.set(ud.worldX, ud.worldY, ud.worldZ);
 
-            // Tilt toward movement direction
-            const vx = (targetX - ud.worldX) * 0.03;
-            const vy = (targetY - ud.worldY) * 0.03;
-            drone.rotation.z = -Math.max(-0.45, Math.min(0.45, vx));
-            drone.rotation.x = Math.max(-0.35, Math.min(0.35, vy));
-            drone.rotation.y = Math.sin(now * 0.002 + i) * 0.25;
+            // Aerodynamic banking: realistic roll and pitch based on velocity vector
+            const vx = (targetX - ud.worldX) * 0.025;
+            const vy = (targetY - ud.worldY) * 0.025;
+            const targetRoll = -Math.max(-0.65, Math.min(0.65, vx));
+            const targetPitch = Math.max(-0.55, Math.min(0.55, vy));
+            drone.rotation.z += (targetRoll - drone.rotation.z) * 0.18;
+            drone.rotation.x += (targetPitch - drone.rotation.x) * 0.18;
+            drone.rotation.y = Math.sin(now * 0.0025 + i) * 0.25;
         }
 
         // Render Scene
