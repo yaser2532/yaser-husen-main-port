@@ -509,6 +509,114 @@ header::before {
     text-align: left;
 }
 
+/* Kinetic Cyberpunk Collage Header Row */
+.hero-kinetic-row {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.hero-sticker-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 0.35rem 0.85rem;
+    background: rgba(25, 227, 208, 0.12);
+    border: 1px solid var(--cp-turquoise);
+    color: var(--cp-turquoise);
+    border-radius: 4px;
+    box-shadow: 0 0 16px rgba(25, 227, 208, 0.35), inset 0 0 8px rgba(25, 227, 208, 0.15);
+    transform: rotate(-1.5deg);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    user-select: none;
+}
+
+.hero-sticker-badge:hover {
+    transform: rotate(0deg) scale(1.05);
+    box-shadow: 0 0 24px rgba(25, 227, 208, 0.65);
+}
+
+.pulse-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--cp-turquoise);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--cp-turquoise);
+    animation: neon-pulse 1.4s infinite ease-in-out;
+}
+
+@keyframes neon-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+.hero-clock-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--cp-gold);
+    background: rgba(242, 193, 78, 0.1);
+    border: 1px solid rgba(242, 193, 78, 0.4);
+    padding: 0.35rem 0.8rem;
+    border-radius: 2rem;
+    box-shadow: 0 0 12px rgba(242, 193, 78, 0.25);
+}
+
+.hero-spec-stamp {
+    font-family: 'Space Grotesk', monospace;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: rgba(180, 160, 220, 0.85);
+    border: 1px dashed rgba(180, 160, 220, 0.4);
+    padding: 0.3rem 0.65rem;
+    border-radius: 2px;
+}
+
+/* Audio-Reactive Kinetic Visualizer Bars */
+.hero-visualizer-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.5rem 1rem;
+    background: rgba(18, 10, 32, 0.65);
+    border: 1px solid rgba(25, 227, 208, 0.35);
+    border-radius: 2rem;
+    backdrop-filter: blur(8px);
+    margin-left: 1.25rem;
+}
+
+.visualizer-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--cp-turquoise);
+}
+
+.hero-audio-visualizer {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 18px;
+}
+
+.hero-audio-visualizer .v-bar {
+    width: 3px;
+    height: 5px;
+    background: linear-gradient(180deg, var(--cp-turquoise), var(--cp-gold));
+    border-radius: 1px;
+    transition: height 0.08s ease;
+    box-shadow: 0 0 6px rgba(25, 227, 208, 0.5);
+}
+
 .hero-content .eyebrow {
     display: inline-flex;
     align-items: center;
@@ -1020,11 +1128,31 @@ header::before {
     flex-direction: column;
     overflow: hidden;
     height: 100%;
+    perspective: 1000px;
+    transform-style: preserve-3d;
+    transform: perspective(1000px) rotateX(calc(var(--tilt-y, 0) * -8deg)) rotateY(calc(var(--tilt-x, 0) * 8deg)) translateY(-3px);
+    transition: transform 0.15s ease-out, box-shadow 0.25s ease, border-color 0.25s ease;
+    position: relative;
+}
+
+.project-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle 320px at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(25, 227, 208, 0.22), rgba(242, 193, 78, 0.14) 45%, transparent 75%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 5;
+}
+
+.project-card:hover::before {
+    opacity: 1;
 }
 
 .project-card:hover {
-    border-color: var(--accent-color);
-    box-shadow: var(--shadow-neon-purple);
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 1rem 3rem rgba(25, 227, 208, 0.32), 0 0 25px rgba(242, 193, 78, 0.25), 0 0 45px rgba(157, 77, 255, 0.25) !important;
 }
 
 .project-img-container {

@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove', (e) => {
             targetX = e.clientX;
             targetY = e.clientY;
+            if (typeof window.__triggerKineticPulse === 'function') {
+                window.__triggerKineticPulse(0.06);
+            }
             ensureGlowLoop();
 
             const readableTarget = e.target.closest(
@@ -915,6 +918,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const char = text.charAt(i);
                     element.textContent += char;
                     i++;
+                    if (typeof window.__triggerKineticPulse === 'function') {
+                        window.__triggerKineticPulse(0.35);
+                    }
                     // Natural human typing rhythm variation
                     let delay = baseSpeed * (0.75 + Math.random() * 0.65);
                     if (char === ' ') delay += 50;
@@ -1160,6 +1166,93 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof initCosmicBackground === 'function') {
         initCosmicBackground();
     }
+
+    /* --- 10. Kinetic Cyberpunk Hero Row & Audio-Reactive Visualizer --- */
+    function initHeroKineticCollage() {
+        // A. Live UTC Precision Clock
+        const clockEl = document.getElementById('clock-utc');
+        if (clockEl) {
+            const updateClock = () => {
+                const d = new Date();
+                const hh = String(d.getUTCHours()).padStart(2, '0');
+                const mm = String(d.getUTCMinutes()).padStart(2, '0');
+                const ss = String(d.getUTCSeconds()).padStart(2, '0');
+                clockEl.textContent = `UTC ${hh}:${mm}:${ss}`;
+            };
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+
+        // B. Audio-Reactive Kinetic Visualizer Bars
+        const vBars = document.querySelectorAll('.hero-audio-visualizer .v-bar');
+        let kineticEnergy = 0.35;
+
+        window.__triggerKineticPulse = (intensity = 0.5) => {
+            kineticEnergy = Math.min(1.0, kineticEnergy + intensity);
+        };
+
+        if (vBars.length > 0) {
+            let t = 0;
+            function renderVisualizer() {
+                t += 0.07;
+                kineticEnergy = Math.max(0.18, kineticEnergy * 0.955); // smooth decay
+                vBars.forEach((bar, idx) => {
+                    const wave1 = Math.sin(t * 2.8 + idx * 0.42) * 0.5 + 0.5;
+                    const wave2 = Math.cos(t * 1.9 - idx * 0.28) * 0.5 + 0.5;
+                    const combined = (wave1 * 0.55 + wave2 * 0.45) * kineticEnergy;
+                    const barHeight = Math.max(3, Math.min(18, Math.round(3 + combined * 15)));
+                    bar.style.height = `${barHeight}px`;
+                });
+                requestAnimationFrame(renderVisualizer);
+            }
+            requestAnimationFrame(renderVisualizer);
+        }
+    }
+    initHeroKineticCollage();
+
+    /* --- 11. Project Cards 3D Parallax Tilt & Specular Sweep --- */
+    function initProjectCardTilt() {
+        const cards = document.querySelectorAll('.project-card');
+        cards.forEach(card => {
+            let ticking = false;
+            let targetNormX = 0;
+            let targetNormY = 0;
+            let targetPxX = 0;
+            let targetPxY = 0;
+
+            const handleMove = (e) => {
+                const rect = card.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                targetNormX = ((mouseX / rect.width) - 0.5) * 2;
+                targetNormY = ((mouseY / rect.height) - 0.5) * 2;
+                targetPxX = mouseX;
+                targetPxY = mouseY;
+
+                if (!ticking) {
+                    ticking = true;
+                    requestAnimationFrame(() => {
+                        card.style.setProperty('--tilt-x', targetNormX.toFixed(3));
+                        card.style.setProperty('--tilt-y', targetNormY.toFixed(3));
+                        card.style.setProperty('--card-mouse-x', `${targetPxX.toFixed(1)}px`);
+                        card.style.setProperty('--card-mouse-y', `${targetPxY.toFixed(1)}px`);
+                        ticking = false;
+                    });
+                }
+            };
+
+            const handleLeave = () => {
+                card.style.setProperty('--tilt-x', '0');
+                card.style.setProperty('--tilt-y', '0');
+                card.style.setProperty('--card-mouse-x', '50%');
+                card.style.setProperty('--card-mouse-y', '50%');
+            };
+
+            card.addEventListener('mousemove', handleMove, { passive: true });
+            card.addEventListener('mouseleave', handleLeave, { passive: true });
+        });
+    }
+    initProjectCardTilt();
 });
 
 
