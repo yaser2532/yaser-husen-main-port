@@ -2,38 +2,75 @@
    Design System & Global Variables
    ========================================================================== */
 :root {
-    /* Color Palette - Unified Sleek Tech Aesthetic */
-    --bg-color: #06030c; /* Black with violet undertone [A-RECOLOR] */ /* Deep cosmic black background */
-    --bg-darker: #030108; /* Absolute space black */
+    /* Color Palette - Cyberpunk 4-Color Theme [AU-01, Section 2] */
+    --bg-color: #05030a; /* Black base (~60%) */
+    --bg-darker: #020106; /* Deepest black */
     --card-bg: rgba(20, 10, 36, 0.55); /* Glassmorphic card base */
-    --card-bg-hover: rgba(34, 16, 58, 0.7);
+    --card-bg-hover: rgba(34, 16, 58, 0.75);
     
     --text-primary: #f3eeff;
     --text-secondary: #cfc6e6;
     --text-muted: #8a7fa8;
     
-    /* Neon Accents */
-    --accent-color: #9d4dff; /* Cyberpunk Purple */
-    --accent-hover: #f2c14e; /* Cyberpunk Gold */
-    --accent-emerald: #ffd873; /* Bright Gold */
+    /* Cyberpunk Tokens */
+    --cp-purple: #9d4dff; /* Structure: panels, borders, glows (~25%) */
+    --cp-purple-deep: #3a1170; /* Panel gradients, fog */
+    --cp-gold: #f2c14e; /* Energy: primary buttons, key accents, bot cores (~10%) */
+    --cp-gold-bright: #ffd873; /* Highlights, flashes */
+    --cp-turquoise: #19e3d0; /* Interaction: hover, links, focus rings, beams (~5%) */
+    --cp-turquoise-soft: #7ff5e8; /* Hover glow tint */
+
+    /* Mapped Variables (preserving original token names) */
+    --accent-color: var(--cp-purple);
+    --accent-hover: var(--cp-turquoise);
+    --accent-emerald: var(--cp-gold-bright);
     
     /* Shadows & Glows */
-    --border-glass: rgba(157, 77, 255, 0.18);
-    --border-glass-hover: rgba(242, 193, 78, 0.35);
+    --border-glass: rgba(157, 77, 255, 0.22);
+    --border-glass-hover: rgba(25, 227, 208, 0.50);
     --shadow-neon-purple: 0 0 1.875rem rgba(157, 77, 255, 0.35);
-    --shadow-neon-cyan: 0 0 1.875rem rgba(242, 193, 78, 0.30);
-    --shadow-glass: 0 0.5rem 2rem 0 rgba(0, 0, 0, 0.5);
+    --shadow-neon-cyan: 0 0 1.875rem rgba(25, 227, 208, 0.35);
+    --shadow-neon-gold: 0 0 1.875rem rgba(242, 193, 78, 0.35);
+    --shadow-neon-turquoise: 0 0 1.875rem rgba(25, 227, 208, 0.40);
+    --shadow-glass: 0 0.5rem 2rem 0 rgba(0, 0, 0, 0.6);
     
     /* Typography & Spacing */
     --font-headings: 'Outfit', 'Segoe UI', sans-serif;
     --font-body: 'Inter', 'Segoe UI', sans-serif;
     --radius-soft: 0.75rem;
     --radius-pill: 3.125rem;
-    --spacing-section: 8.5rem; /* Increased vertical space for a cleaner feel */
+    --spacing-section: 8.5rem;
     
     /* Transitions */
     --transition-fast: all 0.25s ease;
     --transition-smooth: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Styled Selection & Focus Rings [Section 5] */
+::selection {
+    background: rgba(157, 77, 255, 0.45);
+    color: #ffd873;
+}
+
+:focus-visible {
+    outline: 2px solid var(--cp-turquoise);
+    outline-offset: 3px;
+}
+
+/* Thin Custom Scrollbar [Section 5] */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-darker);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(157, 77, 255, 0.4);
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--cp-turquoise);
 }
 
 /* ==========================================================================
@@ -3325,6 +3362,16 @@ footer {
    ========================================================================== */
 
 /* Overlay canvas for ghost blueprints, tethers, and snap sparks [PF-01] */
+#gl {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
 #nb-canvas {
     position: fixed;
     top: 0;
@@ -3388,7 +3435,298 @@ html.nb-ready [data-nb="dispatch"] {
         transform: none !important;
         transition: opacity 0.2s ease !important;
     }
-    #nb-canvas {
+    #gl {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+
+#nb-canvas {
         display: none !important;
     }
+}
+
+
+/* === HOVER & MICRO-INTERACTIONS SYSTEM [H-01 ... H-06] === */
+.cp-hover-title {
+    position: relative;
+    display: inline-block;
+    transition: text-shadow 0.15s ease, color 0.15s ease;
+}
+
+.cp-hover-title::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--cp-gold), var(--cp-turquoise));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+}
+
+.cp-hover-title:hover::after {
+    transform: scaleX(1);
+}
+
+.cp-chromatic-split {
+    text-shadow: -2.5px 0 var(--cp-turquoise), 2.5px 0 var(--cp-gold-bright) !important;
+}
+
+.cp-magnetic-btn {
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, border-color 0.22s ease !important;
+    position: relative;
+}
+
+.cp-magnetic-btn:hover {
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 0 1.5rem rgba(25, 227, 208, 0.45) !important;
+}
+
+.cp-3d-card {
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease !important;
+    transform-style: preserve-3d;
+    will-change: transform;
+    position: relative;
+}
+
+.cp-3d-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle 180px at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(25, 227, 208, 0.16), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.cp-3d-card:hover::before {
+    opacity: 1;
+}
+
+.cp-3d-card:hover {
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 0.5rem 2.5rem rgba(25, 227, 208, 0.22), 0 0 1.5rem rgba(157, 77, 255, 0.35) !important;
+}
+
+.cp-input-focused .mouse-tracker-dot {
+    opacity: 0.15 !important;
+}
+
+@media (hover: none) or (prefers-reduced-motion: reduce) {
+    .cp-hover-title::after { display: none; }
+    .cp-magnetic-btn { transform: none !important; }
+    .cp-3d-card { transform: none !important; }
+}
+
+/* === NANO LOCAL AI CHATBOT TERMINAL [CB-01 ... CB-05] === */
+.nano-chat-card {
+    margin: 3.5rem auto 2.5rem auto;
+    max-width: 52rem;
+    width: 95%;
+    background: rgba(20, 10, 36, 0.75);
+    border: 1px solid rgba(157, 77, 255, 0.35);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 0.5rem 2.5rem rgba(0, 0, 0, 0.65), 0 0 1.5rem rgba(157, 77, 255, 0.22);
+    position: relative;
+    z-index: 5;
+    text-align: left;
+}
+
+.nano-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid rgba(157, 77, 255, 0.25);
+    margin-bottom: 1rem;
+}
+
+.nano-title-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nano-pulse-dot {
+    color: var(--cp-gold-bright);
+    filter: drop-shadow(0 0 6px var(--cp-gold));
+    font-size: 1.1rem;
+}
+
+.nano-title {
+    font-family: var(--font-headings);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cp-gold);
+    letter-spacing: 0.05em;
+    margin: 0;
+}
+
+.nano-badge-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.nano-mode-badge {
+    font-size: 0.72rem;
+    color: var(--cp-turquoise);
+    background: rgba(25, 227, 208, 0.12);
+    border: 1px solid rgba(25, 227, 208, 0.35);
+    border-radius: 20px;
+    padding: 0.2rem 0.65rem;
+    font-family: monospace;
+    letter-spacing: 0.03em;
+}
+
+.nano-clear-btn {
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid rgba(138, 127, 168, 0.3);
+    border-radius: 4px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nano-clear-btn:hover {
+    color: var(--cp-turquoise);
+    border-color: var(--cp-turquoise);
+}
+
+.nano-messages-log {
+    max-height: 250px;
+    min-height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.5rem 0.25rem;
+}
+
+.nano-msg-row {
+    display: flex;
+    width: 100%;
+}
+
+.nano-msg-row.user {
+    justify-content: flex-end;
+}
+
+.nano-msg-row.assistant {
+    justify-content: flex-start;
+}
+
+.nano-msg-bubble {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    word-break: break-word;
+}
+
+.nano-msg-bubble.user {
+    background: rgba(157, 77, 255, 0.28);
+    border: 1px solid rgba(157, 77, 255, 0.5);
+    color: #f3eeff;
+    border-radius: 12px 12px 2px 12px;
+    padding: 0.65rem 1rem;
+    max-width: 82%;
+}
+
+.nano-msg-bubble.assistant {
+    background: rgba(12, 6, 22, 0.88);
+    border: 1px solid rgba(25, 227, 208, 0.35);
+    color: #f3eeff;
+    border-radius: 12px 12px 12px 2px;
+    padding: 0.75rem 1.1rem;
+    max-width: 86%;
+    box-shadow: 0 0 12px rgba(25, 227, 208, 0.12);
+}
+
+.nano-chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0.85rem 0;
+}
+
+.nano-chip {
+    background: rgba(157, 77, 255, 0.12);
+    border: 1px solid rgba(157, 77, 255, 0.3);
+    color: var(--cp-turquoise);
+    border-radius: 20px;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.nano-chip:hover {
+    background: rgba(25, 227, 208, 0.2);
+    border-color: var(--cp-turquoise);
+    transform: translateY(-1px);
+}
+
+.nano-input-bar {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.nano-input-field {
+    flex: 1;
+    min-height: 44px;
+    background: rgba(5, 3, 10, 0.85);
+    border: 1px solid rgba(157, 77, 255, 0.35);
+    border-radius: 8px;
+    color: #f3eeff;
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.nano-input-field:focus {
+    border-color: var(--cp-turquoise);
+    outline: none;
+    box-shadow: 0 0 14px rgba(25, 227, 208, 0.35);
+}
+
+.nano-send-btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 1.35rem;
+    background: var(--cp-turquoise);
+    color: #020106;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.nano-send-btn:hover {
+    background: var(--cp-turquoise-soft);
+    transform: scale(1.03);
+}
+
+@media (max-width: 480px) {
+    .nano-chat-card { padding: 1rem; }
+    .nano-title { font-size: 0.95rem; }
+    .nano-msg-bubble.user, .nano-msg-bubble.assistant { max-width: 95%; }
 }

@@ -193,6 +193,30 @@
         return 1 - Math.pow(1 - x, 4);
     }
 
+    function getInnerBoxes(item, currentYOffset) {
+        const scrollY = window.scrollY || window.pageYOffset;
+        const selectors = '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card, .stat-item, .lamp-scene, .contact-card, .about-content, .section-title, .section-header, h2, h3';
+        const rawEls = Array.from(item.el.querySelectorAll(selectors));
+        const validBoxes = [];
+
+        rawEls.forEach(el => {
+            const r = el.getBoundingClientRect();
+            // Filter out collapsed or tiny elements
+            if (r.width > 40 && r.height > 20) {
+                validBoxes.push({
+                    el,
+                    x: r.left,
+                    y: r.top + currentYOffset,
+                    w: r.width,
+                    h: r.height
+                });
+            }
+        });
+
+        // Limit to 4 prominent boxes per section for clean swarm distribution
+        return validBoxes.slice(0, 4);
+    }
+
     function computeAnchorPoints(item, currentYOffset) {
         const scrollY = window.scrollY || window.pageYOffset;
         const screenTop = item.pageTop - scrollY + currentYOffset;
@@ -200,16 +224,61 @@
         const w = item.width;
         const h = item.height;
 
-        return [
-            { x: screenLeft, y: screenTop },                         // Top-Left corner
-            { x: screenLeft + w, y: screenTop },                     // Top-Right corner
-            { x: screenLeft + w * 0.3, y: screenTop },               // Top edge quarter
-            { x: screenLeft + w * 0.7, y: screenTop },               // Top edge three-quarters
-            { x: screenLeft, y: screenTop + Math.min(100, h * 0.2) }, // Left edge
-            { x: screenLeft + w, y: screenTop + Math.min(100, h * 0.2) }, // Right edge
-            { x: screenLeft + w * 0.15, y: screenTop + 8 },          // Left top inset
-            { x: screenLeft + w * 0.85, y: screenTop + 8 }           // Right top inset
-        ];
+        const boxes = getInnerBoxes(item, currentYOffset);
+        const anchors = [];
+
+        if (boxes.length >= 4) {
+            // 4 boxes: 2 drones per box
+            boxes.forEach(b => {
+                anchors.push({ x: b.x + 10, y: b.y + 10 });
+                anchors.push({ x: b.x + b.w - 10, y: b.y + 10 });
+            });
+        } else if (boxes.length === 3) {
+            // 3 boxes: 3 on box 1, 3 on box 2, 2 on box 3
+            anchors.push({ x: boxes[0].x, y: boxes[0].y });
+            anchors.push({ x: boxes[0].x + boxes[0].w, y: boxes[0].y });
+            anchors.push({ x: boxes[0].x + boxes[0].w * 0.5, y: boxes[0].y + boxes[0].h });
+
+            anchors.push({ x: boxes[1].x, y: boxes[1].y });
+            anchors.push({ x: boxes[1].x + boxes[1].w, y: boxes[1].y });
+            anchors.push({ x: boxes[1].x + boxes[1].w * 0.5, y: boxes[1].y + boxes[1].h });
+
+            anchors.push({ x: boxes[2].x, y: boxes[2].y });
+            anchors.push({ x: boxes[2].x + boxes[2].w, y: boxes[2].y });
+        } else if (boxes.length === 2) {
+            // 2 boxes: 4 drones per box wrapping around each
+            boxes.forEach(b => {
+                anchors.push({ x: b.x, y: b.y });
+                anchors.push({ x: b.x + b.w, y: b.y });
+                anchors.push({ x: b.x + b.w, y: b.y + b.h });
+                anchors.push({ x: b.x, y: b.y + b.h });
+            });
+        } else if (boxes.length === 1) {
+            // 1 box: 8 drones encircling all 4 corners and midpoints
+            const b = boxes[0];
+            anchors.push({ x: b.x, y: b.y });
+            anchors.push({ x: b.x + b.w * 0.5, y: b.y });
+            anchors.push({ x: b.x + b.w, y: b.y });
+            anchors.push({ x: b.x + b.w, y: b.y + b.h * 0.5 });
+            anchors.push({ x: b.x + b.w, y: b.y + b.h });
+            anchors.push({ x: b.x + b.w * 0.5, y: b.y + b.h });
+            anchors.push({ x: b.x, y: b.y + b.h });
+            anchors.push({ x: b.x, y: b.y + b.h * 0.5 });
+        } else {
+            // Fallback to outer section perimeter
+            anchors.push(
+                { x: screenLeft, y: screenTop },
+                { x: screenLeft + w, y: screenTop },
+                { x: screenLeft + w * 0.3, y: screenTop },
+                { x: screenLeft + w * 0.7, y: screenTop },
+                { x: screenLeft, y: screenTop + Math.min(100, h * 0.2) },
+                { x: screenLeft + w, y: screenTop + Math.min(100, h * 0.2) },
+                { x: screenLeft + w * 0.15, y: screenTop + 8 },
+                { x: screenLeft + w * 0.85, y: screenTop + 8 }
+            );
+        }
+
+        return anchors.slice(0, 8);
     }
 
     function startPull(item, fastMode = false) {
@@ -424,7 +493,32 @@
                 window.swarm.assign(anchors);
             }
 
-            // Draw glowing tethers between swarm dots and anchors [Phase 3 TETHER]
+            // Draw inner box laser scan & weld line sweep [AU-04, PROMPT v4 Phase 4.2]
+            const innerBoxes = getInnerBoxes(item, currentOffset);
+            if (t >= dispatchRatio && t < 0.95) {
+                innerBoxes.forEach(b => {
+                    ctx.save();
+                    // 1. Turquoise laser scan contour around box
+                    ctx.strokeStyle = 'rgba(25, 227, 208, 0.45)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([8, 6]);
+                    ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+                    // 2. Bright gold weld line sweep across box
+                    const sweepX = b.x + b.w * Math.min(1.0, (t - dispatchRatio) / (pullRatio - dispatchRatio));
+                    ctx.beginPath();
+                    ctx.moveTo(sweepX, b.y - 2);
+                    ctx.lineTo(sweepX, b.y + b.h + 2);
+                    ctx.strokeStyle = 'rgba(255, 216, 115, 0.85)';
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowColor = '#ffd873';
+                    ctx.shadowBlur = 8;
+                    ctx.stroke();
+                    ctx.restore();
+                });
+            }
+
+            // Draw glowing tethers between swarm dots and inner box anchors [Phase 3 TETHER]
             if (t >= dispatchRatio && t < 0.95 && window.swarm && typeof window.swarm.getDots === 'function') {
                 const dots = window.swarm.getDots();
                 const vibration = Math.sin(now * 0.035) * 1.5;
@@ -439,19 +533,27 @@
                     const midY = (dotY + anchor.y) * 0.5;
 
                     ctx.save();
-                    // Outer 3px violet line
+                    // Outer 3.5px violet beam
                     ctx.beginPath();
                     ctx.moveTo(dotX, dotY);
                     ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                    ctx.strokeStyle = 'rgba(157, 77, 255, 0.18)';
-                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = 'rgba(157, 77, 255, 0.35)';
+                    ctx.lineWidth = 3.5;
                     ctx.stroke();
 
-                    // Inner 1px gold line
+                    // Middle 2px turquoise beam
                     ctx.beginPath();
                     ctx.moveTo(dotX, dotY);
                     ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                    ctx.strokeStyle = 'rgba(242, 193, 78, 0.60)';
+                    ctx.strokeStyle = 'rgba(25, 227, 208, 0.55)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Inner 1px bright gold core
+                    ctx.beginPath();
+                    ctx.moveTo(dotX, dotY);
+                    ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
+                    ctx.strokeStyle = 'rgba(255, 216, 115, 0.95)';
                     ctx.lineWidth = 1;
                     ctx.stroke();
                     ctx.restore();

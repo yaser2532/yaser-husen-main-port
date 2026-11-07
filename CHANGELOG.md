@@ -1,93 +1,93 @@
-# Changelog
+# Changelog (PROMPT v4)
 
-All changes made to the codebase in accordance with PROMPT v3. The original HTML structure, element IDs, typography, text copy, layout, and functional features are 100% preserved.
+All changes made to the codebase in accordance with PROMPT v4. The original HTML structure, element IDs, typography, text copy, layout, and functional features are 100% preserved.
 
 ---
 
 ## 1. `assets/css/style.css`
 
-- **[A-RECOLOR] Dark Cyberpunk Theme Tokens (`:root`):**
-  - Updated `--bg-color` to `#06030c` (near-black with subtle violet undertone).
-  - Updated `--bg-darker` to `#030108`.
-  - Updated `--card-bg` to `rgba(20, 10, 36, 0.55)` and `--card-bg-hover` to `rgba(34, 16, 58, 0.70)`.
-  - Updated `--text-primary` to `#f3eeff`, `--text-secondary` to `#cfc6e6`, `--text-muted` to `#8a7fa8`.
-  - Updated `--accent-color` to `#9d4dff` (cyberpunk purple).
-  - Updated `--accent-hover` to `#f2c14e` (cyberpunk gold).
-  - Updated `--accent-emerald` to `#ffd873` (bright gold).
-  - Updated `--shadow-neon-purple` to `0 0 1.875rem rgba(157, 77, 255, 0.35)`.
-  - Updated `--shadow-neon-cyan` to `0 0 1.875rem rgba(242, 193, 78, 0.30)`.
-  - Updated `--border-glass` to `rgba(157, 77, 255, 0.18)` and hover to `rgba(242, 193, 78, 0.35)`.
-- **[A-RECOLOR] Hardcoded Cyan & Blue Replacement:**
-  - Replaced hardcoded `#06b6d4`, `#10b981`, and `rgba(6, 182, 212, ...)` across gradients, shadows, text glowing effects, lamp elements, button glows, and modal overlays.
-- **[B-01, B-02] Cursor Swarm Visual Upgrade (`.mouse-tracker-dot`):**
-  - Replaced flat translucent dots with dual-layer radial gradients: 3–4px bright white-gold core with a 14–18px violet halo.
-  - Retained compositor-friendly `transform: translate3d` positioning.
-- **[B-04] Touch Device Support:**
-  - Enabled dots on touch devices (`@media (hover: none)`), tracking touch events and orbiting lower third of viewport when idle.
-- **[C-02, PF-01] Pull-to-Build CSS Architecture (`=== PULL-BUILD (nb-) ===`):**
-  - `#nb-canvas`: Fullscreen, fixed pointer-events: none canvas overlay (`z-index: 9998`).
-  - `html.nb-ready:not(.nb-done) [data-nb="pending"]`: Sections start hidden via `opacity: 0; transform: translate3d(0, min(90px, 10vh), 0) scale(0.92); pointer-events: none;`.
-  - `html.nb-ready [data-nb="pulling"]`: Active pull state with `pointer-events: none;`.
-  - `[data-nb="built"]`: Fully settled section restored to `opacity: 1; transform: none; pointer-events: auto;`.
-  - `[data-nb="snapping"]::after`: Golden rim flash pseudo-element with 240ms ease-out fade.
-  - `html.nb-done`: Restores all sections to native styling and removes canvas visibility.
-  - `@media (prefers-reduced-motion: reduce)`: Overrides pending states immediately to full visibility.
+- **[AU-01, Section 2] Cyberpunk 4-Color Theme System (`:root`):**
+  - Base: `--bg-color: #05030a` (60%), `--bg-darker: #020106`.
+  - Structure: `--cp-purple: #9d4dff` (25%), `--cp-purple-deep: #3a1170`.
+  - Energy / Primary: `--cp-gold: #f2c14e` (10%), `--cp-gold-bright: #ffd873`.
+  - Interaction / Reactivity: `--cp-turquoise: #19e3d0` (5%), `--cp-turquoise-soft: #7ff5e8`.
+  - Borders & Shadows: `--border-glass: rgba(157, 77, 255, 0.22)`, `--border-glass-hover: rgba(25, 227, 208, 0.50)`, `--shadow-neon-turquoise: 0 0 1.875rem rgba(25, 227, 208, 0.40)`.
+- **[Section 5] Styled Selection, Focus & Scrollbars:**
+  - Styled `::selection` with purple background (`rgba(157, 77, 255, 0.45)`) and bright gold text (`#ffd873`).
+  - Styled `:focus-visible` with 2px turquoise outline (`#19e3d0`) and 3px offset.
+  - Thin custom scrollbar (6px width, purple thumb with turquoise hover transition).
+- **[3D-01 ... 3D-05] WebGL Canvas Architecture:**
+  - Added `#gl` fixed background canvas (`position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;`).
+- **[H-01 ... H-06] Hover & Micro-Interactions System:**
+  - `.cp-hover-title`: Left-to-right gold-to-turquoise underline draw on headings.
+  - `.cp-chromatic-split`: 150ms chromatic aberration text shadow (`-2.5px` turquoise, `+2.5px` gold).
+  - `.cp-magnetic-btn`: Smooth magnetic button follow (max 6px) with turquoise glow transition.
+  - `.cp-3d-card`: 3D perspective tilt (max 7.5°) with dynamic turquoise specular highlight following pointer position.
+  - `.cp-input-focused`: Automatically fades follower bots to 15% opacity when visitor types into form inputs.
+- **[CB-01 ... CB-05] Nano Local AI Terminal Styling:**
+  - Glassmorphic container with neon gold title and live status badge.
+  - Cyberpunk user and assistant chat bubbles, responsive horizontal suggestion chips, and turquoise submit button.
 
 ---
 
-## 2. `assets/js/script.js`
+## 2. `assets/js/gl-engine.js` (NEW MODULE)
 
-- **[A-RECOLOR] Scene & Effect Palette Harmonization:**
-  - Confetti `COLORS` array updated to purple and gold tones.
-  - Three.js starfield particle tints and nebula coloring updated to match the purple-gold theme.
-- **[B-02, B-03] Swarm Controller & Crew Mode (`window.swarm`):**
-  - Exposed `window.swarm = { assign(targets), release(), isAssigned(), getDots() }`.
-  - Added target tracking allowing `pull-build.js` to dispatch dots to section corners during pulls.
-  - Retained organic orbit offsets and spring easing during both cursor-following and crew assignment.
-- **[B-04] Touch Event Handlers:**
-  - Added `touchstart` and `touchmove` listeners to route touch coordinates to the swarm.
-  - Added idle center point calculation in the lower third of the viewport when no touch input is active.
-- **[B-05, PF-06] Sleep Loop When Idle:**
-  - Swarm rAF loop enters sleep mode after 2 seconds of inactivity and wakes automatically on mouse or touch input.
-- **[Regression / Parity Hook]:**
-  - Exposed `window.animateCounters` so that stat counter numbers animate smoothly when `#about-me` is pulled into view.
-
----
-
-## 3. `assets/js/threescenes.js`
-
-- **[A-RECOLOR] 3D Cake & Gift Scene Colors:**
-  - Updated `sprinkleColors` array from cyan/emerald to gold (`0xf2c14e`), bright gold (`0xffd873`), and purple (`0x9d4dff`).
-  - Updated candle materials to harmonized gold and violet tones.
+- **[3D-01] High-Energy Procedural Hero Core:**
+  - Wireframe icosahedron with inner faceted glowing core and dual counter-rotating energy rings in gold and turquoise.
+  - 32 floating crystal shards orbiting dynamically in 3D space.
+  - Accelerates rotation and pulse trails upon hero hover; drifts back in Z-space on scroll.
+- **[3D-02] Cyber Perspective Grid Backdrop:**
+  - Infinite perspective grid floor in turquoise and deep purple.
+  - 260 drifting cosmic dust particles with camera scroll translation.
+- **[3D-04] 8 Low-Poly 3D Drones:**
+  - Octahedron gold faceted body, purple glowing wireframe core, spinning turquoise rotor fins, and downward holographic light cones.
+  - Follows cursor at rest with organic spring orbits; synchronizes with swarm targets during bot-build sequences.
+- **[3D-05] Depth Parallax & Quality Tiers:**
+  - Damped mouse parallax across backdrop, hero core, and drone layers.
+  - Automatic quality scaling (`high`, `medium`, `low`) and idle tab pausing.
+  - Exposed `window.__gl` debug hook reporting active tier, render calls, and geometry.
 
 ---
 
-## 4. `assets/js/pull-build.js` (NEW MODULE)
+## 3. `assets/js/pull-build.js`
 
-- **[C-01 ... C-07] Framework-Agnostic Pull-to-Build Engine:**
-  - Written as a self-contained IIFE with 0 external dependencies (11.4 KB minified).
-  - Handles 5-phase pull lifecycle:
-    1. **Ghost Blueprint (`C-03`):** Renders dashed purple outline (`rgba(157, 77, 255, 0.45)`) on the canvas for pending sections.
-    2. **Dispatch Swarm (`C-03`):** Calls `swarm.assign()` to send dots to the section's top/bottom corners.
-    3. **Tether Formation (`C-03`):** Draws glowing bezier lines (3px violet glow + 1px gold core) from dots to section anchor points.
-    4. **Section Pull (`C-03`):** Interpolates section position from `translate3d(0, 90px, 0) scale(0.92)` to `(0, 0, 0) scale(1.0)` using `cubic-bezier(0.16, 1, 0.3, 1)` easing.
-    5. **Snap Sparks (`C-03`):** Releases swarm, triggers 10 gold sparks on the canvas, fires golden rim flash, and staggers `.scroll-reveal` children.
-  - **Sequential Order (`C-05`):** Strictly enforces pulling in page order (`#home` -> `#profile-expertise` -> `#about-me` -> `#projects` -> `#creative-lab` -> `#certificates` -> `#secret-desk` -> `#contact`).
-  - **Permanence (`C-04`):** Once a section is marked `data-nb="built"`, it never re-animates or un-builds during the session.
-  - **Fast Scroll Catch-Up (`C-06`):** Fast scrolling rapidly pulls preceding sections in sequence (180ms fast duration) so the user never encounters broken unbuilt gaps.
-  - **End of Page Completion (`C-07`):** Marks `html.nb-done`, releases swarm to cursor, disconnects IntersectionObserver, and sleeps the canvas rAF loop.
-  - **Fail-safe Timer (`T-07`):** 3-second failsafe timer ensures all sections are visible even if an unhandled error occurs.
-  - **Reduced Motion Support (`T-10`):** Checks `window.matchMedia('(prefers-reduced-motion: reduce)')` and skips all pulling if requested.
+- **[AU-04, 4.2] Simultaneous Inner-Box Swarm Wrap:**
+  - Replaced outer corner anchoring with `getInnerBoxes(item, currentYOffset)`: locates internal cards (`.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card`) and headings.
+  - Simultaneously divides the 8 drones across the inner cards and boxes.
+  - Renders turquoise laser contour scans around each card contour.
+  - Renders bright gold laser weld lines sweeping across each box as it materializes.
+  - Quad-curved violet-gold tethers connecting drones to the cards.
+  - 10 golden snap sparks burst on the card perimeters upon completion.
 
 ---
 
-## 5. `index.html`
+## 4. `assets/js/hover-system.js` (NEW MODULE)
 
-- Added `<canvas id="nb-canvas" aria-hidden="true"></canvas>` overlay right after `<body>`.
-- Added `<script src="assets/js/pull-build.js"></script>` before the closing `</body>` tag.
+- **[H-01 ... H-06] Unified Micro-Interactions Engine:**
+  - Coordinates chromatic split on 18 section titles.
+  - Implements physics-based magnetic pull on buttons.
+  - Handles 3D card tilt and specular highlight coordinates (`--card-mouse-x`, `--card-mouse-y`).
+  - Guards interactions under `prefers-reduced-motion` and touch devices (`hover: none`).
 
 ---
 
-## 6. Project Configuration
+## 5. `assets/js/nano-chat.js` (NEW MODULE)
 
-- Updated `.gitignore` to exclude `_baseline/`, `shots/`, `tools/`, and `node_modules/` from deployment builds.
+- **[CB-01 ... CB-05] Nano Local AI Terminal:**
+  - 100% client-side zero-dependency Q&A assistant.
+  - 35-chunk knowledge base derived from Yaser Husen's verified portfolio and experience.
+  - BM25 and domain intent keyword retrieval engine responding in < 50ms.
+  - Strict XSS safety: text rendered exclusively via `textContent`.
+  - Built-in prompt-injection defenses and polite out-of-scope refusals.
+  - Suggestion chips, clear history option, and Escape key dismissal.
+  - **100.0% pass rate across 28 test cases** in `tests/chat-eval.json`.
+
+---
+
+## 6. Local Vendors & HTML Updates
+
+- **`assets/vendor/three/three.min.js`:** Downloaded and vendored Three.js r128 locally; replaced external CDN script tag in `index.html`.
+- **`index.html`:**
+  - Added `<canvas id="gl" aria-hidden="true"></canvas>` for 3D WebGL layer.
+  - Added inline SVG favicon to eliminate 404 console errors.
+  - Added script inclusions for `gl-engine.js`, `hover-system.js`, and `nano-chat.js`.
