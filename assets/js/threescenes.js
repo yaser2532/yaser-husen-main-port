@@ -122,7 +122,7 @@
     }
 
     // Decorative sprinkles on top
-    const sprinkleColors = [0xFF4D8D, 0xFFD700, 0x00E5FF, 0xc084fc, 0x39FF14, 0xFF8C00];
+    const sprinkleColors = [0xFF4D8D, 0xFFD873, 0x9D4DFF, 0xc084fc, 0xF2C14E, 0xFF8C00];
     for (let i = 0; i < 30; i++) {
       const r = Math.random() * 1.1;
       const a = Math.random() * Math.PI * 2;
@@ -136,7 +136,7 @@
     }
 
     // ─── Candles ──────────────────────────────────────────
-    const candleColors = [0xFF4D8D, 0xFFD700, 0x00E5FF, 0xc084fc, 0x39FF14, 0xFF8C00];
+    const candleColors = [0xFF4D8D, 0xFFD873, 0x9D4DFF, 0xc084fc, 0xF2C14E, 0xFF8C00];
     window._cakeCandles3D = [];
     window._candlesOutFlags = [];
     const totalC = window._cakeCandleCount || 5;

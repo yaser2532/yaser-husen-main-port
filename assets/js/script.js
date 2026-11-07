@@ -123,6 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove', (e) => {
             targetX = e.clientX;
             targetY = e.clientY;
+            ensureGlowLoop();
 
             const readableTarget = e.target.closest(
                 'a, button, p, h1, h2, h3, h4, h5, h6, li, label, code, blockquote, ' +
@@ -186,6 +187,72 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        /* --- [B-03] Crew Mode & Swarm Control API --- */
+        let assignedTargets = null;
+        let isTouchDevice = window.matchMedia('(hover: none)').matches;
+        let lastPointerTime = performance.now();
+        let lastTouchTime = performance.now();
+        let isGlowLoopRunning = false;
+
+        function ensureGlowLoop() {
+            lastPointerTime = performance.now();
+            if (!isGlowLoopRunning) {
+                isGlowLoopRunning = true;
+                requestAnimationFrame(animateGlow);
+            }
+        }
+
+        window.swarm = {
+            assign(targets) {
+                assignedTargets = Array.isArray(targets) && targets.length ? targets : null;
+                if (!isVisible) {
+                    isVisible = true;
+                    mouseGlow.style.opacity = '1';
+                    dots.forEach(dot => dot.classList.add('active'));
+                    targetDotOpacity = 0.95;
+                }
+                ensureGlowLoop();
+            },
+            release() {
+                assignedTargets = null;
+                ensureGlowLoop();
+            },
+            getDots() {
+                return dots;
+            },
+            getDotsData() {
+                return dotsData;
+            },
+            isAssigned() {
+                return Boolean(assignedTargets);
+            }
+        };
+
+        /* --- [B-04] Touch Support: follow touch point and lower third idle orbit --- */
+        window.addEventListener('touchstart', (e) => {
+            if (e.touches && e.touches[0]) {
+                targetX = e.touches[0].clientX;
+                targetY = e.touches[0].clientY;
+                lastTouchTime = performance.now();
+                if (!isVisible) {
+                    isVisible = true;
+                    mouseGlow.style.opacity = '0.6';
+                    dots.forEach(dot => dot.classList.add('active'));
+                    targetDotOpacity = 0.95;
+                }
+                ensureGlowLoop();
+            }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+            if (e.touches && e.touches[0]) {
+                targetX = e.touches[0].clientX;
+                targetY = e.touches[0].clientY;
+                lastTouchTime = performance.now();
+                ensureGlowLoop();
+            }
+        }, { passive: true });
+
         function animateGlow() {
             // Update main background glow
             currentX += (targetX - currentX) * ease;
@@ -199,17 +266,31 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Update individual dots in the cluster
             const time = performance.now() * 0.001;
+
+            // [B-04] Touch idle orbit at lower third of viewport
+            if (isTouchDevice && !assignedTargets && (performance.now() - lastTouchTime > 2000)) {
+                targetX = window.innerWidth * 0.5 + Math.cos(time * 0.8) * 35;
+                targetY = window.innerHeight * 0.78 + Math.sin(time * 0.6) * 20;
+            }
             
             for (let i = 0; i < NUM_DOTS; i++) {
                 const dot = dots[i];
                 const data = dotsData[i];
                 
-                // Swarming drift offset calculation
+                // Swarming drift offset calculation [B-03 alive in crew mode]
                 const driftX = Math.sin(time * data.freqX + data.phaseX) * data.ampX;
                 const driftY = Math.cos(time * data.freqY + data.phaseY) * data.ampY;
                 
-                const targetDotX = targetX + data.dx + driftX;
-                const targetDotY = targetY + data.dy + driftY;
+                let targetDotX, targetDotY;
+                if (assignedTargets && assignedTargets.length > 0) {
+                    // Crew mode target [B-03]
+                    const pt = assignedTargets[i % assignedTargets.length];
+                    targetDotX = pt.x + driftX;
+                    targetDotY = pt.y + driftY;
+                } else {
+                    targetDotX = targetX + data.dx + driftX;
+                    targetDotY = targetY + data.dy + driftY;
+                }
                 
                 data.currentX += (targetDotX - data.currentX) * data.ease;
                 data.currentY += (targetDotY - data.currentY) * data.ease;
@@ -221,10 +302,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 dot.style.transform = `translate3d(${dotXRem}rem, ${dotYRem}rem, 0) translate(-50%, -50%) scale(${currentScale})`;
                 dot.style.opacity = data.currentOpacity.toFixed(3);
             }
+
+            // [PF-06, C-07] Sleep loop when idle for > 2s and settled
+            const isIdle = (performance.now() - lastPointerTime > 2000) && !assignedTargets && !isTouchDevice;
+            if (isIdle) {
+                let maxDelta = 0;
+                for (let i = 0; i < NUM_DOTS; i++) {
+                    maxDelta = Math.max(maxDelta, Math.abs(dotsData[i].currentX - (targetX + dotsData[i].dx)));
+                }
+                if (maxDelta < 0.5) {
+                    isGlowLoopRunning = false;
+                    return; // 0% CPU idle
+                }
+            }
             
             requestAnimationFrame(animateGlow);
         }
-        requestAnimationFrame(animateGlow);
+
+        // Start glow loop
+        ensureGlowLoop();
     }
 
     /* --- 2. Interactive Hanging Lamp swinging physics --- */
@@ -507,6 +603,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         animatedStats = true;
     }
+    window.animateCounters = animateCounters;
 
     const revealElements = document.querySelectorAll('.scroll-reveal');
     let revealQueue = [];
@@ -530,6 +627,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const revealObserver = new IntersectionObserver((entries) => {
+        // [C-04] When Pull-to-Build is active, reveals are gated to section snap
+        if (document.documentElement.classList.contains('nb-ready') && !document.documentElement.classList.contains('nb-done')) {
+            return;
+        }
         let added = false;
         entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1304,7 +1405,7 @@ function shareTelegram() {
 
 // ─── Sparkle Mouse Trail ──────────────────────────────────────────────────
 (function () {
-  const COLORS = ['#ffe66d','#ff4d8d','#00e5ff','#c084fc','#39ff14','#ff8c00'];
+  const COLORS = ['#ffd873','#f2c14e','#9d4dff','#c084fc','#ffb703','#ff4d8d'];
   let last = 0;
   document.addEventListener('mousemove', (e) => {
     const now = Date.now();
@@ -1388,7 +1489,7 @@ function initCosmicBackground() {
     // Sleek space colors corresponding to the website aesthetics
     const starColors = [
       new THREE.Color(0xffffff), // Pure White
-      new THREE.Color(0xa7d8ff), // Neon Cyan-Blue
+      new THREE.Color(0xf2c14e), // Neon Cyberpunk Gold
       new THREE.Color(0xe0b5ff), // Bright Purple
       new THREE.Color(0xfff3d1)  // Warm Gold
     ];
@@ -1452,7 +1553,7 @@ function initCosmicBackground() {
 
   // Generate three custom color maps for the nebulas (reduced intensity for subtle drifting patches)
   const nebulaTexPurple = createNebulaTexture('rgba(139, 92, 246, 0.12)', 'rgba(109, 40, 217, 0.04)'); // --accent-color matching purple
-  const nebulaTexCyan = createNebulaTexture('rgba(6, 182, 212, 0.09)', 'rgba(8, 145, 178, 0.02)');   // --accent-hover matching cyan
+  const nebulaTexCyan = createNebulaTexture('rgba(242, 193, 78, 0.08)', 'rgba(255, 216, 115, 0.02)'); // --accent-hover matching gold
   const nebulaTexMagenta = createNebulaTexture('rgba(236, 72, 153, 0.07)', 'rgba(190, 24, 74, 0.01)'); // Magenta highlights
 
   const nebulaPlanes = [];
