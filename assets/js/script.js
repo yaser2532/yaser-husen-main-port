@@ -100,9 +100,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(dot);
             dots.push(dot);
 
-            // Establish random directional angles and offset distances to form an organic cluster
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 6 + Math.random() * 8;
+            // Establish airy, organic escort orbit around pointer
+            const angle = (i * (Math.PI * 2 / NUM_DOTS)) + (Math.random() * 0.4);
+            const distance = 24 + i * 8 + Math.random() * 10;
             
             dotsData.push({
                 currentX: targetX,
@@ -111,10 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 ease: 0.08 + Math.random() * 0.04,
                 dx: Math.cos(angle) * distance,
                 dy: Math.sin(angle) * distance,
-              freqX: 0.7 + Math.random() * 0.8,
-              freqY: 0.7 + Math.random() * 0.8,
-              ampX: 1.5 + Math.random() * 2.5,
-              ampY: 1.5 + Math.random() * 2.5,
+                freqX: 0.6 + Math.random() * 0.7,
+                freqY: 0.6 + Math.random() * 0.7,
+                ampX: 6.0 + Math.random() * 10.0,
+                ampY: 6.0 + Math.random() * 10.0,
                 phaseX: Math.random() * Math.PI * 2,
                 phaseY: Math.random() * Math.PI * 2
             });
@@ -406,6 +406,10 @@ document.addEventListener('DOMContentLoaded', () => {
         let swingPhase = 0;
         let isDragging = false;
 
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let hasMoved = false;
+
         const getHingePoint = () => {
             const rect = lampArm.getBoundingClientRect();
             return {
@@ -416,11 +420,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const handleStart = (clientX, clientY) => {
             isDragging = true;
-            handleMove(clientX, clientY);
+            hasMoved = false;
+            dragStartX = clientX;
+            dragStartY = clientY;
         };
 
         const handleMove = (clientX, clientY) => {
             if (!isDragging) return;
+            const dist = Math.hypot(clientX - dragStartX, clientY - dragStartY);
+            if (dist > 6) {
+                hasMoved = true;
+            }
             const hinge = getHingePoint();
             const dx = clientX - hinge.x;
             const dy = clientY - hinge.y;
@@ -430,11 +440,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const handleEnd = () => {
+            if (isDragging && !hasMoved) {
+                // User clicked the lamp without dragging - toggle the light!
+                lampSwitch.checked = !lampSwitch.checked;
+                lampSwitch.dispatchEvent(new Event('change'));
+            }
             isDragging = false;
         };
 
         const lampStructure = lampArm.querySelector('.lamp-structure');
         if (lampStructure) {
+            lampStructure.style.cursor = 'pointer';
             lampStructure.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 handleStart(e.clientX, e.clientY);
@@ -484,32 +500,32 @@ document.addEventListener('DOMContentLoaded', () => {
         function swingLoop() {
             if (!isDragging) {
                 if (isLampLit) {
-                    // Gentle, graceful pendulum toggle right and left (~3.8s period, max +/- 8.5 deg)
-                    swingPhase += 0.022;
-                    const targetAngle = Math.sin(swingPhase) * 8.5;
-                    angle += (targetAngle - angle) * 0.055;
-                    chainFlex += (-angle * 0.12 - chainFlex) * 0.08;
+                    // Gentle, graceful pendulum toggle right and left (~4.2s period, max +/- 6.8 deg)
+                    swingPhase += 0.016;
+                    const targetAngle = Math.sin(swingPhase) * 6.8;
+                    angle += (targetAngle - angle) * 0.045;
+                    chainFlex += (-angle * 0.1 - chainFlex) * 0.06;
                 } else {
                     // Settle gently back to center 0 deg when switched off
-                    angle += (0 - angle) * 0.08;
-                    chainFlex += (0 - chainFlex) * 0.1;
+                    angle += (0 - angle) * 0.06;
+                    chainFlex += (0 - chainFlex) * 0.08;
                 }
             } else {
-                chainFlex += (-angle * 0.2 - chainFlex) * 0.15;
+                chainFlex += (-angle * 0.18 - chainFlex) * 0.12;
             }
 
             lampArm.style.transform = `rotate(${angle.toFixed(2)}deg) skewX(${chainFlex.toFixed(2)}deg)`;
 
-            const shiftX = -Math.sin(angle * Math.PI / 180) * 160;
+            const shiftX = -Math.sin(angle * Math.PI / 180) * 140;
             lampRefl.style.transform = `translateX(calc(-50% + ${shiftX.toFixed(1)}px))`;
 
-            // Spotlight intersection: calculate light beam projection on text characters
+            // Spotlight intersection: smooth cosine blending on characters
             if (isLampLit && secretTextEl) {
                 const hinge = getHingePoint();
                 const textRect = secretTextEl.getBoundingClientRect();
                 const H = Math.max(180, textRect.top + textRect.height / 2 - hinge.y);
                 const beamCenterX = hinge.x + H * Math.tan(angle * Math.PI / 180);
-                const beamHalfWidth = 82; // Half-width of spotlight cone at text level
+                const beamRadius = 145; // Soft diffused spotlight radius
 
                 const spans = secretTextEl.querySelectorAll('.lamp-char');
                 spans.forEach(span => {
@@ -517,15 +533,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const charX = r.left + r.width / 2;
                     const dist = Math.abs(charX - beamCenterX);
 
-                    if (dist < beamHalfWidth) {
-                        const factor = Math.max(0, 1 - (dist / beamHalfWidth));
+                    if (dist < beamRadius) {
+                        const norm = dist / beamRadius;
+                        const factor = 0.5 * (1 + Math.cos(norm * Math.PI)); // 1.0 at center, smooth 0 at edge
                         span.style.opacity = (0.25 + 0.75 * factor).toFixed(2);
                         span.style.color = '#ffffff';
-                        span.style.textShadow = `0 0 ${Math.round(8 * factor)}px #ffd873, 0 0 ${Math.round(18 * factor)}px #19e3d0`;
-                        span.style.transform = `scale(${(1 + 0.15 * factor).toFixed(2)})`;
+                        span.style.textShadow = `0 0 ${Math.round(10 * factor)}px #ffd873, 0 0 ${Math.round(22 * factor)}px #19e3d0`;
+                        span.style.transform = `scale(${(1 + 0.12 * factor).toFixed(2)})`;
                     } else {
-                        span.style.opacity = '0.14';
-                        span.style.color = 'rgba(160, 130, 200, 0.35)';
+                        span.style.opacity = '0.2';
+                        span.style.color = 'rgba(180, 150, 220, 0.4)';
                         span.style.textShadow = 'none';
                         span.style.transform = 'scale(1)';
                     }
@@ -535,16 +552,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const btnRect = secretMsgBtn.getBoundingClientRect();
                     const btnX = btnRect.left + btnRect.width / 2;
                     const btnDist = Math.abs(btnX - beamCenterX);
-                    const btnThreshold = beamHalfWidth + btnRect.width * 0.35;
+                    const btnThreshold = beamRadius + btnRect.width * 0.4;
                     if (btnDist < btnThreshold) {
-                        const factor = Math.max(0, 1 - (btnDist / btnThreshold));
+                        const norm = btnDist / btnThreshold;
+                        const factor = 0.5 * (1 + Math.cos(norm * Math.PI));
                         secretMsgBtn.style.opacity = (0.5 + 0.5 * factor).toFixed(2);
                         secretMsgBtn.style.boxShadow = `0 0 ${Math.round(24 * factor)}px rgba(25, 227, 208, 0.65), inset 0 0 ${Math.round(14 * factor)}px rgba(242, 193, 78, 0.4)`;
-                        secretMsgBtn.style.borderColor = factor > 0.4 ? 'var(--cp-turquoise)' : 'rgba(242, 193, 78, 0.5)';
+                        secretMsgBtn.style.borderColor = factor > 0.35 ? 'var(--cp-turquoise)' : 'rgba(242, 193, 78, 0.5)';
                     } else {
                         secretMsgBtn.style.opacity = '0.35';
                         secretMsgBtn.style.boxShadow = 'none';
-                        secretMsgBtn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                        secretMsgBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
                     }
                 }
             }

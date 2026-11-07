@@ -480,16 +480,15 @@ header::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle, rgba(20, 10, 36, 0.72) 0%, rgba(6, 3, 12, 0.92) 100%);
+    background: radial-gradient(circle at 50% 45%, rgba(20, 10, 36, 0.45) 0%, rgba(6, 3, 12, 0.7) 65%, rgba(4, 2, 8, 0.9) 100%);
     z-index: 1;
 }
 
 .page-body-content {
     position: relative;
     z-index: 10;
-    background-color: var(--bg-color);
-    background-image: linear-gradient(180deg, #06030c 0%, #030108 100%); /* Deep, mysterious cosmic space background */
-    box-shadow: 0 -1rem 3rem rgba(0, 0, 0, 0.95);
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
 .header-content {
@@ -618,15 +617,40 @@ header::before {
     font-family: 'Space Grotesk', var(--font-headings);
     font-style: italic;
     font-weight: 800;
-    letter-spacing: 0.03em;
-    background: linear-gradient(135deg, #ffffff 15%, #ffd873 55%, #f2c14e 100%);
+    letter-spacing: 0.04em;
+    background: linear-gradient(135deg, #ffffff 10%, #ffd873 45%, #19e3d0 80%, #b388ff 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 25px rgba(242, 193, 78, 0.45));
+    filter: drop-shadow(0 0 18px rgba(242, 193, 78, 0.45)) drop-shadow(0 0 30px rgba(25, 227, 208, 0.35));
     display: inline-block;
-    padding-right: 0.25em; /* Prevents italic slant clipping of the letter 'N' */
+    padding-right: 0.25em; /* Prevents italic slant clipping */
     overflow: visible;
+    position: relative;
+    animation: artistic-glitch 5.5s infinite ease-in-out;
+}
+
+@keyframes artistic-glitch {
+    0%, 88%, 100% {
+        transform: translate(0, 0) skew(0deg);
+        filter: drop-shadow(0 0 18px rgba(242, 193, 78, 0.45)) drop-shadow(0 0 30px rgba(25, 227, 208, 0.35));
+    }
+    89% {
+        transform: translate(-1.5px, 0.5px) skew(-0.5deg);
+        filter: drop-shadow(-2px 0 0 rgba(25, 227, 208, 0.8)) drop-shadow(2px 0 0 rgba(179, 136, 255, 0.8)) drop-shadow(0 0 22px #ffd873);
+    }
+    91% {
+        transform: translate(1.5px, -0.5px) skew(0.5deg);
+        filter: drop-shadow(2px -1px 0 rgba(242, 193, 78, 0.9)) drop-shadow(-2px 1px 0 rgba(25, 227, 208, 0.9));
+    }
+    93% {
+        transform: translate(-0.5px, -0.5px);
+        filter: drop-shadow(0 0 24px rgba(25, 227, 208, 0.6)) drop-shadow(0 0 35px rgba(242, 193, 78, 0.5));
+    }
+    95% {
+        transform: translate(0, 0) skew(0deg);
+        filter: drop-shadow(0 0 18px rgba(242, 193, 78, 0.45)) drop-shadow(0 0 30px rgba(25, 227, 208, 0.35));
+    }
 }
 
 #tp-subtitle {
@@ -1648,13 +1672,12 @@ header::before {
     top: 4.8rem;
     left: 50%;
     transform: translateX(-50%);
-    width: 22rem;
-    height: 25rem;
-    clip-path: polygon(44% 0%, 56% 0%, 98% 100%, 2% 100%);
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.65) 0%, rgba(242, 193, 78, 0.35) 25%, rgba(25, 227, 208, 0.18) 65%, transparent 100%);
+    width: 26rem;
+    height: 26rem;
+    background: radial-gradient(ellipse 65% 100% at 50% 0%, rgba(255, 245, 215, 0.5) 0%, rgba(242, 193, 78, 0.28) 35%, rgba(25, 227, 208, 0.14) 70%, transparent 100%);
     opacity: 0;
-    filter: blur(8px);
-    transition: opacity 0.4s ease;
+    filter: blur(14px);
+    transition: opacity 0.5s ease-out;
     pointer-events: none;
     z-index: 6;
 }
@@ -1747,9 +1770,66 @@ header::before {
    Footer & Contact Form
    ========================================================================== */
 footer {
-    background-color: var(--bg-darker);
-    padding: 6rem 0 3rem;
-    border-top: 1px solid var(--border-glass);
+    background-color: transparent !important;
+    padding: 5rem 0 3.5rem;
+    border-top: 1px solid rgba(157, 77, 255, 0.25);
+    position: relative;
+    z-index: 10;
+}
+
+.footer-content-wrap {
+    max-width: 48rem;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+}
+
+.footer-header .section-title {
+    margin-bottom: 0.75rem;
+}
+
+.footer-header .section-desc {
+    max-width: 38rem;
+    margin: 0 auto;
+}
+
+.footer-cta-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin: 1.25rem 0;
+}
+
+.footer-cta-row .cta-button {
+    padding: 0.85rem 2.2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    border-radius: var(--radius-pill);
+}
+
+.footer-cta-row .btn-ai-chat {
+    background: linear-gradient(135deg, rgba(25, 227, 208, 0.15), rgba(157, 77, 255, 0.25)) !important;
+    border: 1px solid var(--cp-turquoise) !important;
+    box-shadow: 0 0 20px rgba(25, 227, 208, 0.35) !important;
+}
+
+.footer-cta-row .btn-ai-chat:hover {
+    box-shadow: 0 0 30px rgba(25, 227, 208, 0.7) !important;
+    transform: translateY(-2px);
+}
+
+.footer-bottom-line p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
 }
 
 .contact-container {
@@ -3987,6 +4067,13 @@ body {
     box-shadow: 0 0 12px rgba(157, 77, 255, 0.22), inset 0 0 8px rgba(157, 77, 255, 0.12) !important;
     background: rgba(26, 12, 46, 0.88) !important;
     color: #ffffff !important;
+}
+
+.filter-btn.active:hover {
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 0 26px rgba(25, 227, 208, 0.7), inset 0 0 14px rgba(25, 227, 208, 0.35) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
 }
 
 /* Pronounced Vibrant Radial Gradient Hover on Cards */

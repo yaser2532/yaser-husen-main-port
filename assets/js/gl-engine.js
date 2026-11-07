@@ -116,39 +116,54 @@
     grid.material.opacity = 0.28;
     backdropGroup.add(grid);
 
-    // ─── Rich Multi-Depth 3D Starry Night Sky [Section 2] ─────────────────
-    // 1. Foreground Twinkling Stars (Large, vibrant, high-glow)
-    const FG_STARS = tier === 'low' ? 180 : (tier === 'medium' ? 350 : 500);
+    // ─── Rich Multi-Depth 3D Starry Night Sky & Distant Galaxy ────────────
+    function createStarTexture() {
+        const texCanvas = document.createElement('canvas');
+        texCanvas.width = 32;
+        texCanvas.height = 32;
+        const c = texCanvas.getContext('2d');
+        const grad = c.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+        grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.85)');
+        grad.addColorStop(0.55, 'rgba(255, 255, 255, 0.30)');
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        c.fillStyle = grad;
+        c.fillRect(0, 0, 32, 32);
+        return new THREE.CanvasTexture(texCanvas);
+    }
+    const starTex = createStarTexture();
+
+    // 1. Foreground Twinkling Stars (Vibrant, luminous, high-depth parallax)
+    const FG_STARS = 450;
     const fgGeom = new THREE.BufferGeometry();
     const fgPos = new Float32Array(FG_STARS * 3);
     const fgCol = new Float32Array(FG_STARS * 3);
-    const fgSizes = new Float32Array(FG_STARS);
 
     const starColors = [
-        new THREE.Color(0xffffff),      // Brilliant diamond
-        new THREE.Color(COLOR_GOLD_BRIGHT), // Neon Gold
+        new THREE.Color(0xffffff),          // Brilliant diamond white
+        new THREE.Color(COLOR_GOLD_BRIGHT), // Neon Cyberpunk Gold
         new THREE.Color(COLOR_TURQUOISE),   // Neon Turquoise
-        new THREE.Color(0xa855f7)       // Radiant Purple
+        new THREE.Color(0xc084fc),          // Radiant Purple
+        new THREE.Color(0x7ff5e8)           // Cyan Glow
     ];
 
     for (let i = 0; i < FG_STARS; i++) {
-        fgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 2.2;
-        fgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 2.5;
-        fgPos[i * 3 + 2] = -Math.random() * 650 + 150;
+        fgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 2.6;
+        fgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 3.2;
+        fgPos[i * 3 + 2] = -Math.random() * 550 + 120;
 
         const c = starColors[i % starColors.length];
         fgCol[i * 3 + 0] = c.r;
         fgCol[i * 3 + 1] = c.g;
         fgCol[i * 3 + 2] = c.b;
-
-        fgSizes[i] = 1.6 + Math.random() * 1.6; // 1.6px to 3.2px sharp distant stars
     }
 
     fgGeom.setAttribute('position', new THREE.BufferAttribute(fgPos, 3));
     fgGeom.setAttribute('color', new THREE.BufferAttribute(fgCol, 3));
 
     const fgMat = new THREE.PointsMaterial({
-        size: 2.2,
+        size: 3.8,
+        map: starTex,
         vertexColors: true,
         transparent: true,
         opacity: 0.95,
@@ -158,16 +173,16 @@
     const fgStarfield = new THREE.Points(fgGeom, fgMat);
     backdropGroup.add(fgStarfield);
 
-    // 2. Deep Space Background Constellations (High depth density)
-    const BG_STARS = tier === 'low' ? 300 : (tier === 'medium' ? 600 : 900);
+    // 2. Deep Space Background Constellations (High depth density distant galaxy)
+    const BG_STARS = 1400;
     const bgGeom = new THREE.BufferGeometry();
     const bgPos = new Float32Array(BG_STARS * 3);
     const bgCol = new Float32Array(BG_STARS * 3);
 
     for (let i = 0; i < BG_STARS; i++) {
-        bgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 3.0;
-        bgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 3.5;
-        bgPos[i * 3 + 2] = -Math.random() * 1800 - 300; // Deep Z-space
+        bgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 3.5;
+        bgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 4.0;
+        bgPos[i * 3 + 2] = -Math.random() * 1900 - 250; // Deep Z-space
 
         const c = starColors[Math.floor(Math.random() * starColors.length)];
         bgCol[i * 3 + 0] = c.r * 0.95;
@@ -179,15 +194,54 @@
     bgGeom.setAttribute('color', new THREE.BufferAttribute(bgCol, 3));
 
     const bgMat = new THREE.PointsMaterial({
-        size: 1.4,
+        size: 2.2,
+        map: starTex,
         vertexColors: true,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.88,
         blending: THREE.AdditiveBlending,
         depthWrite: false
     });
     const bgStarfield = new THREE.Points(bgGeom, bgMat);
     backdropGroup.add(bgStarfield);
+
+    // 3. Cosmic Nebula Dust Cloud Layer (Soft colorful deep galaxy dust)
+    const NEBULA_COUNT = 180;
+    const nebGeom = new THREE.BufferGeometry();
+    const nebPos = new Float32Array(NEBULA_COUNT * 3);
+    const nebCol = new Float32Array(NEBULA_COUNT * 3);
+
+    const nebColors = [
+        new THREE.Color(0x9d4dff), // Violet dust
+        new THREE.Color(0x19e3d0), // Turquoise dust
+        new THREE.Color(0xf2c14e)  // Gold dust
+    ];
+
+    for (let i = 0; i < NEBULA_COUNT; i++) {
+        nebPos[i * 3 + 0] = (Math.random() - 0.5) * width * 2.8;
+        nebPos[i * 3 + 1] = (Math.random() - 0.5) * height * 3.0;
+        nebPos[i * 3 + 2] = -Math.random() * 1200 - 400;
+
+        const c = nebColors[i % nebColors.length];
+        nebCol[i * 3 + 0] = c.r * 0.85;
+        nebCol[i * 3 + 1] = c.g * 0.85;
+        nebCol[i * 3 + 2] = c.b * 0.85;
+    }
+
+    nebGeom.setAttribute('position', new THREE.BufferAttribute(nebPos, 3));
+    nebGeom.setAttribute('color', new THREE.BufferAttribute(nebCol, 3));
+
+    const nebMat = new THREE.PointsMaterial({
+        size: 9.0,
+        map: starTex,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.42,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    const nebStarfield = new THREE.Points(nebGeom, nebMat);
+    backdropGroup.add(nebStarfield);
 
     /* =========================================================================
        3D-04: 8 LOW-POLY 3D DRONES (Gold body, purple core, spinning fins, cone)
@@ -261,9 +315,9 @@
             targetWorldX: 0,
             targetWorldY: 0,
             targetWorldZ: 40,
-            spring: 0.14 + (i * 0.012),
+            spring: 0.12 + (i * 0.010),
             orbitAngle: (i / NUM_DRONES) * Math.PI * 2,
-            orbitRadius: 28 + (i % 3) * 12
+            orbitRadius: 70 + (i * 18) + (i % 3) * 25 // Looser, expansive orbit spacing [B-04]
         };
 
         droneGroup.add(drone);
@@ -367,6 +421,9 @@
         fgStarfield.position.y = currentParallaxY * 30;
         bgStarfield.position.x = currentParallaxX * 15;
         bgStarfield.position.y = currentParallaxY * 10;
+        nebStarfield.position.x = currentParallaxX * 25;
+        nebStarfield.position.y = currentParallaxY * 18;
+        nebStarfield.rotation.y = now * 0.00015;
 
         // 2. 3D DRONES CHOREOGRAPHY [Phase: scout, pull, idle]
         // Coordinated with window.swarm and pull-build module
@@ -433,15 +490,15 @@
                 }
 
             } else {
-                // PHASE 3: IDLE FLUID ORBIT AROUND CURSOR / TOUCH
+                // PHASE 3: IDLE FLUID ORBIT AROUND CURSOR / TOUCH (Loose, airy escort cloud)
                 rotorSpeed = 20;
-                const orbitSpeed = 1.1 + (i % 3) * 0.35;
-                const angle = ud.orbitAngle + now * 0.0014 * orbitSpeed;
-                const ox = Math.cos(angle) * ud.orbitRadius;
-                const oy = Math.sin(angle * 1.3) * (ud.orbitRadius * 0.7);
+                const orbitSpeed = 0.95 + (i % 3) * 0.3;
+                const angle = ud.orbitAngle + now * 0.0012 * orbitSpeed;
+                const ox = Math.cos(angle) * ud.orbitRadius + Math.sin(now * 0.0016 + i) * 35;
+                const oy = Math.sin(angle * 1.25) * (ud.orbitRadius * 0.65) + Math.cos(now * 0.0014 + i) * 28;
                 targetX = cursorWorldX + ox;
                 targetY = cursorWorldY + oy;
-                targetZ = 40 + Math.sin(angle * 2) * 16;
+                targetZ = 45 + Math.sin(angle * 1.8 + i) * 22;
             }
 
             // Spin rotor fin

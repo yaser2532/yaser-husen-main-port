@@ -400,7 +400,14 @@
         item.el.style.transform = '';
         item.el.style.willChange = '';
 
-        // Mark all inner elements as assembled in coordinator
+        // Mark all inner elements as assembled in coordinator and clear inline styles
+        const nodes = SectionCoordinator.getNodesForSection(item.id);
+        nodes.forEach(n => {
+            SectionCoordinator.markAssembled(n);
+            n.el.style.transform = '';
+            n.el.style.opacity = '';
+            n.el.style.filter = '';
+        });
         SectionCoordinator.assembleAll(item.id);
 
         if (!instant) {
@@ -452,8 +459,8 @@
 
         // Auto-recovery: if currentPullingItem is completely scrolled offscreen, finish it instantly
         if (currentPullingItem) {
-            const isOffscreen = (currentPullingItem.pageTop + currentPullingItem.height < scrollY - 60) ||
-                                (currentPullingItem.pageTop > scrollY + viewH + 200);
+            const r = currentPullingItem.el.getBoundingClientRect();
+            const isOffscreen = (r.bottom < -60) || (r.top > viewH + 200);
             if (isOffscreen) {
                 finishPull(currentPullingItem, true);
                 currentPullingItem = null;
@@ -462,22 +469,33 @@
             }
         }
 
-        // Check which pending section is most visible in the viewport right now
-        const viewCenterY = scrollY + viewH * 0.45;
+        // Check which pending section is currently entering or within the viewport
         let targetSection = null;
 
-        // Check if viewport center lands directly on a pending section
         for (let i = 0; i < sections.length; i++) {
             const s = sections[i];
-            if (s.state === 'pending' && viewCenterY >= s.pageTop - 60 && viewCenterY <= s.pageTop + s.height + 60) {
-                targetSection = s;
-                break;
+            if (s.state === 'pending' && !s.isHero) {
+                const r = s.el.getBoundingClientRect();
+                // Visible in comfortable viewport reading window
+                if (r.top < viewH * 0.85 && r.bottom > viewH * 0.15) {
+                    targetSection = s;
+                    break;
+                }
             }
         }
 
-        // Fallback: pick next pending section that is entering the lower viewport
+        // Fallback: pick next pending section entering lower edge
         if (!targetSection) {
-            targetSection = sections.find(s => s.state === 'pending' && s.pageTop <= scrollY + viewH * 0.88);
+            for (let i = 0; i < sections.length; i++) {
+                const s = sections[i];
+                if (s.state === 'pending' && !s.isHero) {
+                    const r = s.el.getBoundingClientRect();
+                    if (r.top < viewH * 0.95 && r.bottom > 0) {
+                        targetSection = s;
+                        break;
+                    }
+                }
+            }
         }
 
         if (targetSection) {
@@ -488,8 +506,6 @@
     function checkCompletion() {
         const allBuilt = sections.every(s => s.state === 'built');
         if (allBuilt) {
-            docEl.classList.add('nb-done');
-            docEl.classList.remove('nb-ready');
             ctx.clearRect(0, 0, viewW, viewH);
         }
     }
@@ -505,7 +521,6 @@
                     processNextInQueue();
                 }
             }
-            // Note: Built sections remain built to guarantee smooth uninterrupted reading.
         });
     }, {
         threshold: 0.08,
@@ -518,19 +533,38 @@
         }
     });
 
-    // Handle scroll for fast scrolling and queue triggering
+    // Handle scroll for bi-directional deconstruct/reconstruct & fast-scroll fail-safe
     window.addEventListener('scroll', () => {
         const scrollY = window.scrollY || window.pageYOffset;
 
-        // Instant resolution of all sections scrolled past
         sections.forEach(s => {
             const r = s.el.getBoundingClientRect();
-            const pageTop = r.top + scrollY;
-            s.pageTop = pageTop;
+            s.pageTop = r.top + scrollY;
             s.height = r.height;
 
-            if (s.state !== 'built' && (pageTop + s.height * 0.40 < scrollY || pageTop < scrollY - 60)) {
+            // Fast-scroll fail-safe: if scrolled past while not built, resolve instantly so nothing is blank!
+            if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.35)) {
                 finishPull(s, true);
+            }
+
+            // Bi-directional deconstruct: if section was built but has now scrolled out of view (> 0.5 viewports away),
+            // safely deconstruct it so drones reconstruct it upon scrolling back!
+            if (!s.isHero && s.state === 'built') {
+                const isFarAway = (r.bottom < -viewH * 0.5) || (r.top > viewH * 1.5);
+                if (isFarAway) {
+                    s.state = 'pending';
+                    s.el.setAttribute('data-nb', 'pending');
+                    s.el.style.opacity = '0.2';
+                    s.el.style.transform = 'translate3d(0, 45px, 0) scale(0.96)';
+                    
+                    const nodes = SectionCoordinator.getNodesForSection(s.id);
+                    nodes.forEach(n => {
+                        n.state = 'unscouted';
+                        n.el.removeAttribute('data-assembled');
+                        n.el.style.transform = 'translate3d(0, 28px, 0)';
+                        n.el.style.opacity = '0.25';
+                    });
+                }
             }
         });
 
@@ -659,8 +693,42 @@
                 currentOpacity = 0.30 + eased * 0.70;
                 currentScale = 0.94 + eased * 0.06;
 
-                // Update swarm anchor targets so drones lock to elements
-                const anchors = computeAnchorPoints(item, currentOffset);
+                // Individual child element micro-hoist & progressive assembly
+                const nodes = SectionCoordinator.getNodesForSection(item.id);
+                const totalNodes = nodes.length;
+                const dynamicTargets = [];
+
+                nodes.forEach((n, idx) => {
+                    const staggerStart = (idx / Math.max(1, totalNodes)) * 0.55;
+                    const childProgress = Math.max(0, Math.min(1, (pullT - staggerStart) / 0.45));
+                    const childEase = easeOutQuint(childProgress);
+                    
+                    const childY = (1 - childEase) * 28;
+                    const childOp = 0.25 + childEase * 0.75;
+                    
+                    n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0)`;
+                    n.el.style.opacity = childOp.toFixed(3);
+                    
+                    if (childProgress > 0 && childProgress < 0.95) {
+                        const r = n.el.getBoundingClientRect();
+                        if (r.width > 20 && r.height > 10) {
+                            dynamicTargets.push({
+                                x: r.left + r.width * 0.5,
+                                y: r.top + r.height * 0.5
+                            });
+                        }
+                    }
+                    
+                    if (childProgress >= 0.95 && n.state !== 'assembled') {
+                        SectionCoordinator.markAssembled(n);
+                    }
+                });
+
+                // Update swarm anchor targets so drones actively hoist the current active elements
+                const anchors = dynamicTargets.length >= 4 
+                    ? dynamicTargets.slice(0, 8) 
+                    : computeAnchorPoints(item, currentOffset);
+
                 if (window.swarm && typeof window.swarm.assign === 'function') {
                     window.swarm.assign(anchors);
                 }
