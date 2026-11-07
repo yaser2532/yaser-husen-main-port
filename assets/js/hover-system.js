@@ -48,22 +48,26 @@
             const centerY = rect.top + rect.height / 2;
             
             // Limit pull to 6px maximum
-            const maxPull = 6.0;
-            const pullX = Math.max(-maxPull, Math.min(maxPull, (e.clientX - centerX) * 0.25));
-            const pullY = Math.max(-maxPull, Math.min(maxPull, (e.clientY - centerY) * 0.25));
+            const maxPull = 5.0;
+            const pullX = Math.max(-maxPull, Math.min(maxPull, (e.clientX - centerX) * 0.22));
+            const pullY = Math.max(-maxPull, Math.min(maxPull, (e.clientY - centerY) * 0.22));
 
+            btn.style.transition = 'none';
             btn.style.transform = `translate3d(${pullX.toFixed(1)}px, ${pullY.toFixed(1)}px, 0)`;
         });
 
         btn.addEventListener('mouseleave', () => {
+            btn.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease';
             btn.style.transform = 'translate3d(0, 0, 0)';
         });
 
-        btn.addEventListener('mousedown', (e) => {
-            btn.style.transform = 'translate3d(0, 0, 0) scale(0.95)';
+        btn.addEventListener('mousedown', () => {
+            btn.style.transition = 'transform 0.1s ease';
+            btn.style.transform = 'translate3d(0, 0, 0) scale(0.96)';
         });
 
         btn.addEventListener('mouseup', () => {
+            btn.style.transition = 'transform 0.2s ease';
             btn.style.transform = 'translate3d(0, 0, 0) scale(1.0)';
         });
     });
@@ -84,17 +88,19 @@
             const normX = (x / rect.width) * 2 - 1;
             const normY = (y / rect.height) * 2 - 1;
 
-            // Max 8 degrees tilt
-            const maxTilt = 7.5;
+            // Max 6.5 degrees tilt for buttery smooth response without jitter
+            const maxTilt = 6.5;
             const rotX = -normY * maxTilt;
             const rotY = normX * maxTilt;
 
+            card.style.transition = 'none';
             card.style.transform = `perspective(900px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) scale3d(1.018, 1.018, 1.018)`;
             card.style.setProperty('--card-mouse-x', `${(x / rect.width * 100).toFixed(1)}%`);
             card.style.setProperty('--card-mouse-y', `${(y / rect.height * 100).toFixed(1)}%`);
         });
 
         card.addEventListener('mouseleave', () => {
+            card.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease, border-color 0.3s ease';
             card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
         });
     });

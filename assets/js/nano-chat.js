@@ -121,6 +121,24 @@
             keywords: ['philosophy', 'design approach', 'mindset', 'values'],
             intent: 'philosophy',
             answer: "Yaser believes software should not only be mathematically rigorous and highly performant, but visually captivating and genuinely memorable to use."
+        },
+        {
+            id: 'pricing_rates',
+            keywords: ['rates', 'pricing', 'cost', 'quote', 'budget', 'charge', 'fee', 'hourly', 'freelance'],
+            intent: 'rates',
+            answer: "Yaser structures project pricing based on architectural scope, technical complexity, and timeline requirements. Reach out directly via the Contact button or at yhusen336@gmail.com for an evaluation!"
+        },
+        {
+            id: 'web_development',
+            keywords: ['web development', 'frontend', 'responsive', 'websites', 'ui', 'ux', 'html', 'css', 'javascript', 'framework'],
+            intent: 'web',
+            answer: "Yaser develops responsive, high-velocity web platforms using modern HTML5, CSS3, vanilla JavaScript, and real-time Three.js WebGL graphics with 100% device adaptability and high Lighthouse scores."
+        },
+        {
+            id: 'custom_ai_solutions',
+            keywords: ['custom ai', 'build ai', 'startup', 'prototype', 'consulting', 'automation', 'solution', 'agents'],
+            intent: 'custom_ai',
+            answer: "Yaser architects tailored AI integrations, from enterprise RAG pipelines with Vertex AI to custom prompt engineering, agentic automations, and LLM-powered APIs designed to scale with your business."
         }
     ];
 
@@ -254,13 +272,19 @@
         }
     }
 
-    // ─── 3. Mount Inline Cyberpunk Terminal in Footer [CB-03] ───────────────
+    // ─── 3. Mount Cyberpunk AI Modal Window & Footer Trigger [CB-03] ───────
     function initNanoUI() {
-        const contactSec = document.getElementById('contact');
-        if (!contactSec) return;
-
         // Check if already mounted
         if (document.getElementById('nano-chat-container')) return;
+
+        // Create Modal Overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'nano-chat-modal-overlay';
+        modalOverlay.className = 'nano-modal-overlay';
+        modalOverlay.setAttribute('aria-hidden', 'true');
+
+        const modalWindow = document.createElement('div');
+        modalWindow.className = 'nano-modal-window';
 
         const terminalWrap = document.createElement('div');
         terminalWrap.id = 'nano-chat-container';
@@ -297,8 +321,16 @@
         clearBtn.setAttribute('aria-label', 'Reset Chat History');
         clearBtn.textContent = 'Clear';
 
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'nano-modal-close-btn';
+        closeBtn.id = 'nano-close-btn';
+        closeBtn.setAttribute('type', 'button');
+        closeBtn.setAttribute('aria-label', 'Close AI Chat');
+        closeBtn.innerHTML = '&times;';
+
         badgeBox.appendChild(badge);
         badgeBox.appendChild(clearBtn);
+        badgeBox.appendChild(closeBtn);
 
         header.appendChild(titleBox);
         header.appendChild(badgeBox);
@@ -360,16 +392,38 @@
         terminalWrap.appendChild(chipsWrap);
         terminalWrap.appendChild(form);
 
-        // Append to contact section before copyright
-        const footerBottom = contactSec.querySelector('.footer-bottom, .contact-bottom');
-        if (footerBottom) {
-            contactSec.insertBefore(terminalWrap, footerBottom);
-        } else {
-            contactSec.appendChild(terminalWrap);
-        }
+        modalWindow.appendChild(terminalWrap);
+        modalOverlay.appendChild(modalWindow);
+        document.body.appendChild(modalOverlay);
 
         // Initial Assistant Message
         appendMessage('assistant', "Greetings! I am Nano, Yaser's local AI assistant. Ask me anything about his technical stack, Google Cloud Vertex AI projects, SQL analytics, or work experience!");
+
+        // Open & Close Handlers
+        const openModal = () => {
+            modalOverlay.classList.add('active');
+            modalOverlay.setAttribute('aria-hidden', 'false');
+            setTimeout(() => input.focus(), 100);
+        };
+
+        const closeModal = () => {
+            modalOverlay.classList.remove('active');
+            modalOverlay.setAttribute('aria-hidden', 'true');
+        };
+
+        closeBtn.addEventListener('click', closeModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeModal();
+        });
+
+        // Connect "Chat with My AI" button in footer
+        const triggerBtn = document.getElementById('nano-chat-trigger-btn');
+        if (triggerBtn) {
+            triggerBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                openModal();
+            });
+        }
 
         // Event Listeners
         form.addEventListener('submit', (e) => {
@@ -385,12 +439,16 @@
             appendMessage('assistant', "Chat history cleared. How can I assist you with Yaser's portfolio?");
         });
 
-        // Esc key clears or blurs
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                input.blur();
+        // Esc key closes modal or blurs
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+                closeModal();
             }
         });
+
+        // Expose open/close APIs
+        window.nanoChat.open = openModal;
+        window.nanoChat.close = closeModal;
     }
 
     function appendMessage(sender, text) {
@@ -420,10 +478,9 @@
     }
 
     // Expose local retrieval for automated evaluation suite [CB-03]
-    window.nanoChat = {
-        ask: retrieveAnswer,
-        getKnowledgeBase: () => KNOWLEDGE_BASE
-    };
+    window.nanoChat = window.nanoChat || {};
+    window.nanoChat.ask = retrieveAnswer;
+    window.nanoChat.getKnowledgeBase = () => KNOWLEDGE_BASE;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initNanoUI);

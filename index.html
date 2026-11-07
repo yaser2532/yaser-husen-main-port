@@ -37,7 +37,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Dancing+Script:wght@700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:ital,wght@0,600;0,700;1,700;1,800&family=Dancing+Script:wght@700&display=swap"
         rel="stylesheet">
 
     <!-- Font Awesome Icons -->
@@ -65,6 +65,11 @@
                 <li><a href="#creative-lab" class="nav-link">Creative Lab</a></li>
                 <li><a href="#certificates" class="nav-link">Certificates</a></li>
                 <li><a href="#contact" class="nav-link">Contact</a></li>
+                <li>
+                    <button id="sound-toggle-btn" class="nav-sound-btn" aria-label="Toggle Ambient Audio" title="Toggle Ambient Audio">
+                        <i class="fa-solid fa-volume-xmark"></i>
+                    </button>
+                </li>
             </ul>
             <div class="burger">
                 <div class="line1"></div>
@@ -78,21 +83,21 @@
     <header id="home">
         <div class="overlay"></div>
         <div class="header-content scroll-reveal fade-up">
-            <h1 class="hero-title"><span id="tp-name">YASER HUSEN</span><span id="name-cursor" class="typing-cursor"></span></h1>
-            <h2 class="hero-subtitle"><span id="tp-subtitle">AI Developer, UI/UX &amp; SaaS Integrator</span><span id="subtitle-cursor"
+            <h1 class="hero-title"><span id="tp-name"></span><span id="name-cursor" class="typing-cursor"></span></h1>
+            <h2 class="hero-subtitle"><span id="tp-subtitle"></span><span id="subtitle-cursor"
                     class="typing-cursor hidden"></span></h2>
 
             <div id="hero-details" class="hero-details-container">
                 <!-- Small About Me Tile -->
                 <div class="hero-about-tile glass-card">
-                    <p><span id="tp-about">I bridge technical data science, scalable artificial intelligence, and beautiful custom frontends to build unified high-velocity web platforms.</span><span id="about-cursor" class="typing-cursor hidden"></span></p>
+                    <p><span id="tp-about"></span><span id="about-cursor" class="typing-cursor hidden"></span></p>
                 </div>
 
                 <!-- Special Traits -->
                 <div class="hero-traits-list">
-                    <span class="trait-tag">Python & AI Workflows</span>
-                    <span class="trait-tag">Advanced SQL</span>
-                    <span class="trait-tag">Data Storytelling</span>
+                    <span class="trait-tag">Prompt Engineering & AI Workflows</span>
+                    <span class="trait-tag">Advanced SQL & Analytics</span>
+                    <span class="trait-tag">LLM Architecture & APIs</span>
                     <span class="trait-tag">High-Velocity Execution</span>
                 </div>
             </div>
@@ -127,10 +132,6 @@
                     <div class="profile-card-wrapper">
                         <img src="assets/images/g-img.png" alt="Yaser Husen Profile" class="profile-details-img">
                         <div class="profile-card-glow"></div>
-                        <div class="status-indicator">
-                            <span class="pulse-dot"></span>
-                            <span class="status-txt">Online & Active</span>
-                        </div>
                     </div>
                 </div>
 
@@ -182,12 +183,11 @@
         <div class="container">
             <div class="section-header">
                 <span class="section-tag">About Me</span>
-                <h2>The Mindset Behind the Code</h2>
+                <h2>Engineering & AI Philosophy</h2>
             </div>
 
             <div class="about-grid">
                 <div class="about-text scroll-reveal fade-left">
-                    <h3 class="highlight-text">"I am effective and fast with my work with the help of AI."</h3>
                     <p>
                         I am a forward-thinking developer leveraging the cutting edge of Artificial Intelligence to
                         build robust software solutions. My workflow is optimized through a symbiotic relationship with
@@ -644,17 +644,16 @@
                         <div class="lamp-shade"></div>
                         <div class="lamp-bulb"></div>
                     </div>
+                    <div class="light-beam-visual" id="light-beam-visual"></div>
                 </div>
 
-                <!-- Blurred Light & Reflection -->
-                <div class="light-beam-visual"></div>
                 <div class="light-floor-reflection" id="lamp-reflection"></div>
 
-                <!-- Interactive Content -->
-                <div class="desk-content-wrapper">
-                    <p class="secret-text">Let's build something bright.</p>
+                <!-- Interactive Content (Lit only where the spotlight intersects) -->
+                <div class="desk-content-wrapper" id="desk-content-wrapper">
+                    <p class="secret-text" id="secret-desk-text">Let's build something bright.</p>
                     <a href="mailto:yhusen336@gmail.com?subject=Inquiry%20about%20your%20services&body=Hello,%20I%20have%20a%20question%20regarding..."
-                        class="message-btn">
+                        class="message-btn" id="secret-message-btn">
                         Message Me
                     </a>
                 </div>
@@ -666,7 +665,10 @@
     <!-- Footer & Contact Form -->
     <!-- Footer Section (Compact & Right-Aligned Button) -->
     <footer id="contact" class="scroll-reveal fade-in-section" style="padding: 1rem 0;">
-        <div class="container" style="display: flex; justify-content: flex-end; align-items: center; padding: 0 2rem;">
+        <div class="container footer-cta-row" style="display: flex; justify-content: flex-end; align-items: center; gap: 1rem; padding: 0 2rem; flex-wrap: wrap;">
+            <button class="cta-button btn-ai-chat" id="nano-chat-trigger-btn" style="cursor: pointer; padding: 0.8rem 1.8rem; font-size: 0.95rem;">
+                <span>Chat with My AI</span> <i class="fa-solid fa-robot"></i>
+            </button>
             <button class="cta-button" id="contact-trigger-btn" style="cursor: pointer; padding: 0.8rem 1.8rem; font-size: 0.95rem;">
                 <span>Contact Me</span> <i class="fa-solid fa-paper-plane"></i>
             </button>

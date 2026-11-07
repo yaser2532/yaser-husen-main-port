@@ -323,19 +323,41 @@ document.addEventListener('DOMContentLoaded', () => {
         ensureGlowLoop();
     }
 
-    /* --- 2. Interactive Hanging Lamp natural pendulum & gravity physics --- */
+    /* --- 2. Interactive Hanging Lamp & Focused Spotlight Logic --- */
     const lampArm = document.getElementById('lamp-swing-arm');
     const lampRefl = document.getElementById('lamp-reflection');
-    
-    if (lampArm && lampRefl) {
+    const secretDeskSection = document.getElementById('secret-desk');
+    const lampSwitch = document.getElementById('lamp-toggle');
+    const secretTextEl = document.getElementById('secret-desk-text');
+    const secretMsgBtn = document.getElementById('secret-message-btn');
+
+    // Split secret text into individual character spans for pinpoint spotlight projection
+    if (secretTextEl) {
+        const rawText = secretTextEl.textContent.trim();
+        secretTextEl.innerHTML = '';
+        for (let i = 0; i < rawText.length; i++) {
+            const ch = rawText[i];
+            const span = document.createElement('span');
+            span.className = 'lamp-char';
+            span.textContent = ch;
+            if (ch === ' ') {
+                span.style.display = 'inline-block';
+                span.style.width = '0.35em';
+            }
+            secretTextEl.appendChild(span);
+        }
+    }
+
+    if (lampArm && lampRefl && secretDeskSection && lampSwitch) {
+        lampSwitch.checked = false;
+        secretDeskSection.classList.remove('is-lit');
+
+        let isLampLit = false;
         let angle = 0;
-        let velocity = 0;
-        const gravity = 0.0035;       // Natural gravity constant
-        const airResistance = 0.988; // Fluid aerodynamic damping
-        let chainFlex = 0;           // Catenary flex lag
-        
+        let chainFlex = 0;
+        let swingPhase = 0;
         let isDragging = false;
-        
+
         const getHingePoint = () => {
             const rect = lampArm.getBoundingClientRect();
             return {
@@ -346,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const handleStart = (clientX, clientY) => {
             isDragging = true;
-            velocity = 0;
             handleMove(clientX, clientY);
         };
 
@@ -355,12 +376,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const hinge = getHingePoint();
             const dx = clientX - hinge.x;
             const dy = clientY - hinge.y;
-            
-            // Calculate natural pendulum angle relative to vertical downward axis
             let dragAngle = Math.atan2(dx, Math.max(dy, 30)) * (180 / Math.PI);
-            dragAngle = Math.max(-48, Math.min(48, dragAngle));
-            
-            velocity = (dragAngle - angle) * 0.85; 
+            dragAngle = Math.max(-25, Math.min(25, dragAngle));
             angle = dragAngle;
         };
 
@@ -368,14 +385,12 @@ document.addEventListener('DOMContentLoaded', () => {
             isDragging = false;
         };
 
-        // Attach mouse events for direct drag interactions
         const lampStructure = lampArm.querySelector('.lamp-structure');
         if (lampStructure) {
             lampStructure.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 handleStart(e.clientX, e.clientY);
             });
-            
             lampStructure.addEventListener('touchstart', (e) => {
                 if (e.touches.length > 0) {
                     handleStart(e.touches[0].clientX, e.touches[0].clientY);
@@ -386,63 +401,109 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove', (e) => {
             if (isDragging) {
                 handleMove(e.clientX, e.clientY);
-            } else {
-                // Natural passing draft kick when mouse passes near lamp
-                const mouseX = e.clientX;
-                const mouseY = e.clientY;
-                const hinge = getHingePoint();
-                const dx = mouseX - hinge.x;
-                const dy = mouseY - hinge.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                if (distance < 240) {
-                    const draftForce = (e.movementX || 0) * 0.0015 * (1 - distance / 240);
-                    velocity += draftForce;
-                }
             }
         });
-
         document.addEventListener('touchmove', (e) => {
             if (isDragging && e.touches.length > 0) {
                 handleMove(e.touches[0].clientX, e.touches[0].clientY);
             }
         }, { passive: true });
-
         document.addEventListener('mouseup', handleEnd);
         document.addEventListener('touchend', handleEnd);
 
-        let ambientTime = 0;
+        lampSwitch.addEventListener('change', () => {
+            isLampLit = lampSwitch.checked;
+            if (isLampLit) {
+                secretDeskSection.classList.add('is-lit');
+            } else {
+                secretDeskSection.classList.remove('is-lit');
+                if (secretTextEl) {
+                    secretTextEl.querySelectorAll('.lamp-char').forEach(span => {
+                        span.style.opacity = '';
+                        span.style.color = '';
+                        span.style.textShadow = '';
+                        span.style.transform = '';
+                    });
+                }
+                if (secretMsgBtn) {
+                    secretMsgBtn.style.opacity = '';
+                    secretMsgBtn.style.boxShadow = '';
+                    secretMsgBtn.style.borderColor = '';
+                }
+            }
+        });
 
         function swingLoop() {
             if (!isDragging) {
-                ambientTime += 0.015;
-                // Subtle organic ambient air drift
-                const ambientBreeze = Math.sin(ambientTime) * 0.00018;
-                
-                // Pure pendulum gravity equation: acceleration = - (g / L) * sin(theta)
-                const thetaRad = angle * (Math.PI / 180);
-                const acceleration = -gravity * Math.sin(thetaRad) * (180 / Math.PI) + ambientBreeze;
-                
-                velocity += acceleration;
-                velocity *= airResistance;
-                angle += velocity;
-                
-                // Natural chain catenary flex lagging behind angular velocity
-                chainFlex += (-velocity * 1.8 - chainFlex) * 0.20;
+                if (isLampLit) {
+                    // Gentle, graceful pendulum toggle right and left (~3.8s period, max +/- 8.5 deg)
+                    swingPhase += 0.022;
+                    const targetAngle = Math.sin(swingPhase) * 8.5;
+                    angle += (targetAngle - angle) * 0.055;
+                    chainFlex += (-angle * 0.12 - chainFlex) * 0.08;
+                } else {
+                    // Settle gently back to center 0 deg when switched off
+                    angle += (0 - angle) * 0.08;
+                    chainFlex += (0 - chainFlex) * 0.1;
+                }
             } else {
-                chainFlex += (velocity * 0.8 - chainFlex) * 0.25;
+                chainFlex += (-angle * 0.2 - chainFlex) * 0.15;
             }
-            
-            // Apply pendulum swing + organic chain flex
+
             lampArm.style.transform = `rotate(${angle.toFixed(2)}deg) skewX(${chainFlex.toFixed(2)}deg)`;
-            
-            // Floor reflection tracks with physical light perspective
-            const shiftX = -Math.sin(angle * Math.PI / 180) * 220; 
+
+            const shiftX = -Math.sin(angle * Math.PI / 180) * 160;
             lampRefl.style.transform = `translateX(calc(-50% + ${shiftX.toFixed(1)}px))`;
-            
+
+            // Spotlight intersection: calculate light beam projection on text characters
+            if (isLampLit && secretTextEl) {
+                const hinge = getHingePoint();
+                const textRect = secretTextEl.getBoundingClientRect();
+                const H = Math.max(180, textRect.top + textRect.height / 2 - hinge.y);
+                const beamCenterX = hinge.x + H * Math.tan(angle * Math.PI / 180);
+                const beamHalfWidth = 82; // Half-width of spotlight cone at text level
+
+                const spans = secretTextEl.querySelectorAll('.lamp-char');
+                spans.forEach(span => {
+                    const r = span.getBoundingClientRect();
+                    const charX = r.left + r.width / 2;
+                    const dist = Math.abs(charX - beamCenterX);
+
+                    if (dist < beamHalfWidth) {
+                        const factor = Math.max(0, 1 - (dist / beamHalfWidth));
+                        span.style.opacity = (0.25 + 0.75 * factor).toFixed(2);
+                        span.style.color = '#ffffff';
+                        span.style.textShadow = `0 0 ${Math.round(8 * factor)}px #ffd873, 0 0 ${Math.round(18 * factor)}px #19e3d0`;
+                        span.style.transform = `scale(${(1 + 0.15 * factor).toFixed(2)})`;
+                    } else {
+                        span.style.opacity = '0.14';
+                        span.style.color = 'rgba(160, 130, 200, 0.35)';
+                        span.style.textShadow = 'none';
+                        span.style.transform = 'scale(1)';
+                    }
+                });
+
+                if (secretMsgBtn) {
+                    const btnRect = secretMsgBtn.getBoundingClientRect();
+                    const btnX = btnRect.left + btnRect.width / 2;
+                    const btnDist = Math.abs(btnX - beamCenterX);
+                    const btnThreshold = beamHalfWidth + btnRect.width * 0.35;
+                    if (btnDist < btnThreshold) {
+                        const factor = Math.max(0, 1 - (btnDist / btnThreshold));
+                        secretMsgBtn.style.opacity = (0.5 + 0.5 * factor).toFixed(2);
+                        secretMsgBtn.style.boxShadow = `0 0 ${Math.round(24 * factor)}px rgba(25, 227, 208, 0.65), inset 0 0 ${Math.round(14 * factor)}px rgba(242, 193, 78, 0.4)`;
+                        secretMsgBtn.style.borderColor = factor > 0.4 ? 'var(--cp-turquoise)' : 'rgba(242, 193, 78, 0.5)';
+                    } else {
+                        secretMsgBtn.style.opacity = '0.35';
+                        secretMsgBtn.style.boxShadow = 'none';
+                        secretMsgBtn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                    }
+                }
+            }
+
             requestAnimationFrame(swingLoop);
         }
-        
+
         requestAnimationFrame(swingLoop);
     }
 
@@ -533,19 +594,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (burger) burger.classList.remove('toggle');
         });
     });
-
-    /* --- 4. Secret Desk Lamp Logic --- */
-    const secretDeskSection = document.getElementById('secret-desk');
-    const lampSwitch = document.getElementById('lamp-toggle');
-
-    if (secretDeskSection && lampSwitch) {
-        lampSwitch.checked = false;
-        secretDeskSection.classList.remove('is-lit');
-
-        lampSwitch.addEventListener('change', () => {
-            secretDeskSection.classList.toggle('is-lit');
-        });
-    }
 
     /* --- 5. Project Grid Category Filtering --- */
     const filterButtons = document.querySelectorAll('.filter-btn');
@@ -725,11 +773,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Step 4: Continuous rotating dynamic skill titles
         const SKILL_TITLES = [
-            "Data Analyst & AI Integration Specialist",
-            "Prompt Engineering & LLM API Architecture",
-            "Enterprise RAG Pipelines & GCP Vertex AI",
+            "Prompt Engineering & LLM Architecture",
+            "AI Systems & API Pipeline Integration",
+            "Data Science, Machine Learning & Analytics",
             "Advanced SQL Analytics & Predictive Modeling",
-            "High-Performance 3D Web & Interactive Systems"
+            "High-Performance 3D Web & Intelligent Systems"
         ];
 
         let titleIndex = 0;
@@ -1571,63 +1619,11 @@ function initCosmicBackground() {
     return new THREE.Points(geo, mat);
   }
 
-  // 2000 tiny far stars, 450 larger twinkling near stars (kept at high visibility)
-  const farStars = createStarfield(2000, 0.32, 220, 0.8);
-  const nearStars = createStarfield(450, 0.6, 160, 0.95);
+  // 1200 tiny sharp far stars, 350 twinkling distant near stars (crisp galaxy view, no milky blobs)
+  const farStars = createStarfield(1200, 0.22, 220, 0.85);
+  const nearStars = createStarfield(350, 0.38, 160, 0.95);
   scene.add(farStars);
   scene.add(nearStars);
-
-  // Gaseous Nebula cloud texture generator
-  function createNebulaTexture(colorHex1, colorHex2) {
-    const texCanvas = document.createElement('canvas');
-    texCanvas.width = 512;
-    texCanvas.height = 512;
-    const ctx = texCanvas.getContext('2d');
-    ctx.clearRect(0, 0, 512, 512);
-
-    // Large radial gradient for soft smoke appearance
-    const grad = ctx.createRadialGradient(256, 256, 15, 256, 256, 240);
-    grad.addColorStop(0, colorHex1);
-    grad.addColorStop(0.5, colorHex2);
-    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(256, 256, 256, 0, Math.PI * 2);
-    ctx.fill();
-
-    const texture = new THREE.CanvasTexture(texCanvas);
-    return texture;
-  }
-
-  // Generate three custom color maps for the nebulas (reduced intensity for subtle drifting patches)
-  const nebulaTexPurple = createNebulaTexture('rgba(139, 92, 246, 0.12)', 'rgba(109, 40, 217, 0.04)'); // --accent-color matching purple
-  const nebulaTexCyan = createNebulaTexture('rgba(242, 193, 78, 0.08)', 'rgba(255, 216, 115, 0.02)'); // --accent-hover matching gold
-  const nebulaTexMagenta = createNebulaTexture('rgba(236, 72, 153, 0.07)', 'rgba(190, 24, 74, 0.01)'); // Magenta highlights
-
-  const nebulaPlanes = [];
-  const nebulaSpecs = [
-    { tex: nebulaTexPurple, size: 85, pos: [-35, 15, -55], rotSpeed: 0.0006, driftX: 4, driftY: 3 },
-    { tex: nebulaTexCyan, size: 95, pos: [35, -8, -75], rotSpeed: -0.0005, driftX: 5, driftY: 2 },
-    { tex: nebulaTexMagenta, size: 75, pos: [-10, -25, -65], rotSpeed: 0.0003, driftX: 3, driftY: 4 },
-    { tex: nebulaTexPurple, size: 105, pos: [20, 25, -95], rotSpeed: -0.0002, driftX: 4, driftY: 3 }
-  ];
-
-  nebulaSpecs.forEach(spec => {
-    const geo = new THREE.PlaneGeometry(spec.size, spec.size);
-    const mat = new THREE.MeshBasicMaterial({
-      map: spec.tex,
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      opacity: 0.45
-    });
-    const plane = new THREE.Mesh(geo, mat);
-    plane.position.set(spec.pos[0], spec.pos[1], spec.pos[2]);
-    plane.rotation.z = Math.random() * Math.PI * 2;
-    scene.add(plane);
-    nebulaPlanes.push({ mesh: plane, spec });
-  });
 
   // Ambient lighting
   scene.add(new THREE.AmbientLight(0xffffff, 0.5));
@@ -1689,13 +1685,6 @@ function initCosmicBackground() {
     // Twinkling light fluctuations (brighter limits)
     farStars.material.opacity = 0.65 + Math.sin(time * 1.6) * 0.15;
     nearStars.material.opacity = 0.78 + Math.cos(time * 2.2) * 0.15;
-
-    // Swirl and shift gaseous cloud plane meshes
-    nebulaPlanes.forEach(p => {
-      p.mesh.rotation.z += p.spec.rotSpeed;
-      p.mesh.position.x = p.spec.pos[0] + Math.sin(time * 0.12 + p.spec.pos[2]) * p.spec.driftX;
-      p.mesh.position.y = p.spec.pos[1] + Math.cos(time * 0.10 + p.spec.pos[0]) * p.spec.driftY;
-    });
 
     // Camera parallax dampening
     mouseX += (targetMouseX - mouseX) * 0.06;

@@ -20,10 +20,16 @@
             masterGain.gain.setValueAtTime(isMuted ? 0 : 0.25, audioCtx ? audioCtx.currentTime : 0);
         }
         
-        // Also mute/unmute the HTML5 background music element if it exists
+        // Also play/pause and mute/unmute the HTML5 background music element
         const bgMusic = document.getElementById('bgMusic');
         if (bgMusic) {
             bgMusic.muted = isMuted;
+            if (!isMuted) {
+                bgMusic.volume = 0.22;
+                bgMusic.play().catch(e => console.log('Audio autoplay prevented:', e));
+            } else {
+                bgMusic.pause();
+            }
         }
 
         // Update UI

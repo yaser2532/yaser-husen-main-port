@@ -244,14 +244,14 @@
         fgCol[i * 3 + 1] = c.g;
         fgCol[i * 3 + 2] = c.b;
 
-        fgSizes[i] = 4.5 + Math.random() * 5.0; // 4.5px to 9.5px
+        fgSizes[i] = 1.6 + Math.random() * 1.6; // 1.6px to 3.2px sharp distant stars
     }
 
     fgGeom.setAttribute('position', new THREE.BufferAttribute(fgPos, 3));
     fgGeom.setAttribute('color', new THREE.BufferAttribute(fgCol, 3));
 
     const fgMat = new THREE.PointsMaterial({
-        size: 6.0,
+        size: 2.2,
         vertexColors: true,
         transparent: true,
         opacity: 0.95,
@@ -273,19 +273,19 @@
         bgPos[i * 3 + 2] = -Math.random() * 1800 - 300; // Deep Z-space
 
         const c = starColors[Math.floor(Math.random() * starColors.length)];
-        bgCol[i * 3 + 0] = c.r * 0.85;
-        bgCol[i * 3 + 1] = c.g * 0.85;
-        bgCol[i * 3 + 2] = c.b * 0.85;
+        bgCol[i * 3 + 0] = c.r * 0.95;
+        bgCol[i * 3 + 1] = c.g * 0.95;
+        bgCol[i * 3 + 2] = c.b * 0.95;
     }
 
     bgGeom.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
     bgGeom.setAttribute('color', new THREE.BufferAttribute(bgCol, 3));
 
     const bgMat = new THREE.PointsMaterial({
-        size: 3.2,
+        size: 1.4,
         vertexColors: true,
         transparent: true,
-        opacity: 0.80,
+        opacity: 0.85,
         blending: THREE.AdditiveBlending,
         depthWrite: false
     });

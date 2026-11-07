@@ -195,12 +195,12 @@
 
     function getInnerBoxes(item, currentYOffset) {
         const scrollY = window.scrollY || window.pageYOffset;
-        // Targets both card containers AND individual text headings/paragraphs [Section 4]
+        // Targets all inner text elements (headings, paragraphs, tags, buttons) AND cards [Section 4]
         const selectors = [
-            'h1, h2, h3, h4, .section-title, .section-header, .card-title, .onboard-title',
-            '.section-desc, p, .about-bio, .stat-desc, .project-details p, .timeline-text, .hero-tagline',
-            '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-item, .contact-card, .glass-card',
-            '.hero-traits-list, .filter-buttons, .tech-badges'
+            'h1, h2, h3, h4, .section-title, .section-header, .card-title, .section-tag',
+            '.section-desc, p, .about-text p, .trait-tag, .stat-label, .stat-number, .badge',
+            '.project-card, .cert-card, .expertise-card, .stat-card, .glass-card',
+            '.hero-traits-list, .filter-btn, .cta-button, .message-btn, .project-details'
         ].join(', ');
 
         const rawEls = Array.from(item.el.querySelectorAll(selectors));
@@ -209,9 +209,14 @@
         rawEls.forEach(el => {
             const r = el.getBoundingClientRect();
             // Filter elements that have actual layout dimensions
-            if (r.width > 28 && r.height > 14) {
+            if (r.width > 20 && r.height > 12) {
                 const tag = el.tagName.toLowerCase();
-                const isText = ['h1', 'h2', 'h3', 'h4', 'p', 'span'].includes(tag) || el.classList.contains('section-desc') || el.classList.contains('section-title');
+                const isText = ['h1', 'h2', 'h3', 'h4', 'p', 'span', 'a', 'button'].includes(tag) || 
+                               el.classList.contains('section-desc') || 
+                               el.classList.contains('section-title') ||
+                               el.classList.contains('section-tag') ||
+                               el.classList.contains('trait-tag') ||
+                               el.classList.contains('stat-label');
                 validBoxes.push({
                     el,
                     isText,
@@ -223,8 +228,8 @@
             }
         });
 
-        // Select up to 6 prominent elements (headings, text paragraphs, and cards)
-        return validBoxes.slice(0, 6);
+        // Select up to 16 prominent elements across the section so drones handle every text block
+        return validBoxes.slice(0, 16);
     }
 
     function computeAnchorPoints(item, currentYOffset) {
@@ -292,16 +297,16 @@
     }
 
     function startPull(item, fastMode = false) {
-        if (!item || item.state === 'built') return;
+        if (!item || item.state === 'dispatch' || item.state === 'pulling' || item.state === 'snapping') return;
 
         currentPullingItem = item;
         item.state = 'dispatch';
         item.startTime = performance.now();
-        item.duration = fastMode ? 1150 : (item.isHero ? 1350 : 2100); // Cinematic slowed down pace (+0.75s)
+        item.duration = fastMode ? 1050 : (item.isHero ? 1200 : 1380); // 1.0 to 1.4s smooth visible pace
         item.el.setAttribute('data-nb', 'pulling');
         item.el.style.willChange = 'transform, opacity'; // [PF-05]
 
-        const maxOffset = Math.min(90, viewH * 0.10); // min(90px, 10vh) [PF-09]
+        const maxOffset = Math.min(65, viewH * 0.08);
         const targets = computeAnchorPoints(item, maxOffset);
 
         if (window.swarm && typeof window.swarm.assign === 'function') {
@@ -376,31 +381,36 @@
             docEl.classList.add('nb-done');
             docEl.classList.remove('nb-ready');
             ctx.clearRect(0, 0, viewW, viewH);
-            if (observer) observer.disconnect();
+            // Keep observer active to allow re-triggering dynamic reconstruction on scroll-back
         }
     }
 
-    // ─── 8. IntersectionObserver for Section Triggering [4.2, C-01] ─────────
+    // ─── 8. IntersectionObserver with Bi-directional Deconstruct & Reconstruct [4.2, C-01] ───
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
+            const item = sectionMap[entry.target.id];
+            if (!item || item.isHero) return;
+
             if (entry.isIntersecting) {
-                const item = sectionMap[entry.target.id];
-                if (item && item.state === 'pending') {
-                    // Check Anchor Jump [C-03]: if section is already above viewport, build instantly
-                    const scrollY = window.scrollY || window.pageYOffset;
-                    if (item.pageTop + item.height < scrollY) {
-                        item.state = 'built';
-                        item.el.setAttribute('data-nb', 'built');
-                        item.el.querySelectorAll('.scroll-reveal').forEach(c => c.classList.add('active'));
-                        return;
-                    }
-                    processNextInQueue();
+                if (item.state === 'pending') {
+                    startPull(item);
+                }
+            } else {
+                // Section scrolled far out of view: smoothly deconstruct so drones rebuild it upon return
+                if (item.state === 'built' && item !== currentPullingItem) {
+                    item.state = 'pending';
+                    item.el.setAttribute('data-nb', 'pending');
+                    item.el.style.opacity = '0.15';
+                    item.el.style.transform = `translate3d(0, 35px, 0)`;
+                    item.el.querySelectorAll('.scroll-reveal').forEach(c => c.classList.remove('active'));
+                    docEl.classList.remove('nb-done');
+                    docEl.classList.add('nb-ready');
                 }
             }
         });
     }, {
-        threshold: 0.05,
-        rootMargin: '100px 0px 50px 0px'
+        threshold: 0.12,
+        rootMargin: '60px 0px 60px 0px'
     });
 
     sections.forEach(item => {
