@@ -100,19 +100,23 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(dot);
             dots.push(dot);
 
-            // Establish airy, organic escort orbit around pointer
+            // Establish organic firefly physics parameters
             const angle = (i * (Math.PI * 2 / NUM_DOTS)) + (Math.random() * 0.4);
-            const distance = 24 + i * 8 + Math.random() * 10;
+            const distance = 30 + i * 8 + Math.random() * 10;
             
             dotsData.push({
                 currentX: targetX,
                 currentY: targetY,
+                vx: 0,
+                vy: 0,
                 currentOpacity: 0,
-                ease: 0.08 + Math.random() * 0.04,
+                ease: 0.10 + Math.random() * 0.04,
+                naturalRadius: distance,
+                swirlSpeed: (i % 2 === 0 ? 1 : -1) * (1.1 + Math.random() * 1.4),
                 dx: Math.cos(angle) * distance,
                 dy: Math.sin(angle) * distance,
-                freqX: 0.6 + Math.random() * 0.7,
-                freqY: 0.6 + Math.random() * 0.7,
+                freqX: 1.4 + Math.random() * 1.8,
+                freqY: 1.4 + Math.random() * 1.8,
                 ampX: 6.0 + Math.random() * 10.0,
                 ampY: 6.0 + Math.random() * 10.0,
                 phaseX: Math.random() * Math.PI * 2,
@@ -316,33 +320,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 let targetDotX, targetDotY;
 
                 if (currentPhase === 'scout') {
-                    // Scouting reconnaissance sweep across incoming section
-                    const tScout = time * 2.2;
+                    // Phase 1: Scouting reconnaissance sweep across incoming section
+                    const tScout = time * 2.8;
                     let cx = window.innerWidth * 0.5;
                     let cy = window.innerHeight * 0.5;
                     if (currentPhaseMeta && currentPhaseMeta.bounds) {
                         const scrollYNow = window.scrollY || window.pageYOffset || 0;
-                        cy = (currentPhaseMeta.bounds.pageTop - scrollYNow) + (currentPhaseMeta.bounds.height * 0.4);
+                        cy = (currentPhaseMeta.bounds.pageTop - scrollYNow) + (currentPhaseMeta.bounds.height * 0.35);
                         cx = currentPhaseMeta.bounds.pageLeft + (currentPhaseMeta.bounds.width * 0.5);
                     }
-                    const angle = tScout * (1.6 + (i % 3) * 0.5) + (i * Math.PI * 2 / NUM_DOTS);
-                    const rx = Math.min(window.innerWidth * 0.38, 240 + (i % 4) * 60);
-                    const ry = Math.min(window.innerHeight * 0.28, 150 + (i % 3) * 50);
-                    targetDotX = cx + Math.cos(angle) * rx + Math.sin(tScout * 2.5 + i) * 35;
-                    targetDotY = cy + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.0 + i) * 30;
+                    const angle = tScout * (1.8 + (i % 3) * 0.6) + (i * Math.PI * 2 / NUM_DOTS);
+                    const rx = Math.min(window.innerWidth * 0.38, 220 + (i % 4) * 50);
+                    const ry = Math.min(window.innerHeight * 0.28, 140 + (i % 3) * 40);
+                    const targetDotX = cx + Math.cos(angle) * rx + Math.sin(tScout * 2.5 + i) * 30;
+                    const targetDotY = cy + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.0 + i) * 25;
+                    data.currentX += (targetDotX - data.currentX) * 0.16;
+                    data.currentY += (targetDotY - data.currentY) * 0.16;
                 } else if (assignedTargets && assignedTargets.length > 0) {
-                    // Crew mode target [B-03]
+                    // Priority 1: Multipurpose firefly drones pull and hoist incoming section elements
                     const pt = assignedTargets[i % assignedTargets.length];
-                    targetDotX = pt.x + driftX;
-                    targetDotY = pt.y + driftY;
+                    const targetDotX = pt.x + driftX * 0.5;
+                    const targetDotY = pt.y + driftY * 0.5;
+                    data.currentX += (targetDotX - data.currentX) * 0.25;
+                    data.currentY += (targetDotY - data.currentY) * 0.25;
                 } else {
-                    targetDotX = targetX + data.dx + driftX;
-                    targetDotY = targetY + data.dy + driftY;
+                    // Priority 2: Firefly attraction & repulsion dynamics around cursor
+                    const dx = targetX - data.currentX;
+                    const dy = targetY - data.currentY;
+                    const dist = Math.hypot(dx, dy) || 1;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+
+                    // 1. Constantly attracted toward cursor
+                    const fAttract = Math.min(dist * 0.045, 5.2);
+
+                    // 2. Repelled when within close personal bubble (< 48px)
+                    let fRepelX = 0, fRepelY = 0;
+                    const repelRadius = 48;
+                    if (dist < repelRadius) {
+                        const repelForce = Math.pow(1 - dist / repelRadius, 2) * 8.0;
+                        fRepelX = -nx * repelForce;
+                        fRepelY = -ny * repelForce;
+                    }
+
+                    // 3. Tangential Swirl & Flutter: authentic organic firefly movement
+                    const fSwirlX = -ny * data.swirlSpeed;
+                    const fSwirlY = nx * data.swirlSpeed;
+                    const flutterX = Math.sin(time * data.freqX + data.phaseX) * 2.0;
+                    const flutterY = Math.cos(time * data.freqY + data.phaseY) * 2.0;
+
+                    data.vx = (data.vx || 0) * 0.86 + (nx * fAttract + fRepelX + fSwirlX + flutterX) * 0.18;
+                    data.vy = (data.vy || 0) * 0.86 + (ny * fAttract + fRepelY + fSwirlY + flutterY) * 0.18;
+
+                    data.currentX += data.vx;
+                    data.currentY += data.vy;
                 }
                 
-                data.currentX += (targetDotX - data.currentX) * data.ease;
-                data.currentY += (targetDotY - data.currentY) * data.ease;
-                data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.12;
+                data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.14;
                 
                 const dotXRem = data.currentX / rootFontSize;
                 const dotYRem = data.currentY / rootFontSize;
@@ -909,6 +943,50 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function setupHero3dNamePhysics(nameEl) {
+        if (!nameEl) return;
+        const text = "YASER HUSEN";
+        const words = text.split(' ');
+        nameEl.innerHTML = words.map(word => {
+            const chars = word.split('').map(c => `<span class="hero-3d-char" data-char="${c}">${c}</span>`).join('');
+            return `<span class="hero-3d-word">${chars}</span>`;
+        }).join(' ');
+
+        const charSpans = nameEl.querySelectorAll('.hero-3d-char');
+        if (!charSpans.length) return;
+
+        window.addEventListener('mousemove', (e) => {
+            const mx = e.clientX;
+            const my = e.clientY;
+            const repelRadius = 85;
+
+            charSpans.forEach(span => {
+                const rect = span.getBoundingClientRect();
+                const cx = rect.left + rect.width * 0.5;
+                const cy = rect.top + rect.height * 0.5;
+                const dx = cx - mx;
+                const dy = cy - my;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist < repelRadius && dist > 0) {
+                    const force = Math.pow(1 - dist / repelRadius, 1.4) * 32;
+                    const nx = dx / dist;
+                    const ny = dy / dist;
+                    const tx = nx * force;
+                    const ty = ny * force;
+                    const rotZ = (nx * 14).toFixed(1);
+                    const rotX = (-ny * 20).toFixed(1);
+
+                    span.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 20px) rotateZ(${rotZ}deg) rotateX(${rotX}deg) scale(1.15)`;
+                    span.classList.add('is-repelled');
+                } else {
+                    span.style.transform = '';
+                    span.classList.remove('is-repelled');
+                }
+            });
+        }, { passive: true });
+    }
+
     async function startHeroAnimations() {
         const nameEl = document.getElementById('tp-name');
         const subtitleEl = document.getElementById('tp-subtitle');
@@ -925,6 +1003,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nameCursor) nameCursor.classList.remove('hidden');
         await typeHuman(nameEl, "YASER HUSEN", 85);
         if (nameCursor) nameCursor.classList.add('hidden');
+
+        // Transform into 3D interactive character blocks with mouse physics
+        setupHero3dNamePhysics(nameEl);
 
         // Step 2: Reveal trait tags and about card
         if (detailsContainer) {
@@ -1786,14 +1867,16 @@ function initCosmicBackground() {
     return new THREE.Points(geo, mat);
   }
 
-  // 1200 tiny sharp far stars, 350 twinkling distant near stars (crisp galaxy view, no milky blobs)
-  const farStars = createStarfield(1200, 0.22, 220, 0.85);
-  const nearStars = createStarfield(350, 0.38, 160, 0.95);
+  // Multi-tier Starry Sky (gazing into the galaxy from Earth with authentic depth)
+  const farStars = createStarfield(1400, 0.28, 280, 0.88);
+  const nearStars = createStarfield(450, 0.48, 190, 0.95);
+  const galaxyDust = createStarfield(220, 1.35, 200, 0.40);
   scene.add(farStars);
   scene.add(nearStars);
+  scene.add(galaxyDust);
 
   // Ambient lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
   // Cursor Parallax Tracker
   let mouseX = 0, mouseY = 0;
@@ -1807,51 +1890,28 @@ function initCosmicBackground() {
     });
   }
 
-  // Scroll Fade Trigger Logic
-  const triggerSection = document.getElementById('profile-expertise');
-  let isBackgroundActive = false;
-
-  function handleScrollOpacity() {
-    if (!triggerSection) return;
-    const triggerTop = triggerSection.getBoundingClientRect().top + window.scrollY;
-    
-    // Fade starts when the top of the trigger section starts entering the screen
-    const triggerPoint = triggerTop - window.innerHeight;
-    const fadeDistance = window.innerHeight * 0.6; // Fade completes over 60% viewport distance
-    const scrolled = window.scrollY;
-
-    if (scrolled > triggerPoint) {
-      const progress = Math.min(1, (scrolled - triggerPoint) / fadeDistance);
-      container.style.opacity = progress;
-      isBackgroundActive = true;
-    } else {
-      container.style.opacity = 0;
-      isBackgroundActive = false;
-    }
-  }
-
-  // Run immediately and hook to window scroll
-  handleScrollOpacity();
-  window.addEventListener('scroll', handleScrollOpacity);
+  // Unified seamless galaxy background: always visible across whole page
+  container.style.opacity = '1';
+  let isBackgroundActive = true;
 
   // Dynamic animation render loop
   let time = 0;
   function animateScene() {
     requestAnimationFrame(animateScene);
 
-    // Freeze render loop execution when scrolled above section to save performance
-    if (!isBackgroundActive) return;
-
     time += 0.01;
 
     // Slow orbital rotation of starfields
-    farStars.rotation.y = time * 0.004;
-    farStars.rotation.x = time * 0.001;
-    nearStars.rotation.y = -time * 0.007;
+    farStars.rotation.y = time * 0.003;
+    farStars.rotation.x = time * 0.0008;
+    nearStars.rotation.y = -time * 0.005;
+    galaxyDust.rotation.y = time * 0.002;
+    galaxyDust.rotation.z = time * 0.001;
 
-    // Twinkling light fluctuations (brighter limits)
-    farStars.material.opacity = 0.65 + Math.sin(time * 1.6) * 0.15;
-    nearStars.material.opacity = 0.78 + Math.cos(time * 2.2) * 0.15;
+    // Twinkling light fluctuations
+    farStars.material.opacity = 0.72 + Math.sin(time * 1.6) * 0.16;
+    nearStars.material.opacity = 0.82 + Math.cos(time * 2.2) * 0.16;
+    galaxyDust.material.opacity = 0.38 + Math.sin(time * 0.8) * 0.08;
 
     // Camera parallax dampening
     mouseX += (targetMouseX - mouseX) * 0.06;

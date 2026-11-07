@@ -448,13 +448,15 @@ body.cursor-reading .mouse-glow {
    Header / Hero Section
    ========================================================================== */
 header {
-    height: 100vh;
+    min-height: 100vh;
+    height: auto;
     position: sticky;
     top: 0;
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    text-align: center;
+    text-align: left;
+    padding: 6rem 6vw 4rem;
     overflow: visible !important;
     z-index: 1;
     transform-origin: top center;
@@ -467,10 +469,12 @@ header::before {
     top: 0; left: 0; width: 100%; height: 100%;
     background-image: url('../images/Purple_Ghost.jpeg');
     background-size: cover;
-    background-position: center;
+    background-position: center left;
     background-repeat: no-repeat;
     background-attachment: fixed;
-    filter: brightness(0.58) contrast(1.15) saturate(1.05) hue-rotate(25deg);
+    filter: brightness(0.62) contrast(1.18) saturate(1.1) hue-rotate(20deg);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 60%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 60%, rgba(0, 0, 0, 0) 100%);
     z-index: 0;
 }
 
@@ -480,7 +484,9 @@ header::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at 50% 45%, rgba(20, 10, 36, 0.45) 0%, rgba(6, 3, 12, 0.7) 65%, rgba(4, 2, 8, 0.9) 100%);
+    background: radial-gradient(circle at 25% 45%, rgba(20, 10, 36, 0.35) 0%, rgba(6, 3, 12, 0.65) 65%, rgba(4, 2, 8, 0.88) 100%);
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 65%, rgba(0, 0, 0, 0) 100%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 65%, rgba(0, 0, 0, 0) 100%);
     z-index: 1;
 }
 
@@ -494,11 +500,13 @@ header::before {
 .header-content {
     position: relative;
     z-index: 2;
-    padding: 0 1.5rem;
+    padding: 0;
+    max-width: 58rem;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    text-align: left;
 }
 
 .hero-content .eyebrow {
@@ -517,24 +525,57 @@ header::before {
 
 .hero-title {
     font-family: 'Space Grotesk', var(--font-headings);
-    font-size: 4.5rem;
+    font-size: clamp(3.2rem, 7.5vw, 6.2rem);
     font-weight: 800;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.03em;
     margin-bottom: 0.8rem;
     color: #ffffff;
-    min-height: 5.5rem;
-    text-shadow: 0 0 1.25rem rgba(157, 77, 255, 0.25), 0 0 2.5rem rgba(242, 193, 78, 0.12);
+    min-height: 5rem;
     overflow: visible;
     position: relative;
     z-index: 5;
+    text-align: left;
+    perspective: 1000px;
+}
+
+.hero-3d-word {
+    display: inline-block;
+    white-space: nowrap;
+    margin-right: 0.35em;
+}
+
+.hero-3d-char {
+    display: inline-block;
+    position: relative;
+    font-family: 'Space Grotesk', var(--font-headings);
+    font-weight: 900;
+    font-style: italic;
+    color: #ffffff;
+    cursor: default;
+    user-select: none;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.22s ease, text-shadow 0.22s ease;
+    text-shadow: 
+        1px 1px 0 #ffd873,
+        2px 2px 0 #f2c14e,
+        3px 3px 0 #19e3d0,
+        4px 4px 0 #9d4dff,
+        5px 5px 14px rgba(25, 227, 208, 0.65),
+        0 0 24px rgba(242, 193, 78, 0.4);
+    will-change: transform;
+}
+
+.hero-3d-char.is-repelled {
+    filter: brightness(1.35) drop-shadow(0 0 16px var(--cp-turquoise));
 }
 
 .hero-subtitle {
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 500;
-    color: var(--text-secondary);
-    margin-bottom: 2rem;
+    color: var(--cp-turquoise);
+    text-shadow: 0 0 14px rgba(25, 227, 208, 0.55);
+    margin-bottom: 1.5rem;
     min-height: 2.2rem;
+    text-align: left;
 }
 
 .hero-details-container {
@@ -543,7 +584,8 @@ header::before {
     transition: opacity 0.8s ease, transform 0.8s ease;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    text-align: left;
 }
 
 .hero-details-container.reveal {
@@ -552,9 +594,10 @@ header::before {
 }
 
 .hero-about-tile {
-    padding: 1.5rem 2.5rem;
-    max-width: 43.75rem;
-    margin: 0 auto 1.5rem;
+    padding: 1.25rem 2rem;
+    max-width: 44rem;
+    margin: 0 0 1.25rem 0;
+    text-align: left;
 }
 
 .hero-about-tile p {
@@ -566,9 +609,9 @@ header::before {
 .hero-traits-list {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 0.8rem;
-    margin-bottom: 2.5rem;
+    margin-bottom: 2rem;
 }
 
 .trait-tag {
@@ -3508,10 +3551,9 @@ footer {
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 1; /* Sits behind sections (z-index 2) but above default page body backgrounds */
-    pointer-events: none; /* Let all mouse interactions pass through to elements below */
-    opacity: 0; /* Managed dynamically by scroll checking in JS */
-    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: -2;
+    pointer-events: none;
+    opacity: 1 !important;
     background: transparent;
 }
 
@@ -4044,36 +4086,64 @@ body {
     opacity: 0.85 !important;
 }
 
-/* Neon Buttons with Glowing Glass Text Backgrounds */
-.btn, .cta-btn, .filter-btn, .nav-btn, .submit-btn, .resume-btn {
-    background: linear-gradient(135deg, rgba(20, 10, 36, 0.85), rgba(34, 16, 58, 0.92)) !important;
-    border: 1px solid rgba(242, 193, 78, 0.45) !important;
-    box-shadow: 0 0 16px rgba(242, 193, 78, 0.28), inset 0 0 12px rgba(242, 193, 78, 0.14) !important;
+/* Featured Projects: 4 Uniform Clear Glass Filter Buttons with Neon Glow */
+.filter-btn {
+    padding: 0.65rem 1.6rem !important;
+    border-radius: 2rem !important;
+    font-size: 0.92rem !important;
+    font-weight: 600 !important;
     color: #f3eeff !important;
+    background: rgba(22, 12, 38, 0.55) !important;
+    border: 1px solid rgba(242, 193, 78, 0.4) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
+    box-shadow: 0 0 16px rgba(242, 193, 78, 0.32), inset 0 0 10px rgba(242, 193, 78, 0.16) !important;
+    cursor: pointer;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
     position: relative;
     overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.btn:hover, .cta-btn:hover, .filter-btn:hover, .nav-btn:hover, .submit-btn:hover, .resume-btn:hover, .filter-btn:active {
+.filter-btn:hover {
     border-color: var(--cp-turquoise) !important;
-    box-shadow: 0 0 24px rgba(25, 227, 208, 0.55), inset 0 0 14px rgba(25, 227, 208, 0.25) !important;
+    box-shadow: 0 0 28px rgba(25, 227, 208, 0.75), 0 0 45px rgba(25, 227, 208, 0.35), inset 0 0 14px rgba(25, 227, 208, 0.3) !important;
     color: #ffffff !important;
     transform: translateY(-2px);
 }
 
 .filter-btn.active {
-    border-color: rgba(157, 77, 255, 0.45) !important;
-    box-shadow: 0 0 12px rgba(157, 77, 255, 0.22), inset 0 0 8px rgba(157, 77, 255, 0.12) !important;
-    background: rgba(26, 12, 46, 0.88) !important;
+    border-color: rgba(242, 193, 78, 0.75) !important;
+    background: rgba(35, 18, 62, 0.72) !important;
+    box-shadow: 0 0 20px rgba(242, 193, 78, 0.45), inset 0 0 12px rgba(242, 193, 78, 0.22) !important;
     color: #ffffff !important;
 }
 
 .filter-btn.active:hover {
     border-color: var(--cp-turquoise) !important;
-    box-shadow: 0 0 26px rgba(25, 227, 208, 0.7), inset 0 0 14px rgba(25, 227, 208, 0.35) !important;
+    box-shadow: 0 0 30px rgba(25, 227, 208, 0.8), 0 0 50px rgba(25, 227, 208, 0.4), inset 0 0 14px rgba(25, 227, 208, 0.35) !important;
     color: #ffffff !important;
     transform: translateY(-2px);
+}
+
+/* Explore My Work CTA & Neon Lighting Across Elements */
+.cta-button {
+    background: linear-gradient(135deg, rgba(20, 10, 36, 0.85), rgba(34, 16, 58, 0.92)) !important;
+    border: 1px solid rgba(242, 193, 78, 0.45) !important;
+    box-shadow: 0 0 20px rgba(242, 193, 78, 0.38), inset 0 0 12px rgba(242, 193, 78, 0.18) !important;
+    color: #ffffff !important;
+    border-radius: 2rem !important;
+    padding: 0.85rem 2.2rem !important;
+    font-weight: 600 !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.cta-button:hover {
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 0 32px rgba(25, 227, 208, 0.85), 0 0 60px rgba(25, 227, 208, 0.45), inset 0 0 16px rgba(25, 227, 208, 0.35) !important;
+    transform: translateY(-3px);
 }
 
 /* Pronounced Vibrant Radial Gradient Hover on Cards */

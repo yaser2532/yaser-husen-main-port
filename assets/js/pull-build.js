@@ -378,8 +378,8 @@
         currentPullingItem = item;
         item.state = 'scouting';
         item.startTime = performance.now();
-        // Target: ~3.2 seconds total (strictly under 5s). Fast mode: 600ms.
-        item.duration = fastMode ? 600 : (item.isHero ? 1400 : 3200);
+        // Snappy, energetic pull-build under 1.5 seconds (~1.05s total)
+        item.duration = fastMode ? 450 : 1050;
         item.el.setAttribute('data-nb', 'pulling');
         item.el.style.willChange = 'transform, opacity';
 
@@ -605,13 +605,13 @@
             const totalDur = item.duration;
             const t = Math.min(1, elapsed / totalDur);
 
-            // Phase Breakdown:
-            // 0.0s - 0.9s (t < 0.28): Phase 1 SCOUT (Dynamic 3D spiral & reconnaissance)
-            // 0.9s - 2.7s (0.28 <= t < 0.85): Phase 2 PULL (Converge, laser tethers, weld sweep, hoist up)
-            // 2.7s - 3.2s (0.85 <= t <= 1.0): Phase 3 SNAP (Lock, sparks, assembly ping)
-            const scoutRatio = 0.28;
-            const pullRatio = 0.85;
-            const maxOffset = Math.min(75, viewH * 0.09);
+            // Fast, energetic Phase Breakdown under 1.5 seconds:
+            // 0.0s - 0.22s (t < 0.22): Phase 1 SCOUT (Fast reconnaissance sweep)
+            // 0.22s - 0.88s (0.22 <= t < 0.88): Phase 2 PULL (Multipurpose firefly dots hoist child elements)
+            // 0.88s - 1.05s (0.88 <= t <= 1.0): Phase 3 SNAP (Lock, gold sparks, normal constant site)
+            const scoutRatio = 0.22;
+            const pullRatio = 0.88;
+            const maxOffset = Math.min(65, viewH * 0.08);
 
             let currentOffset = maxOffset;
             let currentOpacity = 0.25;

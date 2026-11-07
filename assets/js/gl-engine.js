@@ -244,85 +244,11 @@
     backdropGroup.add(nebStarfield);
 
     /* =========================================================================
-       3D-04: 8 LOW-POLY 3D DRONES (Gold body, purple core, spinning fins, cone)
+       3D-04: MULTIPURPOSE FIREFLY DOT DRONES
+       The separate low-poly quadcopter models are unified into the multipurpose
+       firefly dot elements (DOM/Canvas swarm), eliminating redundant geometries
+       and giving organic firefly attraction/repulsion behavior.
        ========================================================================= */
-    const NUM_DRONES = 8;
-    const droneGroup = new THREE.Group();
-    scene.add(droneGroup);
-
-    const drones = [];
-
-    // Shared geometries
-    const droneBodyGeom = new THREE.OctahedronGeometry(9, 0); // Gold faceted body
-    const droneBodyMat = new THREE.MeshPhongMaterial({
-        color: COLOR_GOLD,
-        emissive: 0x553d00,
-        shininess: 90,
-        flatShading: true
-    });
-
-    const droneCoreGeom = new THREE.SphereGeometry(4.5, 8, 8);
-    const droneCoreMat = new THREE.MeshBasicMaterial({
-        color: COLOR_PURPLE,
-        wireframe: true
-    });
-
-    const finGeom = new THREE.BoxGeometry(16, 1.2, 3);
-    const finMat = new THREE.MeshBasicMaterial({
-        color: COLOR_TURQUOISE,
-        transparent: true,
-        opacity: 0.85
-    });
-
-    const coneGeom = new THREE.ConeGeometry(14, 38, 8, 1, true);
-    const coneMat = new THREE.MeshBasicMaterial({
-        color: COLOR_TURQUOISE_SOFT,
-        transparent: true,
-        opacity: 0.22,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending
-    });
-
-    for (let i = 0; i < NUM_DRONES; i++) {
-        const drone = new THREE.Group();
-
-        // 1. Faceted body
-        const bodyMesh = new THREE.Mesh(droneBodyGeom, droneBodyMat);
-        drone.add(bodyMesh);
-
-        // 2. Purple glowing core inside
-        const coreMesh = new THREE.Mesh(droneCoreGeom, droneCoreMat);
-        drone.add(coreMesh);
-
-        // 3. Spinning rotor fins
-        const finMesh = new THREE.Mesh(finGeom, finMat);
-        finMesh.position.y = 7;
-        drone.add(finMesh);
-
-        // 4. Downward holographic light cone
-        const lightCone = new THREE.Mesh(coneGeom, coneMat);
-        lightCone.position.y = -22;
-        lightCone.rotation.x = Math.PI; // point downward
-        drone.add(lightCone);
-
-        drone.userData = {
-            fin: finMesh,
-            index: i,
-            worldX: 0,
-            worldY: 0,
-            worldZ: 40,
-            targetWorldX: 0,
-            targetWorldY: 0,
-            targetWorldZ: 40,
-            spring: 0.12 + (i * 0.010),
-            orbitAngle: (i / NUM_DRONES) * Math.PI * 2,
-            orbitRadius: 70 + (i * 18) + (i % 3) * 25 // Looser, expansive orbit spacing [B-04]
-        };
-
-        droneGroup.add(drone);
-        drones.push(drone);
-    }
 
     /* =========================================================================
        INTERACTION & PARALLAX TRACKING [3D-05, H-01 ... H-06]
@@ -425,104 +351,7 @@
         nebStarfield.position.y = currentParallaxY * 18;
         nebStarfield.rotation.y = now * 0.00015;
 
-        // 2. 3D DRONES CHOREOGRAPHY [Phase: scout, pull, idle]
-        // Coordinated with window.swarm and pull-build module
-        const swarmActive = Boolean(window.swarm);
-        const currentPhase = (swarmActive && typeof window.swarm.getPhase === 'function')
-            ? window.swarm.getPhase()
-            : (swarmActive && typeof window.swarm.isAssigned === 'function' && window.swarm.isAssigned() ? 'pull' : 'idle');
-        const phaseMeta = (swarmActive && typeof window.swarm.getPhaseMeta === 'function')
-            ? window.swarm.getPhaseMeta()
-            : null;
-        const dotsData = (swarmActive && typeof window.swarm.getDotsData === 'function')
-            ? window.swarm.getDotsData()
-            : null;
-
-        const cursorWorldX = mouseScreenX - width * 0.5;
-        const cursorWorldY = -(mouseScreenY - height * 0.5);
-
-        for (let i = 0; i < NUM_DRONES; i++) {
-            const drone = drones[i];
-            const ud = drone.userData;
-
-            let targetX = cursorWorldX;
-            let targetY = cursorWorldY;
-            let targetZ = 40;
-            let rotorSpeed = 22;
-
-            if (currentPhase === 'scout') {
-                // PHASE 1: RECONNAISSANCE FORMATION
-                // Dynamic 3D spiral & Lissajous sweeps across the screen & section bounds
-                rotorSpeed = 46; // High-speed reconnaissance RPM
-                const tScout = now * 0.0022;
-
-                // Section target center or viewport center
-                let centerX = 0;
-                let centerY = 0;
-                if (phaseMeta && phaseMeta.bounds) {
-                    const scrollYNow = window.scrollY || window.pageYOffset || 0;
-                    const bScreenY = (phaseMeta.bounds.pageTop - scrollYNow) + (phaseMeta.bounds.height * 0.4);
-                    centerY = -(bScreenY - height * 0.5);
-                    centerX = (phaseMeta.bounds.pageLeft + phaseMeta.bounds.width * 0.5) - width * 0.5;
-                }
-
-                // Multi-axis organic sweep: each drone has individual angle & orbital eccentricity
-                const angle = tScout * (1.6 + (i % 3) * 0.5) + (i * Math.PI * 2 / NUM_DRONES);
-                const rx = Math.min(width * 0.42, 260 + (i % 4) * 70);
-                const ry = Math.min(height * 0.32, 160 + (i % 3) * 60);
-
-                targetX = centerX + Math.cos(angle) * rx + Math.sin(tScout * 2.8 + i * 1.5) * 50;
-                targetY = centerY + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.1 + i) * 45;
-                targetZ = 85 + Math.sin(angle * 2.2 + i) * 45;
-
-            } else if (currentPhase === 'pull') {
-                // PHASE 2: MECHANICAL ANCHOR & PULL
-                // Lock onto assigned element positions from dotsData
-                rotorSpeed = 34; // Deep mechanical load RPM
-                if (dotsData && dotsData[i] && !isNaN(dotsData[i].currentX)) {
-                    targetX = dotsData[i].currentX - width * 0.5;
-                    targetY = -(dotsData[i].currentY - height * 0.5);
-                    targetZ = 55 + Math.sin(now * 0.005 + i) * 12;
-                } else {
-                    targetX = cursorWorldX;
-                    targetY = cursorWorldY;
-                    targetZ = 45;
-                }
-
-            } else {
-                // PHASE 3: IDLE FLUID ORBIT AROUND CURSOR / TOUCH (Loose, airy escort cloud)
-                rotorSpeed = 20;
-                const orbitSpeed = 0.95 + (i % 3) * 0.3;
-                const angle = ud.orbitAngle + now * 0.0012 * orbitSpeed;
-                const ox = Math.cos(angle) * ud.orbitRadius + Math.sin(now * 0.0016 + i) * 35;
-                const oy = Math.sin(angle * 1.25) * (ud.orbitRadius * 0.65) + Math.cos(now * 0.0014 + i) * 28;
-                targetX = cursorWorldX + ox;
-                targetY = cursorWorldY + oy;
-                targetZ = 45 + Math.sin(angle * 1.8 + i) * 22;
-            }
-
-            // Spin rotor fin
-            ud.fin.rotation.y += delta * rotorSpeed;
-
-            // Smooth spring lerp
-            const lerpFactor = (currentPhase === 'scout') ? 0.085 : ud.spring;
-            ud.worldX += (targetX - ud.worldX) * lerpFactor;
-            ud.worldY += (targetY - ud.worldY) * lerpFactor;
-            ud.worldZ += (targetZ - ud.worldZ) * 0.12;
-
-            drone.position.set(ud.worldX, ud.worldY, ud.worldZ);
-
-            // Aerodynamic banking: realistic roll and pitch based on velocity vector
-            const vx = (targetX - ud.worldX) * 0.025;
-            const vy = (targetY - ud.worldY) * 0.025;
-            const targetRoll = -Math.max(-0.65, Math.min(0.65, vx));
-            const targetPitch = Math.max(-0.55, Math.min(0.55, vy));
-            drone.rotation.z += (targetRoll - drone.rotation.z) * 0.18;
-            drone.rotation.x += (targetPitch - drone.rotation.x) * 0.18;
-            drone.rotation.y = Math.sin(now * 0.0025 + i) * 0.25;
-        }
-
-        // Render Scene
+        // 2. Render Scene
         renderer.render(scene, camera);
     }
 
@@ -548,7 +377,9 @@
         scene: scene,
         camera: camera,
         heroGroup: heroGroup,
-        drones: drones,
+        get drones() {
+            return (window.swarm && typeof window.swarm.getDots === 'function') ? window.swarm.getDots() : [];
+        },
         get tier() { return tier; },
         getInfo: function () {
             return {
