@@ -100,23 +100,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(dot);
             dots.push(dot);
 
-            // Establish random directional angles and offset distances to form an organic cluster (recovered original)
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 8 + Math.random() * 14;
+            // Establish angular assignment & harmonic attract-repel bounce properties (never clusters to a single point)
+            const baseAngle = i * (Math.PI * 2 / NUM_DOTS);
             
             dotsData.push({
-                currentX: targetX,
-                currentY: targetY,
+                currentX: targetX + Math.cos(baseAngle) * 50,
+                currentY: targetY + Math.sin(baseAngle) * 50,
                 currentOpacity: 0,
-                ease: 0.085 + Math.random() * 0.04,
-                dx: Math.cos(angle) * distance,
-                dy: Math.sin(angle) * distance,
-                freqX: 0.7 + Math.random() * 0.8,
-                freqY: 0.7 + Math.random() * 0.8,
-                ampX: 2.0 + Math.random() * 3.0,
-                ampY: 2.0 + Math.random() * 3.0,
-                phaseX: Math.random() * Math.PI * 2,
-                phaseY: Math.random() * Math.PI * 2
+                baseAngle: baseAngle,
+                orbitSpeed: 0.82,
+                pulseSpeed: 1.8 + (i % 3) * 0.35,
+                phase: i * (Math.PI / 4),
+                minDist: 26 + (i % 3) * 5, // closest approach point to cursor
+                bounceDist: 62 + (i % 4) * 8, // repelled bounce distance
+                ease: 0.16 + (i % 3) * 0.03
             });
         }
 
@@ -134,12 +131,12 @@ document.addEventListener('DOMContentLoaded', () => {
             targetDotOpacity = readableTarget ? 0 : 0.9;
 
             if (!isVisible) {
-              currentX = targetX;
-              currentY = targetY;
-              dotsData.forEach(data => {
-                data.currentX = targetX + data.dx;
-                data.currentY = targetY + data.dy;
-              });
+                currentX = targetX;
+                currentY = targetY;
+                dotsData.forEach(data => {
+                    data.currentX = targetX + Math.cos(data.baseAngle) * data.bounceDist;
+                    data.currentY = targetY + Math.sin(data.baseAngle) * data.bounceDist;
+                });
                 isVisible = true;
                 mouseGlow.style.opacity = '1';
                 dots.forEach(dot => dot.classList.add('active'));
@@ -340,15 +337,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.currentX += (targetDotX - data.currentX) * 0.25;
                     data.currentY += (targetDotY - data.currentY) * 0.25;
                 } else {
-                    // Priority 2: Original smooth organic cluster following the cursor
-                    const targetDotX = targetX + data.dx + driftX;
-                    const targetDotY = targetY + data.dy + driftY;
+                    // Priority 2: Harmonic Attract & Repel Bounce around Cursor (hover, approach, bounce off, never cluster)
+                    const curAngle = data.baseAngle + time * data.orbitSpeed;
+                    const cycle = time * data.pulseSpeed + data.phase;
+                    const bounceFactor = Math.pow(Math.abs(Math.sin(cycle)), 0.65);
+                    const currentDist = data.minDist + bounceFactor * (data.bounceDist - data.minDist);
+                    const flutter = Math.sin(time * 3.2 + i * 1.5) * 3.0;
+
+                    const targetDotX = targetX + Math.cos(curAngle) * (currentDist + flutter);
+                    const targetDotY = targetY + Math.sin(curAngle) * (currentDist + flutter);
+
                     data.currentX += (targetDotX - data.currentX) * data.ease;
                     data.currentY += (targetDotY - data.currentY) * data.ease;
                 }
                 
                 data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.14;
-                
+            }
+
+            // Mutual Dot-to-Dot Electrostatic Repulsion Force: guarantees dots NEVER cluster or touch
+            for (let i = 0; i < NUM_DOTS; i++) {
+                const di = dotsData[i];
+                for (let j = i + 1; j < NUM_DOTS; j++) {
+                    const dj = dotsData[j];
+                    const dx = di.currentX - dj.currentX;
+                    const dy = di.currentY - dj.currentY;
+                    const d2 = dx * dx + dy * dy;
+                    const minSeparation = 18; // 18px physical exclusion zone
+                    if (d2 < minSeparation * minSeparation && d2 > 0.0001) {
+                        const dist = Math.sqrt(d2);
+                        const push = (minSeparation - dist) * 0.5;
+                        const nx = dx / dist;
+                        const ny = dy / dist;
+                        di.currentX += nx * push;
+                        di.currentY += ny * push;
+                        dj.currentX -= nx * push;
+                        dj.currentY -= ny * push;
+                    }
+                }
+            }
+
+            // Commit final position to DOM
+            for (let i = 0; i < NUM_DOTS; i++) {
+                const dot = dots[i];
+                const data = dotsData[i];
                 const dotXRem = data.currentX / rootFontSize;
                 const dotYRem = data.currentY / rootFontSize;
                 
@@ -356,19 +387,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 dot.style.opacity = data.currentOpacity.toFixed(3);
             }
 
-            // [PF-06, C-07] Sleep loop when idle for > 2s and settled
-            const isIdle = (performance.now() - lastPointerTime > 2000) && !assignedTargets && (currentPhase === 'idle') && !isTouchDevice;
-            if (isIdle) {
-                let maxDelta = 0;
-                for (let i = 0; i < NUM_DOTS; i++) {
-                    maxDelta = Math.max(maxDelta, Math.abs(dotsData[i].currentX - (targetX + dotsData[i].dx)));
-                }
-                if (maxDelta < 0.5) {
-                    isGlowLoopRunning = false;
-                    return; // 0% CPU idle
-                }
-            }
-            
             requestAnimationFrame(animateGlow);
         }
 
@@ -1831,8 +1849,8 @@ function initCosmicBackground() {
   scene.background = null; // Transparent to blend seamlessly over the HD galaxy background
 
   // Camera - Perspective Camera for 3D astronomical depth parallax
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1200);
-  camera.position.z = 85;
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1400);
+  camera.position.z = 90;
 
   // WebGL Renderer with alpha channel enabled
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -1860,7 +1878,7 @@ function initCosmicBackground() {
 
   const starTexture = createStarTexture();
 
-  // Multi-tier Starfield Generator
+  // Multi-tier Starfield Generator across wide panoramic space
   function createStarfield(count, size, rangeX, rangeY, rangeZ, opacity) {
     const geo = new THREE.BufferGeometry();
     const positions = [];
@@ -1868,7 +1886,7 @@ function initCosmicBackground() {
     
     const starColors = [
       new THREE.Color(0xffffff), // Diamond Pure White
-      new THREE.Color(0xa5f3fc), // Ice Blue
+      new THREE.Color(0xa5f3fc), // Ice Cyan
       new THREE.Color(0xfde047), // Pale Gold
       new THREE.Color(0xffedd5), // Warm Starlight
       new THREE.Color(0xe9d5ff)  // Soft Cosmic Lavender
@@ -1901,30 +1919,39 @@ function initCosmicBackground() {
     return new THREE.Points(geo, mat);
   }
 
-  // A. Deep Universe Starfield (1,800 minuscule pinprick stars, size 0.22)
-  const deepStars = createStarfield(1800, 0.22, 450, 350, 420, 0.92);
+  // A. Deep Universe Starfield (2,200 wide panoramic stars, size 0.20)
+  const deepStars = createStarfield(2200, 0.20, 560, 420, 480, 0.92);
   scene.add(deepStars);
 
-  // B. Foreground Twinkling Stellar Points (320 stars, size 0.45)
-  const foregroundStars = createStarfield(320, 0.45, 280, 220, 240, 0.95);
+  // B. Mid-range Constellation Points (520 stars, size 0.38)
+  const midStars = createStarfield(520, 0.38, 380, 300, 320, 0.95);
+  scene.add(midStars);
+
+  // C. Foreground Twinkling Stellar Points (180 stars, size 0.58)
+  const foregroundStars = createStarfield(180, 0.58, 260, 200, 200, 0.98);
   scene.add(foregroundStars);
 
-  // Cursor Parallax Tracker
-  let mouseX = 0, mouseY = 0;
-  let targetMouseX = 0, targetMouseY = 0;
+  // Adaptive Panoramic Screen Navigation Tracker (Scrolls around zoomed-in celestial viewport)
+  let camX = 0, camY = 0;
+  let targetCamX = 0, targetCamY = 0;
   let scrollParallaxY = 0;
   let targetScrollParallaxY = 0;
 
   const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   if (!isTouch) {
     document.addEventListener('mousemove', (e) => {
-      targetMouseX = (e.clientX / window.innerWidth) * 2 - 1;
-      targetMouseY = (e.clientY / window.innerHeight) * 2 - 1;
+      const normX = (e.clientX / window.innerWidth) * 2 - 1;
+      const normY = (e.clientY / window.innerHeight) * 2 - 1;
+      // Panoramic glide across the zoomed-in starfield
+      targetCamX = normX * 48;
+      targetCamY = -normY * 36;
+      container.style.setProperty('--bg-pan-x', `${(-normX * 18).toFixed(1)}px`);
+      container.style.setProperty('--bg-pan-y', `${(-normY * 14).toFixed(1)}px`);
     }, { passive: true });
   }
 
   window.addEventListener('scroll', () => {
-    targetScrollParallaxY = (window.scrollY || window.pageYOffset || 0) * 0.022;
+    targetScrollParallaxY = (window.scrollY || window.pageYOffset || 0) * 0.024;
   }, { passive: true });
 
   container.style.opacity = '1';
@@ -1936,21 +1963,22 @@ function initCosmicBackground() {
     time += 0.012;
 
     // Slow celestial rotation of minuscule stars
-    deepStars.rotation.y = time * 0.0004;
-    foregroundStars.rotation.y = -time * 0.0008;
+    deepStars.rotation.y = time * 0.0003;
+    midStars.rotation.y = -time * 0.0006;
+    foregroundStars.rotation.y = time * 0.0008;
 
     // Atmospheric stellar twinkling
     deepStars.material.opacity = 0.82 + Math.sin(time * 1.8) * 0.12;
     foregroundStars.material.opacity = 0.86 + Math.cos(time * 2.4) * 0.14;
 
-    // Camera parallax dampening & scroll depth navigation
-    mouseX += (targetMouseX - mouseX) * 0.05;
-    mouseY += (targetMouseY - mouseY) * 0.05;
+    // Smooth inertial pan across the zoomed-in celestial star screen
+    camX += (targetCamX - camX) * 0.045;
+    camY += (targetCamY - camY) * 0.045;
     scrollParallaxY += (targetScrollParallaxY - scrollParallaxY) * 0.07;
 
-    camera.position.x = mouseX * 8;
-    camera.position.y = -mouseY * 6 - scrollParallaxY;
-    camera.lookAt(0, -scrollParallaxY * 0.85, -80);
+    camera.position.x = camX;
+    camera.position.y = camY - scrollParallaxY;
+    camera.lookAt(camX * 0.35, (camY - scrollParallaxY) * 0.35, -90);
 
     renderer.render(scene, camera);
   }

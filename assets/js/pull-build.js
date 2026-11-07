@@ -217,11 +217,23 @@
                 '.hero-traits-list, .filter-btn, .cta-button, .message-btn, .dock-btn, .cyber-dock-bar'
             ].join(', ');
 
-            const childNodes = Array.from(el.querySelectorAll(selectors));
+            const childNodes = Array.from(el.querySelectorAll(selectors)).filter(childEl => {
+                if (childEl.matches('.project-card, .cert-card, .expertise-card, .stat-card, .glass-card')) {
+                    return true;
+                }
+                if (childEl.closest('.project-card, .cert-card, .expertise-card, .stat-card, .glass-card')) {
+                    return false;
+                }
+                return true;
+            });
             childNodes.forEach((childEl, order) => {
                 const tag = childEl.tagName.toLowerCase();
                 const isText = ['h1', 'h2', 'h3', 'h4', 'p', 'span', 'a', 'button'].includes(tag);
                 SectionCoordinator.register(id, childEl, isText, order);
+                if (!isReducedMotion && !isHero) {
+                    childEl.style.transform = 'translate3d(0, 24px, 0)';
+                    childEl.style.opacity = '0.22';
+                }
             });
 
             if (isReducedMotion || isHero) {
@@ -299,14 +311,16 @@
                                el.classList.contains('section-tag') ||
                                el.classList.contains('trait-tag') ||
                                el.classList.contains('stat-label');
-                validBoxes.push({
-                    el,
-                    isText,
-                    x: r.left,
-                    y: r.top + currentYOffset,
-                    w: r.width,
-                    h: r.height
-                });
+                if (r.bottom > 0 && r.top < viewH) {
+                    validBoxes.push({
+                        el,
+                        isText,
+                        x: r.left,
+                        y: r.top,
+                        w: r.width,
+                        h: r.height
+                    });
+                }
             }
         });
 
@@ -400,15 +414,27 @@
         item.el.style.transform = '';
         item.el.style.willChange = '';
 
-        // Mark all inner elements as assembled in coordinator and clear inline styles
+        // Mark elements as assembled in coordinator and clear inline styles
         const nodes = SectionCoordinator.getNodesForSection(item.id);
-        nodes.forEach(n => {
-            SectionCoordinator.markAssembled(n);
-            n.el.style.transform = '';
-            n.el.style.opacity = '';
-            n.el.style.filter = '';
-        });
-        SectionCoordinator.assembleAll(item.id);
+        if (instant) {
+            nodes.forEach(n => {
+                SectionCoordinator.markAssembled(n);
+                n.el.style.transform = '';
+                n.el.style.opacity = '';
+                n.el.style.filter = '';
+            });
+            SectionCoordinator.assembleAll(item.id);
+        } else {
+            nodes.forEach(n => {
+                const nr = n.el.getBoundingClientRect();
+                if (nr.top <= viewH * 0.95 && nr.bottom >= 0) {
+                    SectionCoordinator.markAssembled(n);
+                    n.el.style.transform = '';
+                    n.el.style.opacity = '';
+                    n.el.style.filter = '';
+                }
+            });
+        }
 
         if (!instant) {
             // Snap sparks
@@ -469,31 +495,18 @@
             }
         }
 
-        // Check which pending section is currently entering or within the viewport
+        // Check which pending section is currently directly under the visitor's core viewpoint
         let targetSection = null;
+        const isAtBottom = (window.innerHeight + scrollY >= document.documentElement.scrollHeight - 100);
 
         for (let i = 0; i < sections.length; i++) {
             const s = sections[i];
             if (s.state === 'pending' && !s.isHero) {
                 const r = s.el.getBoundingClientRect();
-                // Visible in comfortable viewport reading window
-                if (r.top < viewH * 0.85 && r.bottom > viewH * 0.15) {
+                // Section only triggers when visitor is directly over the core viewpoint, or reached bottom for contact footer
+                if ((r.top <= viewH * 0.65 && r.bottom >= viewH * 0.25) || (isAtBottom && s.id === 'contact')) {
                     targetSection = s;
                     break;
-                }
-            }
-        }
-
-        // Fallback: pick next pending section entering lower edge
-        if (!targetSection) {
-            for (let i = 0; i < sections.length; i++) {
-                const s = sections[i];
-                if (s.state === 'pending' && !s.isHero) {
-                    const r = s.el.getBoundingClientRect();
-                    if (r.top < viewH * 0.95 && r.bottom > 0) {
-                        targetSection = s;
-                        break;
-                    }
                 }
             }
         }
@@ -523,8 +536,8 @@
             }
         });
     }, {
-        threshold: 0.08,
-        rootMargin: '100px 0px 100px 0px'
+        threshold: 0.15,
+        rootMargin: '0px 0px -25% 0px'
     });
 
     sections.forEach(item => {
@@ -543,7 +556,7 @@
             s.height = r.height;
 
             // Fast-scroll fail-safe: if scrolled past while not built, resolve instantly so nothing is blank!
-            if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.35)) {
+            if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.15)) {
                 finishPull(s, true);
             }
 
@@ -561,9 +574,29 @@
                     nodes.forEach(n => {
                         n.state = 'unscouted';
                         n.el.removeAttribute('data-assembled');
-                        n.el.style.transform = 'translate3d(0, 28px, 0)';
-                        n.el.style.opacity = '0.25';
+                        n.el.style.transform = 'translate3d(0, 24px, 0)';
+                        n.el.style.opacity = '0.22';
                     });
+                }
+            }
+        });
+
+        // Viewpoint inspection for inner child elements: pull only when directly under visitor viewpoint
+        SectionCoordinator.nodes.forEach(n => {
+            if (n.state !== 'assembled') {
+                const nr = n.el.getBoundingClientRect();
+                if (nr.bottom < viewH * 0.10) {
+                    // Scrolled past above viewpoint: resolve immediately
+                    n.state = 'assembled';
+                    n.el.style.transform = '';
+                    n.el.style.opacity = '';
+                    SectionCoordinator.markAssembled(n);
+                } else if (nr.top <= viewH * 0.85 && nr.bottom >= viewH * 0.10) {
+                    // Directly entering visitor viewpoint: initiate smooth pull
+                    if (n.state === 'unscouted') {
+                        n.state = 'pulling';
+                        n.pullStart = performance.now();
+                    }
                 }
             }
         });
@@ -702,18 +735,42 @@
                 currentOpacity = 0.30 + eased * 0.70;
                 currentScale = 0.94 + eased * 0.06;
 
-                // Individual child element micro-hoist & progressive assembly
+                // Individual child element micro-hoist & progressive assembly:
+                // Pull elements ONLY when directly under the visitor's viewpoint!
                 const nodes = SectionCoordinator.getNodesForSection(item.id);
-                const totalNodes = nodes.length;
                 const dynamicTargets = [];
 
-                nodes.forEach((n, idx) => {
-                    const staggerStart = (idx / Math.max(1, totalNodes)) * 0.55;
-                    const childProgress = Math.max(0, Math.min(1, (pullT - staggerStart) / 0.45));
+                // Filter nodes that are currently in the visitor's direct reading viewpoint
+                const inViewNodes = [];
+                nodes.forEach(n => {
+                    const nr = n.el.getBoundingClientRect();
+                    if (nr.bottom < viewH * 0.10) {
+                        // Scrolled past above viewpoint: resolve immediately
+                        n.el.style.transform = '';
+                        n.el.style.opacity = '';
+                        if (n.state !== 'assembled') {
+                            SectionCoordinator.markAssembled(n);
+                        }
+                    } else if (nr.top > viewH * 0.86) {
+                        // Below visitor viewpoint: keep in 3D pending depth
+                        if (n.state !== 'assembled') {
+                            n.el.style.transform = 'translate3d(0, 24px, 0)';
+                            n.el.style.opacity = '0.22';
+                        }
+                    } else {
+                        // Directly under visitor's viewpoint!
+                        inViewNodes.push(n);
+                    }
+                });
+
+                const totalInView = Math.max(1, inViewNodes.length);
+                inViewNodes.forEach((n, idx) => {
+                    const staggerStart = (idx / totalInView) * 0.60;
+                    const childProgress = Math.max(0, Math.min(1, (pullT - staggerStart) / 0.40));
                     const childEase = easeOutQuint(childProgress);
                     
-                    const childY = (1 - childEase) * 28;
-                    const childOp = 0.25 + childEase * 0.75;
+                    const childY = (1 - childEase) * 24;
+                    const childOp = 0.22 + childEase * 0.78;
                     
                     n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0)`;
                     n.el.style.opacity = childOp.toFixed(3);
@@ -734,7 +791,7 @@
                 });
 
                 // Update swarm anchor targets so drones actively hoist the current active elements
-                const anchors = dynamicTargets.length >= 4 
+                const anchors = dynamicTargets.length > 0 
                     ? dynamicTargets.slice(0, 8) 
                     : computeAnchorPoints(item, currentOffset);
 
@@ -859,6 +916,44 @@
 
             if (t >= 1) {
                 finishPull(item);
+            }
+        }
+
+        // 2b. Animate progressive hoist for individual child elements triggered while scrolling
+        const activeNodeTargets = [];
+        SectionCoordinator.nodes.forEach(n => {
+            if (n.state === 'pulling') {
+                hasActiveDrawing = true;
+                const elapsed = now - (n.pullStart || now);
+                const progress = Math.min(1.0, elapsed / 550);
+                const eased = easeOutQuint(progress);
+                const childY = (1 - eased) * 24;
+                const childOp = 0.22 + eased * 0.78;
+                n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0)`;
+                n.el.style.opacity = childOp.toFixed(3);
+
+                const nr = n.el.getBoundingClientRect();
+                if (nr.width > 20 && nr.height > 10) {
+                    activeNodeTargets.push({
+                        x: nr.left + nr.width * 0.5,
+                        y: nr.top + nr.height * 0.5
+                    });
+                }
+
+                if (progress >= 1.0) {
+                    n.state = 'assembled';
+                    n.el.style.transform = '';
+                    n.el.style.opacity = '';
+                    SectionCoordinator.markAssembled(n);
+                    emitSparks(nr.left + nr.width * 0.5, nr.top + 10, 6);
+                }
+            }
+        });
+
+        // If no section is actively pulling but individual nodes are pulling, assign drones to them
+        if (!currentPullingItem && activeNodeTargets.length > 0) {
+            if (window.swarm && typeof window.swarm.assign === 'function') {
+                window.swarm.assign(activeNodeTargets.slice(0, 8));
             }
         }
 

@@ -774,30 +774,42 @@ header::before {
     letter-spacing: 0.03em;
 }
 
-/* Nav sound button */
+/* Magical Cyberpunk Nav Sound Button */
 .nav-sound-btn {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--border-glass);
-    color: var(--cp-turquoise);
-    padding: 0.4rem 0.7rem;
+    background: rgba(18, 9, 32, 0.75) !important;
+    border: 1px solid rgba(25, 227, 208, 0.45) !important;
+    color: var(--cp-turquoise) !important;
+    padding: 0.45rem 0.85rem;
     border-radius: var(--radius-pill);
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.25s ease;
+    gap: 0.4rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 12px rgba(25, 227, 208, 0.35), inset 0 0 8px rgba(25, 227, 208, 0.15);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-sound-btn:hover {
-    border-color: var(--cp-turquoise);
-    box-shadow: 0 0 15px rgba(25, 227, 208, 0.4);
-    transform: scale(1.06);
+    border-color: var(--cp-gold) !important;
+    color: var(--cp-gold) !important;
+    box-shadow: 0 0 22px rgba(255, 216, 115, 0.65), inset 0 0 10px rgba(255, 216, 115, 0.25) !important;
+    transform: scale(1.08) translateY(-1px);
 }
 
 .nav-sound-btn.muted {
-    color: var(--text-muted);
-    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-muted) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    box-shadow: none !important;
+}
+
+.nav-sound-btn.muted:hover {
+    color: var(--cp-turquoise) !important;
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 0 14px rgba(25, 227, 208, 0.45) !important;
 }
 
 /* ==========================================================================
@@ -3405,63 +3417,6 @@ footer.cyber-dock-footer, footer {
     }
 }
 
-/* ==========================================================================
-   Sound Toggle Button Styles
-   ========================================================================== */
-.sound-toggle-btn {
-    position: fixed;
-    bottom: 2rem;
-    left: 2rem;
-    width: 3.2rem;
-    height: 3.2rem;
-    border-radius: 50%;
-    background: var(--card-bg);
-    border: 1px solid var(--border-glass);
-    color: var(--text-primary);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    z-index: 1000;
-    transition: var(--transition-fast);
-    box-shadow: var(--shadow-glass);
-    backdrop-filter: blur(0.75rem);
-    -webkit-backdrop-filter: blur(0.75rem);
-}
-
-.sound-toggle-btn:hover {
-    background: var(--card-bg-hover);
-    border-color: var(--border-glass-hover);
-    transform: scale(1.1) translateY(-2px);
-    box-shadow: var(--shadow-neon-purple);
-    color: var(--accent-color);
-}
-
-.sound-toggle-btn.muted {
-    color: var(--text-muted);
-}
-
-.sound-toggle-btn.muted:hover {
-    color: var(--accent-hover);
-    box-shadow: var(--shadow-neon-cyan);
-}
-
-.sound-toggle-btn i {
-    font-size: 1.15rem;
-    transition: var(--transition-fast);
-}
-
-@media (max-width: 48rem) {
-    .sound-toggle-btn {
-        bottom: 1.5rem;
-        left: 1.5rem;
-        width: 2.8rem;
-        height: 2.8rem;
-    }
-    .sound-toggle-btn i {
-        font-size: 1rem;
-    }
-}
 
 /* ==========================================================================
    Compact Footer Styles
@@ -3732,10 +3687,10 @@ footer.cyber-dock-footer, footer {
    ========================================================================== */
 #cosmic-bg-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    top: -3vh;
+    left: -3vw;
+    width: 106vw;
+    height: 106vh;
     z-index: -1;
     pointer-events: none;
     opacity: 1 !important;
@@ -3746,7 +3701,9 @@ footer.cyber-dock-footer, footer {
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
-    background-attachment: fixed !important;
+    transform: translate3d(var(--bg-pan-x, 0px), var(--bg-pan-y, 0px), 0);
+    will-change: transform;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 #cosmic-canvas {

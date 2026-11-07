@@ -40,17 +40,18 @@
     }
 
     function updateSoundButtonUI() {
-        const btn = document.getElementById('sound-toggle-btn');
-        if (!btn) return;
-        if (isMuted) {
-            btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
-            btn.setAttribute('title', 'Unmute Sounds');
-            btn.classList.add('muted');
-        } else {
-            btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
-            btn.setAttribute('title', 'Mute Sounds');
-            btn.classList.remove('muted');
-        }
+        const btns = document.querySelectorAll('#sound-toggle-btn, .nav-sound-btn, .sound-toggle-btn');
+        btns.forEach(btn => {
+            if (isMuted) {
+                btn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+                btn.setAttribute('title', 'Unmute Ambient Sound');
+                btn.classList.add('muted');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-volume-high"></i>';
+                btn.setAttribute('title', 'Mute Ambient Sound');
+                btn.classList.remove('muted');
+            }
+        });
     }
 
     // General play sound function helper
@@ -293,24 +294,30 @@
             isMuted = true;
         }
 
-        // Create the floating button
-        const soundBtn = document.createElement('button');
-        soundBtn.id = 'sound-toggle-btn';
-        soundBtn.className = 'sound-toggle-btn';
-        document.body.appendChild(soundBtn);
+        // Attach directly to nav sound button, or create fallback if absent
+        let soundBtn = document.getElementById('sound-toggle-btn');
+        if (!soundBtn) {
+            soundBtn = document.createElement('button');
+            soundBtn.id = 'sound-toggle-btn';
+            soundBtn.className = 'nav-sound-btn';
+            document.body.appendChild(soundBtn);
+        }
 
         updateSoundButtonUI();
 
-        // Bind button action
-        soundBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            initAudio();
-            toggleMute();
-            
-            // Play a small click on unmute
-            if (!isMuted) {
-                window.PortfolioSounds.playClick();
-            }
+        // Bind button actions across all sound toggles
+        const btns = document.querySelectorAll('#sound-toggle-btn, .nav-sound-btn, .sound-toggle-btn');
+        btns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                initAudio();
+                toggleMute();
+                
+                // Play a small click on unmute
+                if (!isMuted) {
+                    window.PortfolioSounds.playClick();
+                }
+            });
         });
 
         // Initialize state on background music if already loaded
