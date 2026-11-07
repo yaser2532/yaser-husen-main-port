@@ -384,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dotXRem = data.currentX / rootFontSize;
                 const dotYRem = data.currentY / rootFontSize;
                 
-                dot.style.transform = `translate3d(${dotXRem}rem, ${dotYRem}rem, 0) translate(-50%, -50%) scale(${currentScale})`;
+                dot.style.transform = `translate3d(${dotXRem}rem, ${dotYRem}rem, 0) translate(-50%, -50%) scale(1)`;
                 dot.style.opacity = data.currentOpacity.toFixed(3);
             }
 
@@ -1880,7 +1880,7 @@ function showToast(msg) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  DYNAMIC COSMIC SPACE BACKGROUND (STARS & NEBULA) WITH THREE.JS
+//  DYNAMIC COSMIC SPACE BACKGROUND (DEEP GALAXY & NEBULA) WITH THREE.JS
 // ════════════════════════════════════════════════════════════
 function initCosmicBackground() {
   const container = document.getElementById('cosmic-bg-container');
@@ -1888,56 +1888,82 @@ function initCosmicBackground() {
   if (!container || !canvas || typeof THREE === 'undefined') return;
 
   const scene = new THREE.Scene();
-  scene.background = null; // Transparent to blend with CSS gradient
+  scene.background = null; // Transparent to blend with container gradient
 
-  // Camera - Perspective Camera for 3D depth parallax
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.z = 80;
+  // Camera - Perspective Camera for 3D astronomical depth parallax
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1200);
+  camera.position.z = 85;
 
   // WebGL Renderer with alpha channel enabled
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  // Particle texture generator (creates a soft radial glow circle)
-  function createCircleTexture() {
+  // 1. Sharp Star Texture with soft diffraction bloom
+  function createStarTexture() {
     const texCanvas = document.createElement('canvas');
-    texCanvas.width = 16;
-    texCanvas.height = 16;
+    texCanvas.width = 32;
+    texCanvas.height = 32;
     const ctx = texCanvas.getContext('2d');
-    const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
+    
+    // Soft outer glow
+    const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
     grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.8)');
+    grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.9)');
+    grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.25)');
     grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 16, 16);
-    
-    const texture = new THREE.CanvasTexture(texCanvas);
-    return texture;
+    ctx.fillRect(0, 0, 32, 32);
+
+    // Micro 4-point cross diffraction twinkle spike
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(16, 2); ctx.lineTo(16, 30);
+    ctx.moveTo(2, 16); ctx.lineTo(30, 16);
+    ctx.stroke();
+
+    return new THREE.CanvasTexture(texCanvas);
   }
 
-  const starTexture = createCircleTexture();
+  // 2. Volumetric Diffuse Nebula Dust Texture
+  function createNebulaTexture() {
+    const texCanvas = document.createElement('canvas');
+    texCanvas.width = 64;
+    texCanvas.height = 64;
+    const ctx = texCanvas.getContext('2d');
+    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.55)');
+    grad.addColorStop(0.7, 'rgba(255, 255, 255, 0.15)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+    return new THREE.CanvasTexture(texCanvas);
+  }
 
-  // Create starfields (2 independent layers for depth/parallax feel)
-  function createStarfield(count, size, range, opacity) {
+  const starTexture = createStarTexture();
+  const nebulaTexture = createNebulaTexture();
+
+  // Multi-tier Starfield Generator
+  function createStarfield(count, size, rangeX, rangeY, rangeZ, opacity) {
     const geo = new THREE.BufferGeometry();
     const positions = [];
     const colors = [];
     
-    // Sleek space colors corresponding to the website aesthetics
     const starColors = [
-      new THREE.Color(0xffffff), // Pure White
-      new THREE.Color(0xf2c14e), // Neon Cyberpunk Gold
-      new THREE.Color(0xe0b5ff), // Bright Purple
-      new THREE.Color(0xfff3d1)  // Warm Gold
+      new THREE.Color(0xffffff), // Diamond Pure White
+      new THREE.Color(0xa5f3fc), // Distant Cyan Stellar
+      new THREE.Color(0xfde047), // Stellar Gold
+      new THREE.Color(0xffedd5), // Warm Amber
+      new THREE.Color(0xd8b4fe)  // Deep Cosmic Lavender
     ];
 
     for (let i = 0; i < count; i++) {
-      // Scatter randomly in a 3D box
       positions.push(
-        (Math.random() - 0.5) * range * 2.2,
-        (Math.random() - 0.5) * range * 1.6,
-        (Math.random() - 0.5) * range
+        (Math.random() - 0.5) * rangeX,
+        (Math.random() - 0.5) * rangeY,
+        (Math.random() - 0.5) * rangeZ
       );
       
       const col = starColors[Math.floor(Math.random() * starColors.length)];
@@ -1960,59 +1986,120 @@ function initCosmicBackground() {
     return new THREE.Points(geo, mat);
   }
 
-  // Multi-tier Starry Sky (gazing into the galaxy from Earth with authentic depth)
-  const farStars = createStarfield(1400, 0.28, 280, 0.88);
-  const nearStars = createStarfield(450, 0.48, 190, 0.95);
-  const galaxyDust = createStarfield(220, 1.35, 200, 0.40);
-  scene.add(farStars);
-  scene.add(nearStars);
-  scene.add(galaxyDust);
+  // A. Deep Universe Starfield (2,000 crisp micro-stars)
+  const deepStars = createStarfield(2000, 0.35, 420, 320, 400, 0.92);
+  scene.add(deepStars);
 
-  // Ambient lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  // B. Foreground Twinkling Stellar Clusters (480 stars)
+  const foregroundStars = createStarfield(480, 0.72, 280, 220, 220, 0.98);
+  scene.add(foregroundStars);
+
+  // C. Spiral Milky Way Galaxy Nebula Simulation
+  const galaxyGroup = new THREE.Group();
+  (function buildMilkyWayGalaxy() {
+    const geo = new THREE.BufferGeometry();
+    const positions = [];
+    const colors = [];
+    const count = 750;
+
+    const coreColor = new THREE.Color(0xfff7ed);
+    const goldColor = new THREE.Color(0xfbbf24);
+    const violetColor = new THREE.Color(0xa855f7);
+    const cyanColor = new THREE.Color(0x19e3d0);
+
+    for (let i = 0; i < count; i++) {
+      // 2 major logarithmic spiral arms
+      const armIndex = i % 2;
+      const armAngle = armIndex * Math.PI;
+      const normDist = Math.pow(Math.random(), 1.35);
+      const r = 12 + normDist * 165;
+      const angle = armAngle + r * 0.035 + (Math.random() - 0.5) * 0.55;
+      const dispersion = (Math.random() - 0.5) * (14 + r * 0.16);
+
+      const x = Math.cos(angle) * r + dispersion;
+      const y = (Math.random() - 0.5) * (12 + r * 0.08);
+      const z = Math.sin(angle) * r + dispersion;
+
+      positions.push(x, y, z);
+
+      // Color gradation: Core (Gold/White) -> Mid-Arms (Violet) -> Outer Filaments (Cyan)
+      const pColor = new THREE.Color();
+      if (r < 42) {
+        pColor.lerpColors(coreColor, goldColor, r / 42);
+      } else if (r < 105) {
+        pColor.lerpColors(goldColor, violetColor, (r - 42) / 63);
+      } else {
+        pColor.lerpColors(violetColor, cyanColor, (r - 105) / 60);
+      }
+      colors.push(pColor.r, pColor.g, pColor.b);
+    }
+
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const mat = new THREE.PointsMaterial({
+      size: 7.5,
+      map: nebulaTexture,
+      transparent: true,
+      opacity: 0.48,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const galaxyPoints = new THREE.Points(geo, mat);
+    galaxyGroup.add(galaxyPoints);
+
+    // Tilt the galaxy plane naturally as viewed from Earth's celestial sphere
+    galaxyGroup.rotation.x = 0.98;
+    galaxyGroup.rotation.z = 0.45;
+    galaxyGroup.position.set(10, 5, -50);
+  })();
+  scene.add(galaxyGroup);
 
   // Cursor Parallax Tracker
   let mouseX = 0, mouseY = 0;
   let targetMouseX = 0, targetMouseY = 0;
-  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  let scrollParallaxY = 0;
+  let targetScrollParallaxY = 0;
 
+  const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   if (!isTouch) {
     document.addEventListener('mousemove', (e) => {
       targetMouseX = (e.clientX / window.innerWidth) * 2 - 1;
       targetMouseY = (e.clientY / window.innerHeight) * 2 - 1;
-    });
+    }, { passive: true });
   }
 
-  // Unified seamless galaxy background: always visible across whole page
+  window.addEventListener('scroll', () => {
+    targetScrollParallaxY = (window.scrollY || window.pageYOffset || 0) * 0.022;
+  }, { passive: true });
+
   container.style.opacity = '1';
-  let isBackgroundActive = true;
 
   // Dynamic animation render loop
   let time = 0;
   function animateScene() {
     requestAnimationFrame(animateScene);
+    time += 0.012;
 
-    time += 0.01;
+    // Slow celestial rotation
+    deepStars.rotation.y = time * 0.0006;
+    foregroundStars.rotation.y = -time * 0.0012;
+    galaxyGroup.rotation.y = time * 0.0010;
 
-    // Slow orbital rotation of starfields
-    farStars.rotation.y = time * 0.003;
-    farStars.rotation.x = time * 0.0008;
-    nearStars.rotation.y = -time * 0.005;
-    galaxyDust.rotation.y = time * 0.002;
-    galaxyDust.rotation.z = time * 0.001;
+    // Organic atmospheric stellar twinkling
+    deepStars.material.opacity = 0.80 + Math.sin(time * 1.8) * 0.14;
+    foregroundStars.material.opacity = 0.88 + Math.cos(time * 2.4) * 0.12;
 
-    // Twinkling light fluctuations
-    farStars.material.opacity = 0.72 + Math.sin(time * 1.6) * 0.16;
-    nearStars.material.opacity = 0.82 + Math.cos(time * 2.2) * 0.16;
-    galaxyDust.material.opacity = 0.38 + Math.sin(time * 0.8) * 0.08;
+    // Camera parallax dampening & scroll depth navigation
+    mouseX += (targetMouseX - mouseX) * 0.05;
+    mouseY += (targetMouseY - mouseY) * 0.05;
+    scrollParallaxY += (targetScrollParallaxY - scrollParallaxY) * 0.07;
 
-    // Camera parallax dampening
-    mouseX += (targetMouseX - mouseX) * 0.06;
-    mouseY += (targetMouseY - mouseY) * 0.06;
-
-    camera.position.x = mouseX * 7;
-    camera.position.y = -mouseY * 5;
-    camera.lookAt(0, 0, -100);
+    camera.position.x = mouseX * 8;
+    camera.position.y = -mouseY * 6 - scrollParallaxY;
+    camera.lookAt(0, -scrollParallaxY * 0.85, -80);
 
     renderer.render(scene, camera);
   }

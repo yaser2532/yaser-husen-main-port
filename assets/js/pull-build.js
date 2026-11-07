@@ -214,7 +214,7 @@
                 'h1, h2, h3, h4, .section-title, .section-header, .card-title, .section-tag',
                 '.section-desc, p, .about-text p, .trait-tag, .stat-label, .badge',
                 '.project-card, .cert-card, .expertise-card, .stat-card, .glass-card',
-                '.hero-traits-list, .filter-btn, .cta-button, .message-btn'
+                '.hero-traits-list, .filter-btn, .cta-button, .message-btn, .dock-btn, .cyber-dock-bar'
             ].join(', ');
 
             const childNodes = Array.from(el.querySelectorAll(selectors));
@@ -579,66 +579,12 @@
         const scrollY = window.scrollY || window.pageYOffset;
         let hasActiveDrawing = false;
 
-        // 0. Bioluminescent Phosphor Trails & Electric Micro-Arcs between Firefly Drones
+        // 0. Robotic Nano-Bots Swarm tracking (interconnected lightning & micro-arcs removed per user directive)
         if (window.swarm && typeof window.swarm.getDotsData === 'function') {
             const dotsData = window.swarm.getDotsData();
             if (dotsData && dotsData.length) {
-                hasActiveDrawing = true;
-
-                // A. Phosphor Trails (soft decaying bioluminescent ribbon)
-                for (let i = 0; i < dotsData.length; i++) {
-                    const d = dotsData[i];
-                    d.trail = d.trail || [];
-                    if (!isNaN(d.currentX) && !isNaN(d.currentY)) {
-                        d.trail.push({ x: d.currentX, y: d.currentY });
-                        if (d.trail.length > 7) d.trail.shift();
-
-                        if (d.trail.length > 1) {
-                            ctx.save();
-                            for (let k = 1; k < d.trail.length; k++) {
-                                const p0 = d.trail[k - 1];
-                                const p1 = d.trail[k];
-                                const alpha = (k / d.trail.length) * 0.42;
-                                ctx.beginPath();
-                                ctx.moveTo(p0.x, p0.y);
-                                ctx.lineTo(p1.x, p1.y);
-                                ctx.strokeStyle = (i % 2 === 0) 
-                                    ? `rgba(25, 227, 208, ${alpha.toFixed(2)})` 
-                                    : `rgba(255, 216, 115, ${alpha.toFixed(2)})`;
-                                ctx.lineWidth = 1.2 * (k / d.trail.length);
-                                ctx.stroke();
-                            }
-                            ctx.restore();
-                        }
-                    }
-                }
-
-                // B. Electric Micro-Arcs between close firefly drones (< 75px)
-                ctx.save();
-                ctx.strokeStyle = 'rgba(25, 227, 208, 0.70)';
-                ctx.shadowColor = '#19e3d0';
-                ctx.shadowBlur = 6;
-                ctx.lineWidth = 1.2;
-
-                for (let i = 0; i < dotsData.length; i++) {
-                    for (let j = i + 1; j < dotsData.length; j++) {
-                        const p1 = dotsData[i];
-                        const p2 = dotsData[j];
-                        const dx = p1.currentX - p2.currentX;
-                        const dy = p1.currentY - p2.currentY;
-                        const distSq = dx * dx + dy * dy;
-                        if (distSq < 5625 && distSq > 64) { // Between 8px and 75px
-                            const midX = (p1.currentX + p2.currentX) * 0.5 + (Math.random() - 0.5) * 8;
-                            const midY = (p1.currentY + p2.currentY) * 0.5 + (Math.random() - 0.5) * 8;
-                            ctx.beginPath();
-                            ctx.moveTo(p1.currentX, p1.currentY);
-                            ctx.lineTo(midX, midY);
-                            ctx.lineTo(p2.currentX, p2.currentY);
-                            ctx.stroke();
-                        }
-                    }
-                }
-                ctx.restore();
+                // Keep active drawing flag for smooth canvas lifecycle if needed
+                hasActiveDrawing = false;
             }
         }
 

@@ -87,8 +87,9 @@ html {
 }
 
 body {
-    background-color: var(--bg-color);
-    background-image: linear-gradient(180deg, #06030c 0%, #030108 100%); /* Deep, mysterious cosmic dark background */
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
     color: var(--text-secondary);
     font-family: var(--font-body);
     line-height: 1.6;
@@ -155,30 +156,24 @@ button, input, textarea {
     transition: opacity 0.4s ease;
 }
 
-/* Swarming organic cursor tracker dots [B-01] */
+/* Futuristic Mechanical Robotic Nano-Bot Swarm (Strictly <= 1px, No Interconnecting Lines) */
 .mouse-tracker-dot {
     position: fixed;
     top: 0;
     left: 0;
+    width: 1px !important;
+    height: 1px !important;
     border-radius: 50%;
     pointer-events: none;
     z-index: 10000;
-    mix-blend-mode: screen;
     will-change: transform;
     opacity: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(circle, rgba(255, 245, 200, 1) 0%, rgba(242, 193, 78, 0.95) 25%, rgba(157, 77, 255, 0.45) 55%, transparent 75%);
-    box-shadow: 0 0 6px rgba(242, 193, 78, 0.8), 0 0 14px rgba(157, 77, 255, 0.45);
+    background: #19e3d0;
+    box-shadow: 0 0 2px #19e3d0, 0 0 3px rgba(25, 227, 208, 0.9);
+    transition: opacity 0.25s ease;
 }
 .mouse-tracker-dot::after {
-    content: '';
-    width: 3.5px;
-    height: 3.5px;
-    border-radius: 50%;
-    background: #ffffff;
-    box-shadow: 0 0 3px #ffd873;
+    display: none !important;
 }
 .mouse-tracker-dot.active {
     opacity: 0.95;
@@ -188,22 +183,30 @@ body.cursor-reading .mouse-glow {
     opacity: 0 !important;
 }
 
-/* Individual size variances [B-01] */
+/* Mechanical nano-bot micro-thruster colors (1px pinpoint) */
 .mouse-tracker-dot:nth-child(odd) {
-    width: 0.875rem; /* ~14px */
-    height: 0.875rem;
+    width: 1px !important;
+    height: 1px !important;
+    background: #19e3d0;
+    box-shadow: 0 0 2px #19e3d0, 0 0 4px rgba(25, 227, 208, 0.85);
 }
 .mouse-tracker-dot:nth-child(even) {
-    width: 1.125rem; /* ~18px */
-    height: 1.125rem;
+    width: 1px !important;
+    height: 1px !important;
+    background: #ffd873;
+    box-shadow: 0 0 2px #ffd873, 0 0 4px rgba(255, 216, 115, 0.85);
 }
 .mouse-tracker-dot:nth-child(3n) {
-    width: 0.75rem; /* ~12px */
-    height: 0.75rem;
+    width: 1px !important;
+    height: 1px !important;
+    background: #c084fc;
+    box-shadow: 0 0 2px #c084fc, 0 0 3px rgba(192, 132, 252, 0.85);
 }
 .mouse-tracker-dot:nth-child(3n+2) {
-    width: 1rem; /* ~16px */
-    height: 1rem;
+    width: 1px !important;
+    height: 1px !important;
+    background: #5eead4;
+    box-shadow: 0 0 2px #5eead4, 0 0 4px rgba(94, 234, 212, 0.85);
 }
 
 /* Keep the cursor effect from washing out readable content. */
@@ -1940,67 +1943,162 @@ header::before {
 /* ==========================================================================
    Footer & Contact Form
    ========================================================================== */
-footer {
+/* Streamlined Cyber Dock Footer (Reduced Height & Sleek Modern Layout) */
+footer.cyber-dock-footer, footer {
     background-color: transparent !important;
-    padding: 5rem 0 3.5rem;
-    border-top: 1px solid rgba(157, 77, 255, 0.25);
+    padding: 2rem 0 2.25rem !important; /* Cut down height by ~60% */
+    border-top: none;
     position: relative;
     z-index: 10;
 }
 
-.footer-content-wrap {
-    max-width: 48rem;
+.cyber-dock-bar {
+    max-width: 72rem;
     margin: 0 auto;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    text-align: center;
-    gap: 1.5rem;
-}
-
-.footer-header .section-title {
-    margin-bottom: 0.75rem;
-}
-
-.footer-header .section-desc {
-    max-width: 38rem;
-    margin: 0 auto;
-}
-
-.footer-cta-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1.5rem;
+    justify-content: space-between;
+    padding: 0.9rem 1.75rem;
+    border-radius: 1.25rem;
+    background: rgba(16, 8, 30, 0.72) !important;
+    border: 1px solid rgba(157, 77, 255, 0.35) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.65), 0 0 1.25rem rgba(157, 77, 255, 0.18);
+    gap: 1.25rem;
     flex-wrap: wrap;
-    margin: 1.25rem 0;
 }
 
-.footer-cta-row .cta-button {
-    padding: 0.85rem 2.2rem;
-    font-size: 1.05rem;
-    font-weight: 600;
+/* Brand & Status Column */
+.dock-brand-col {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.dock-logo {
+    font-family: 'Space Grotesk', var(--font-headings);
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+}
+
+.dock-dot {
+    color: var(--cp-turquoise);
+}
+
+.dock-status-indicator {
     display: inline-flex;
     align-items: center;
+    gap: 0.45rem;
+    background: rgba(25, 227, 208, 0.08);
+    border: 1px solid rgba(25, 227, 208, 0.28);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2rem;
+}
+
+.dock-status-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--cp-turquoise);
+}
+
+.dock-copy {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Center Social Column */
+.dock-social-col {
+    display: flex;
+    align-items: center;
     gap: 0.75rem;
-    cursor: pointer;
-    border-radius: var(--radius-pill);
 }
 
-.footer-cta-row .btn-ai-chat {
-    background: linear-gradient(135deg, rgba(25, 227, 208, 0.15), rgba(157, 77, 255, 0.25)) !important;
-    border: 1px solid var(--cp-turquoise) !important;
-    box-shadow: 0 0 20px rgba(25, 227, 208, 0.35) !important;
+.dock-icon-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f3eeff;
+    font-size: 0.95rem;
+    transition: all 0.22s ease;
 }
 
-.footer-cta-row .btn-ai-chat:hover {
-    box-shadow: 0 0 30px rgba(25, 227, 208, 0.7) !important;
+.dock-icon-btn:hover {
+    background: rgba(25, 227, 208, 0.18);
+    border-color: var(--cp-turquoise);
+    color: var(--cp-turquoise);
+    box-shadow: 0 0 12px rgba(25, 227, 208, 0.5);
     transform: translateY(-2px);
 }
 
-.footer-bottom-line p {
-    font-size: 0.85rem;
-    color: var(--text-muted);
+/* Right Action Buttons Column */
+.dock-actions-col {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-shrink: 0;
+}
+
+.dock-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1.25rem;
+    border-radius: 2rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dock-btn-ai {
+    background: linear-gradient(135deg, rgba(25, 227, 208, 0.18), rgba(157, 77, 255, 0.28)) !important;
+    border: 1px solid var(--cp-turquoise) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(25, 227, 208, 0.35);
+}
+
+.dock-btn-ai:hover {
+    box-shadow: 0 0 24px rgba(25, 227, 208, 0.75) !important;
+    transform: translateY(-2px);
+    border-color: #5eead4 !important;
+}
+
+.dock-btn-contact {
+    background: rgba(242, 193, 78, 0.14) !important;
+    border: 1px solid rgba(242, 193, 78, 0.45) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 12px rgba(242, 193, 78, 0.22);
+}
+
+.dock-btn-contact:hover {
+    background: rgba(242, 193, 78, 0.24) !important;
+    border-color: var(--cp-gold) !important;
+    box-shadow: 0 0 22px rgba(242, 193, 78, 0.65) !important;
+    transform: translateY(-2px);
+}
+
+@media (max-width: 48rem) {
+    .cyber-dock-bar {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+        padding: 1.25rem 1rem;
+    }
+    .dock-brand-col {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
 }
 
 .contact-container {
@@ -3679,10 +3777,10 @@ footer {
     left: 0;
     width: 100vw;
     height: 100vh;
-    z-index: -2;
+    z-index: -1;
     pointer-events: none;
     opacity: 1 !important;
-    background: transparent;
+    background: radial-gradient(ellipse at 50% 25%, #14072b 0%, #080316 45%, #020008 100%) !important;
 }
 
 #cosmic-canvas {
@@ -4211,7 +4309,7 @@ body {
 }
 
 #cosmic-bg-container {
-    opacity: 0.85 !important;
+    opacity: 1 !important;
 }
 
 /* Featured Projects: 4 Uniform Clear Glass Filter Buttons with Neon Glow */
