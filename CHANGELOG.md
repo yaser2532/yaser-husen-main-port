@@ -1,93 +1,49 @@
-# Changelog (PROMPT v4)
+# Changelog (Refinements & Final Polish)
 
-All changes made to the codebase in accordance with PROMPT v4. The original HTML structure, element IDs, typography, text copy, layout, and functional features are 100% preserved.
-
----
-
-## 1. `assets/css/style.css`
-
-- **[AU-01, Section 2] Cyberpunk 4-Color Theme System (`:root`):**
-  - Base: `--bg-color: #05030a` (60%), `--bg-darker: #020106`.
-  - Structure: `--cp-purple: #9d4dff` (25%), `--cp-purple-deep: #3a1170`.
-  - Energy / Primary: `--cp-gold: #f2c14e` (10%), `--cp-gold-bright: #ffd873`.
-  - Interaction / Reactivity: `--cp-turquoise: #19e3d0` (5%), `--cp-turquoise-soft: #7ff5e8`.
-  - Borders & Shadows: `--border-glass: rgba(157, 77, 255, 0.22)`, `--border-glass-hover: rgba(25, 227, 208, 0.50)`, `--shadow-neon-turquoise: 0 0 1.875rem rgba(25, 227, 208, 0.40)`.
-- **[Section 5] Styled Selection, Focus & Scrollbars:**
-  - Styled `::selection` with purple background (`rgba(157, 77, 255, 0.45)`) and bright gold text (`#ffd873`).
-  - Styled `:focus-visible` with 2px turquoise outline (`#19e3d0`) and 3px offset.
-  - Thin custom scrollbar (6px width, purple thumb with turquoise hover transition).
-- **[3D-01 ... 3D-05] WebGL Canvas Architecture:**
-  - Added `#gl` fixed background canvas (`position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0;`).
-- **[H-01 ... H-06] Hover & Micro-Interactions System:**
-  - `.cp-hover-title`: Left-to-right gold-to-turquoise underline draw on headings.
-  - `.cp-chromatic-split`: 150ms chromatic aberration text shadow (`-2.5px` turquoise, `+2.5px` gold).
-  - `.cp-magnetic-btn`: Smooth magnetic button follow (max 6px) with turquoise glow transition.
-  - `.cp-3d-card`: 3D perspective tilt (max 7.5°) with dynamic turquoise specular highlight following pointer position.
-  - `.cp-input-focused`: Automatically fades follower bots to 15% opacity when visitor types into form inputs.
-- **[CB-01 ... CB-05] Nano Local AI Terminal Styling:**
-  - Glassmorphic container with neon gold title and live status badge.
-  - Cyberpunk user and assistant chat bubbles, responsive horizontal suggestion chips, and turquoise submit button.
+All enhancements made in accordance with the user's latest directives. The original HTML structure, element IDs, typography, text copy, layout, and functional features are 100% preserved.
 
 ---
 
-## 2. `assets/js/gl-engine.js` (NEW MODULE)
-
-- **[3D-01] High-Energy Procedural Hero Core:**
-  - Wireframe icosahedron with inner faceted glowing core and dual counter-rotating energy rings in gold and turquoise.
-  - 32 floating crystal shards orbiting dynamically in 3D space.
-  - Accelerates rotation and pulse trails upon hero hover; drifts back in Z-space on scroll.
-- **[3D-02] Cyber Perspective Grid Backdrop:**
-  - Infinite perspective grid floor in turquoise and deep purple.
-  - 260 drifting cosmic dust particles with camera scroll translation.
-- **[3D-04] 8 Low-Poly 3D Drones:**
-  - Octahedron gold faceted body, purple glowing wireframe core, spinning turquoise rotor fins, and downward holographic light cones.
-  - Follows cursor at rest with organic spring orbits; synchronizes with swarm targets during bot-build sequences.
-- **[3D-05] Depth Parallax & Quality Tiers:**
-  - Damped mouse parallax across backdrop, hero core, and drone layers.
-  - Automatic quality scaling (`high`, `medium`, `low`) and idle tab pausing.
-  - Exposed `window.__gl` debug hook reporting active tier, render calls, and geometry.
+## 1. Hero Dynamic Typography & Human Typing ([`script.js`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/js/script.js#L650-L730), [`style.css`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/css/style.css#L160-L210))
+- **Human Keystroke Cadence:** Added randomized keystroke timing (40ms–85ms) with natural micro-pauses at punctuation, spaces, and ampersands.
+- **Hero Name Typing:** "YASER HUSEN" types out smoothly with realistic human rhythm and modern italic styling.
+- **Continuous Rotating Skill Titles:** Loops through 5 verified skill titles:
+  1. *Data Analyst & AI Integration Specialist*
+  2. *Prompt Engineering & LLM API Architecture*
+  3. *Enterprise RAG Pipelines & GCP Vertex AI*
+  4. *Advanced SQL Analytics & Predictive Modeling*
+  5. *High-Performance 3D Web & Interactive Systems*
+- **Neon Cursor & Typography:** Styled with sleek modern italic typography (`#tp-name` with gold gradient drop shadow, `#tp-subtitle` with turquoise neon glow) and a smoothly blinking neon cursor line.
 
 ---
 
-## 3. `assets/js/pull-build.js`
-
-- **[AU-04, 4.2] Simultaneous Inner-Box Swarm Wrap:**
-  - Replaced outer corner anchoring with `getInnerBoxes(item, currentYOffset)`: locates internal cards (`.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card`) and headings.
-  - Simultaneously divides the 8 drones across the inner cards and boxes.
-  - Renders turquoise laser contour scans around each card contour.
-  - Renders bright gold laser weld lines sweeping across each box as it materializes.
-  - Quad-curved violet-gold tethers connecting drones to the cards.
-  - 10 golden snap sparks burst on the card perimeters upon completion.
-
----
-
-## 4. `assets/js/hover-system.js` (NEW MODULE)
-
-- **[H-01 ... H-06] Unified Micro-Interactions Engine:**
-  - Coordinates chromatic split on 18 section titles.
-  - Implements physics-based magnetic pull on buttons.
-  - Handles 3D card tilt and specular highlight coordinates (`--card-mouse-x`, `--card-mouse-y`).
-  - Guards interactions under `prefers-reduced-motion` and touch devices (`hover: none`).
+## 2. Multi-Depth 3D Starry Night Sky & Cyberpunk Neon Lighting ([`gl-engine.js`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/js/gl-engine.js#L210-L290), [`style.css`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/css/style.css#L3780-L3840))
+- **Rich Multi-Layered Cosmos:**
+  - Layer 1: ~500 bright twinkling foreground stars (diamond white, neon gold, turquoise, radiant purple) with dynamic sine-wave shimmering and sizes up to 9.5px.
+  - Layer 2: ~900 deep space stars across depth `-1800` to `-300` providing authentic 3D depth flight on scroll.
+- **Transparent Body Layering:** Set `html` to base black `#05030a` and `body` to transparent, allowing the 3D starry sky to shine through vibrantly across all sections.
+- **Neon Light Styles for Small Elements:**
+  - Buttons (`.btn, .cta-btn, .filter-btn`): Glowing glassmorphic text backgrounds with gold borders and turquoise neon hover sweeps.
+  - Badges & Trait Tags (`.trait-tag, .badge`): Cyberpunk pill styling with luminous borders and subtle inner neon glow.
+- **Enhanced Gradient Hover:** Card hover highlights are now 2.5× more pronounced with a vivid turquoise-gold radial gradient following pointer coordinates.
 
 ---
 
-## 5. `assets/js/nano-chat.js` (NEW MODULE)
-
-- **[CB-01 ... CB-05] Nano Local AI Terminal:**
-  - 100% client-side zero-dependency Q&A assistant.
-  - 35-chunk knowledge base derived from Yaser Husen's verified portfolio and experience.
-  - BM25 and domain intent keyword retrieval engine responding in < 50ms.
-  - Strict XSS safety: text rendered exclusively via `textContent`.
-  - Built-in prompt-injection defenses and polite out-of-scope refusals.
-  - Suggestion chips, clear history option, and Escape key dismissal.
-  - **100.0% pass rate across 28 test cases** in `tests/chat-eval.json`.
+## 3. Natural Gravity Physics on Hanging Lamp Chain ([`script.js`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/js/script.js#L326-L435), [`style.css`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/css/style.css#L1555-L1570))
+- **Pendulum Gravity Equation:** Replaced linear springs with true physical pendulum gravity ($\alpha = -g \sin\theta$) and fluid aerodynamic drag damping.
+- **Catenary Momentum Flex:** Added dynamic `skewX` inertia so the chain flexes organically with momentum when swung or dragged.
+- **Cyberpunk Braided Metal Cord:** Styled with repeating linear gradient in gold and turquoise with soft neon drop shadows.
 
 ---
 
-## 6. Local Vendors & HTML Updates
+## 4. Bot-Build Deep Text & Card Wrapping ([`pull-build.js`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/js/pull-build.js#L196-L260))
+- **Text & Container Targeting:** Drones explicitly target both container cards and individual text blocks (headings, descriptions, paragraphs, stat numbers).
+- **Text Reticle Brackets & Weld Lines:** Renders neon gold corner brackets around text elements and sweeps bright gold laser weld lines across headings and cards as they materialize.
+- **Cinematic Timing Slowdown:** Extended pull sequence duration to ~2.1s (+0.75s) so the mechanical construction is easy to watch and appreciate.
 
-- **`assets/vendor/three/three.min.js`:** Downloaded and vendored Three.js r128 locally; replaced external CDN script tag in `index.html`.
-- **`index.html`:**
-  - Added `<canvas id="gl" aria-hidden="true"></canvas>` for 3D WebGL layer.
-  - Added inline SVG favicon to eliminate 404 console errors.
-  - Added script inclusions for `gl-engine.js`, `hover-system.js`, and `nano-chat.js`.
+---
+
+## 5. Conversational Chatbot Fallbacks ([`nano-chat.js`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/assets/js/nano-chat.js#L140-L225), [`tests/chat-eval.json`](file:///c:/Users/yhuse/OneDrive/Desktop/portfolio-main/yaser-husen-main-port/tests/chat-eval.json))
+- **Conversational Handlers:** Added natural handling for greetings ("hello", "hey"), compliments ("love the 3d", "nice website"), and capabilities inquiries.
+- **Resilient Fallback:** Wrapped in safe try/catch error handling; unpredicted queries receive a warm, contextual guide with suggestion chips instead of an error.
+- **Automated Verification:** **100.0% pass rate across 32 test cases** (factual, conversational, and unpredicted).

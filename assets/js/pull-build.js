@@ -195,16 +195,26 @@
 
     function getInnerBoxes(item, currentYOffset) {
         const scrollY = window.scrollY || window.pageYOffset;
-        const selectors = '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card, .stat-item, .lamp-scene, .contact-card, .about-content, .section-title, .section-header, h2, h3';
+        // Targets both card containers AND individual text headings/paragraphs [Section 4]
+        const selectors = [
+            'h1, h2, h3, h4, .section-title, .section-header, .card-title, .onboard-title',
+            '.section-desc, p, .about-bio, .stat-desc, .project-details p, .timeline-text, .hero-tagline',
+            '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-item, .contact-card, .glass-card',
+            '.hero-traits-list, .filter-buttons, .tech-badges'
+        ].join(', ');
+
         const rawEls = Array.from(item.el.querySelectorAll(selectors));
         const validBoxes = [];
 
         rawEls.forEach(el => {
             const r = el.getBoundingClientRect();
-            // Filter out collapsed or tiny elements
-            if (r.width > 40 && r.height > 20) {
+            // Filter elements that have actual layout dimensions
+            if (r.width > 28 && r.height > 14) {
+                const tag = el.tagName.toLowerCase();
+                const isText = ['h1', 'h2', 'h3', 'h4', 'p', 'span'].includes(tag) || el.classList.contains('section-desc') || el.classList.contains('section-title');
                 validBoxes.push({
                     el,
+                    isText,
                     x: r.left,
                     y: r.top + currentYOffset,
                     w: r.width,
@@ -213,8 +223,8 @@
             }
         });
 
-        // Limit to 4 prominent boxes per section for clean swarm distribution
-        return validBoxes.slice(0, 4);
+        // Select up to 6 prominent elements (headings, text paragraphs, and cards)
+        return validBoxes.slice(0, 6);
     }
 
     function computeAnchorPoints(item, currentYOffset) {
@@ -287,7 +297,7 @@
         currentPullingItem = item;
         item.state = 'dispatch';
         item.startTime = performance.now();
-        item.duration = fastMode ? 750 : (item.isHero ? 850 : 1350);
+        item.duration = fastMode ? 1150 : (item.isHero ? 1350 : 2100); // Cinematic slowed down pace (+0.75s)
         item.el.setAttribute('data-nb', 'pulling');
         item.el.style.willChange = 'transform, opacity'; // [PF-05]
 
@@ -493,26 +503,62 @@
                 window.swarm.assign(anchors);
             }
 
-            // Draw inner box laser scan & weld line sweep [AU-04, PROMPT v4 Phase 4.2]
+            // Draw inner box & text laser scan & weld line sweep [AU-04, Section 4]
             const innerBoxes = getInnerBoxes(item, currentOffset);
             if (t >= dispatchRatio && t < 0.95) {
                 innerBoxes.forEach(b => {
                     ctx.save();
-                    // 1. Turquoise laser scan contour around box
-                    ctx.strokeStyle = 'rgba(25, 227, 208, 0.45)';
-                    ctx.lineWidth = 1.5;
-                    ctx.setLineDash([8, 6]);
-                    ctx.strokeRect(b.x, b.y, b.w, b.h);
+                    if (b.isText) {
+                        // Cyberpunk corner reticles around text elements
+                        const cornerLen = Math.min(12, b.w * 0.15);
+                        ctx.strokeStyle = 'rgba(255, 216, 115, 0.75)'; // Neon Gold for text
+                        ctx.lineWidth = 1.5;
+                        
+                        // Top-left
+                        ctx.beginPath();
+                        ctx.moveTo(b.x, b.y + cornerLen);
+                        ctx.lineTo(b.x, b.y);
+                        ctx.lineTo(b.x + cornerLen, b.y);
+                        ctx.stroke();
 
-                    // 2. Bright gold weld line sweep across box
-                    const sweepX = b.x + b.w * Math.min(1.0, (t - dispatchRatio) / (pullRatio - dispatchRatio));
+                        // Top-right
+                        ctx.beginPath();
+                        ctx.moveTo(b.x + b.w - cornerLen, b.y);
+                        ctx.lineTo(b.x + b.w, b.y);
+                        ctx.lineTo(b.x + b.w, b.y + cornerLen);
+                        ctx.stroke();
+
+                        // Bottom-left
+                        ctx.beginPath();
+                        ctx.moveTo(b.x, b.y + b.h - cornerLen);
+                        ctx.lineTo(b.x, b.y + b.h);
+                        ctx.lineTo(b.x + cornerLen, b.y + b.h);
+                        ctx.stroke();
+
+                        // Bottom-right
+                        ctx.beginPath();
+                        ctx.moveTo(b.x + b.w - cornerLen, b.y + b.h);
+                        ctx.lineTo(b.x + b.w, b.y + b.h);
+                        ctx.lineTo(b.x + b.w, b.y + b.h - cornerLen);
+                        ctx.stroke();
+                    } else {
+                        // Turquoise laser scan contour around cards
+                        ctx.strokeStyle = 'rgba(25, 227, 208, 0.55)';
+                        ctx.lineWidth = 1.5;
+                        ctx.setLineDash([8, 6]);
+                        ctx.strokeRect(b.x, b.y, b.w, b.h);
+                    }
+
+                    // Bright gold weld line sweep across box or text
+                    const sweepProgress = Math.min(1.0, (t - dispatchRatio) / (pullRatio - dispatchRatio));
+                    const sweepX = b.x + b.w * sweepProgress;
                     ctx.beginPath();
                     ctx.moveTo(sweepX, b.y - 2);
                     ctx.lineTo(sweepX, b.y + b.h + 2);
-                    ctx.strokeStyle = 'rgba(255, 216, 115, 0.85)';
+                    ctx.strokeStyle = 'rgba(255, 216, 115, 0.95)';
                     ctx.lineWidth = 2.5;
                     ctx.shadowColor = '#ffd873';
-                    ctx.shadowBlur = 8;
+                    ctx.shadowBlur = 10;
                     ctx.stroke();
                     ctx.restore();
                 });

@@ -323,15 +323,16 @@ document.addEventListener('DOMContentLoaded', () => {
         ensureGlowLoop();
     }
 
-    /* --- 2. Interactive Hanging Lamp swinging physics --- */
+    /* --- 2. Interactive Hanging Lamp natural pendulum & gravity physics --- */
     const lampArm = document.getElementById('lamp-swing-arm');
     const lampRefl = document.getElementById('lamp-reflection');
     
     if (lampArm && lampRefl) {
         let angle = 0;
         let velocity = 0;
-        const damping = 0.985;
-        const restoringForce = 0.002;
+        const gravity = 0.0035;       // Natural gravity constant
+        const airResistance = 0.988; // Fluid aerodynamic damping
+        let chainFlex = 0;           // Catenary flex lag
         
         let isDragging = false;
         
@@ -355,14 +356,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const dx = clientX - hinge.x;
             const dy = clientY - hinge.y;
             
-            // Calculate angle relative to vertical downward axis
-            let dragAngle = Math.atan2(dx, Math.max(dy, 20)) * (180 / Math.PI);
+            // Calculate natural pendulum angle relative to vertical downward axis
+            let dragAngle = Math.atan2(dx, Math.max(dy, 30)) * (180 / Math.PI);
+            dragAngle = Math.max(-48, Math.min(48, dragAngle));
             
-            // Clamp drag angle
-            if (dragAngle > 45) dragAngle = 45;
-            if (dragAngle < -45) dragAngle = -45;
-            
-            velocity = dragAngle - angle; 
+            velocity = (dragAngle - angle) * 0.85; 
             angle = dragAngle;
         };
 
@@ -389,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isDragging) {
                 handleMove(e.clientX, e.clientY);
             } else {
-                // Hover swing start kick
+                // Natural passing draft kick when mouse passes near lamp
                 const mouseX = e.clientX;
                 const mouseY = e.clientY;
                 const hinge = getHingePoint();
@@ -397,9 +395,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dy = mouseY - hinge.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
                 
-                if (distance < 250) {
-                    const force = (e.movementX || 0) * 0.0012 * (1 - distance / 250);
-                    velocity += force;
+                if (distance < 240) {
+                    const draftForce = (e.movementX || 0) * 0.0015 * (1 - distance / 240);
+                    velocity += draftForce;
                 }
             }
         });
@@ -417,22 +415,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function swingLoop() {
             if (!isDragging) {
-                ambientTime += 0.01;
-                const ambientForce = Math.sin(ambientTime) * 0.00015;
+                ambientTime += 0.015;
+                // Subtle organic ambient air drift
+                const ambientBreeze = Math.sin(ambientTime) * 0.00018;
                 
-                const acceleration = -restoringForce * angle + ambientForce;
+                // Pure pendulum gravity equation: acceleration = - (g / L) * sin(theta)
+                const thetaRad = angle * (Math.PI / 180);
+                const acceleration = -gravity * Math.sin(thetaRad) * (180 / Math.PI) + ambientBreeze;
+                
                 velocity += acceleration;
-                velocity *= damping;
+                velocity *= airResistance;
                 angle += velocity;
                 
-                if (angle > 50) angle = 50;
-                if (angle < -50) angle = -50;
+                // Natural chain catenary flex lagging behind angular velocity
+                chainFlex += (-velocity * 1.8 - chainFlex) * 0.20;
+            } else {
+                chainFlex += (velocity * 0.8 - chainFlex) * 0.25;
             }
             
-            lampArm.style.transform = `rotate(${angle}deg)`;
+            // Apply pendulum swing + organic chain flex
+            lampArm.style.transform = `rotate(${angle.toFixed(2)}deg) skewX(${chainFlex.toFixed(2)}deg)`;
             
-            const shiftX = -angle * 5.5; 
-            lampRefl.style.transform = `translateX(calc(-50% + ${shiftX}px))`;
+            // Floor reflection tracks with physical light perspective
+            const shiftX = -Math.sin(angle * Math.PI / 180) * 220; 
+            lampRefl.style.transform = `translateX(calc(-50% + ${shiftX.toFixed(1)}px))`;
             
             requestAnimationFrame(swingLoop);
         }
@@ -650,21 +656,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     revealElements.forEach(el => revealObserver.observe(el));
 
-    /* --- 7. Typewriter Sequence --- */
-    function typeText(element, text, speed) {
+    /* --- 7. Human-Cadence Cyberpunk Typewriter Sequence --- */
+    function typeHuman(element, text, baseSpeed = 70) {
         return new Promise((resolve) => {
             let i = 0;
             element.textContent = '';
-            function type() {
+            function step() {
                 if (i < text.length) {
-                    element.textContent += text.charAt(i);
+                    const char = text.charAt(i);
+                    element.textContent += char;
                     i++;
-                    setTimeout(type, speed);
+                    // Natural human typing rhythm variation
+                    let delay = baseSpeed * (0.75 + Math.random() * 0.65);
+                    if (char === ' ') delay += 50;
+                    if (char === ',' || char === '.' || char === '|' || char === '&') delay += 130;
+                    setTimeout(step, delay);
                 } else {
                     resolve();
                 }
             }
-            type();
+            step();
+        });
+    }
+
+    function backspaceText(element, speed = 20) {
+        return new Promise((resolve) => {
+            function step() {
+                const current = element.textContent;
+                if (current.length > 0) {
+                    element.textContent = current.slice(0, -1);
+                    setTimeout(step, speed);
+                } else {
+                    resolve();
+                }
+            }
+            step();
         });
     }
 
@@ -680,27 +706,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!nameEl) return;
 
-        // Step 1: Type name
-        await typeText(nameEl, "YASER HUSEN", 130);
-        nameCursor.classList.add('hidden');
+        // Step 1: Type Yaser Husen with authentic human keystrokes
+        if (nameCursor) nameCursor.classList.remove('hidden');
+        await typeHuman(nameEl, "YASER HUSEN", 85);
+        if (nameCursor) nameCursor.classList.add('hidden');
 
-        // Step 2: Type subtitle
-        if (subtitleEl && subtitleCursor) {
-            subtitleCursor.classList.remove('hidden');
-            await typeText(subtitleEl, "AI Developer, UI/UX & SaaS Integrator", 80);
-            subtitleCursor.classList.add('hidden');
-        }
-
-        // Step 3: Reveal trait tags and about card
+        // Step 2: Reveal trait tags and about card
         if (detailsContainer) {
             detailsContainer.classList.add('reveal');
         }
 
-        // Step 4: Type description
+        // Step 3: Type description
         if (aboutEl && aboutCursor) {
             aboutCursor.classList.remove('hidden');
-            await typeText(aboutEl, "I bridge technical data science, scalable artificial intelligence, and beautiful custom frontends to build unified high-velocity web platforms.", 50);
+            await typeHuman(aboutEl, "I bridge technical data science, scalable artificial intelligence, and high-velocity web platforms to build unified intelligent systems.", 35);
+            aboutCursor.classList.add('hidden');
         }
+
+        // Step 4: Continuous rotating dynamic skill titles
+        const SKILL_TITLES = [
+            "Data Analyst & AI Integration Specialist",
+            "Prompt Engineering & LLM API Architecture",
+            "Enterprise RAG Pipelines & GCP Vertex AI",
+            "Advanced SQL Analytics & Predictive Modeling",
+            "High-Performance 3D Web & Interactive Systems"
+        ];
+
+        let titleIndex = 0;
+        async function loopTitles() {
+            if (!subtitleEl) return;
+            if (subtitleCursor) subtitleCursor.classList.remove('hidden');
+
+            while (true) {
+                const titleToType = SKILL_TITLES[titleIndex % SKILL_TITLES.length];
+                await typeHuman(subtitleEl, titleToType, 50);
+                // Pause to let visitor read comfortably
+                await new Promise(r => setTimeout(r, 2600));
+                // Smooth backspacing
+                await backspaceText(subtitleEl, 20);
+                await new Promise(r => setTimeout(r, 450));
+                titleIndex++;
+            }
+        }
+
+        loopTitles();
     }
 
     startHeroAnimations();

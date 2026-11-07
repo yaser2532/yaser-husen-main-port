@@ -590,21 +590,39 @@ header::before {
 /* Typing Cursor */
 .typing-cursor {
     display: inline-block;
-    width: 3px;
-    height: 1.1em;
-    background: linear-gradient(to bottom, var(--accent-color), var(--accent-hover));
-    margin-left: 0.3125rem;
-    animation: blink 0.70s step-end infinite;
+    width: 3.5px;
+    height: 1.18em;
+    background: var(--cp-turquoise);
+    box-shadow: 0 0 10px var(--cp-turquoise), 0 0 20px var(--cp-turquoise-soft);
+    margin-left: 0.35rem;
+    animation: neonCursorBlink 0.85s ease-in-out infinite alternate;
     vertical-align: middle;
+    border-radius: 1px;
 }
 
 .typing-cursor.hidden {
     display: none;
 }
 
-@keyframes blink {
-    from, to { background: transparent; }
-    50% { background: var(--accent-hover); }
+@keyframes neonCursorBlink {
+    0% { opacity: 0.15; filter: drop-shadow(0 0 2px var(--cp-turquoise)); }
+    100% { opacity: 1.0; filter: drop-shadow(0 0 12px var(--cp-turquoise)) drop-shadow(0 0 24px var(--cp-turquoise-soft)); }
+}
+
+#tp-name {
+    font-style: italic;
+    background: linear-gradient(135deg, #ffffff 15%, #ffd873 55%, #f2c14e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 25px rgba(242, 193, 78, 0.45));
+    display: inline-block;
+}
+
+#tp-subtitle {
+    font-style: italic;
+    color: var(--cp-turquoise);
+    text-shadow: 0 0 14px rgba(25, 227, 208, 0.55), 0 0 28px rgba(25, 227, 208, 0.25);
+    letter-spacing: 0.03em;
 }
 
 /* ==========================================================================
@@ -1540,9 +1558,11 @@ header::before {
     content: '';
     position: absolute;
     bottom: 100%;
-    width: 3px;
+    width: 4px;
     height: 100vh;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 0%, #111 100%);
+    background: repeating-linear-gradient(to bottom, #ffd873 0px, #f2c14e 3px, #19e3d0 6px, #0a0314 9px, #ffd873 12px);
+    box-shadow: 0 0 10px rgba(242, 193, 78, 0.45);
+    border-radius: 2px;
 }
 
 .lamp-shade {
@@ -3729,4 +3749,79 @@ html.nb-ready [data-nb="dispatch"] {
     .nano-chat-card { padding: 1rem; }
     .nano-title { font-size: 0.95rem; }
     .nano-msg-bubble.user, .nano-msg-bubble.assistant { max-width: 95%; }
+}
+
+/* === CYBERPUNK NEON LIGHTING & TRANSPARENT STARRY SKY [Section 2] === */
+html {
+    background-color: var(--bg-color);
+}
+
+body {
+    background-color: transparent !important;
+}
+
+#cosmic-bg-container {
+    opacity: 0.85 !important;
+}
+
+/* Neon Buttons with Glowing Glass Text Backgrounds */
+.btn, .cta-btn, .filter-btn, .nav-btn, .submit-btn, .resume-btn {
+    background: linear-gradient(135deg, rgba(20, 10, 36, 0.85), rgba(34, 16, 58, 0.92)) !important;
+    border: 1px solid rgba(242, 193, 78, 0.45) !important;
+    box-shadow: 0 0 16px rgba(242, 193, 78, 0.28), inset 0 0 12px rgba(242, 193, 78, 0.14) !important;
+    color: #f3eeff !important;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:hover, .cta-btn:hover, .filter-btn:hover, .nav-btn:hover, .submit-btn:hover, .resume-btn:hover, .filter-btn.active {
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 0 26px rgba(25, 227, 208, 0.55), inset 0 0 15px rgba(25, 227, 208, 0.28) !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+}
+
+/* Pronounced Vibrant Radial Gradient Hover on Cards */
+.cp-3d-card {
+    border: 1px solid rgba(157, 77, 255, 0.25) !important;
+    background: rgba(18, 9, 32, 0.65) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}
+
+.cp-3d-card::before {
+    background: radial-gradient(circle 260px at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(25, 227, 208, 0.30), rgba(242, 193, 78, 0.20) 40%, rgba(157, 77, 255, 0.15) 60%, transparent 80%) !important;
+    opacity: 0;
+    transition: opacity 0.25s ease !important;
+}
+
+.cp-3d-card:hover::before {
+    opacity: 1 !important;
+}
+
+.cp-3d-card:hover {
+    border-color: var(--cp-turquoise) !important;
+    box-shadow: 0 0.5rem 3rem rgba(25, 227, 208, 0.28), 0 0 20px rgba(242, 193, 78, 0.25), 0 0 35px rgba(157, 77, 255, 0.35) !important;
+}
+
+/* Neon Pill Text Backgrounds for Badges & Small Tags */
+.trait-tag, .badge, .status-txt, .expertise-tag, .onboard-badge, .bday-tag {
+    background: rgba(20, 10, 36, 0.85) !important;
+    border: 1px solid rgba(25, 227, 208, 0.45) !important;
+    box-shadow: 0 0 12px rgba(25, 227, 208, 0.22), inset 0 0 8px rgba(25, 227, 208, 0.12) !important;
+    color: var(--cp-turquoise-soft) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.04em;
+    padding: 0.35rem 0.85rem !important;
+    border-radius: 20px !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.trait-tag:hover, .badge:hover {
+    border-color: var(--cp-gold) !important;
+    box-shadow: 0 0 18px rgba(242, 193, 78, 0.40), inset 0 0 10px rgba(242, 193, 78, 0.20) !important;
+    color: var(--cp-gold-bright) !important;
 }

@@ -143,39 +143,62 @@
     ]);
 
     function retrieveAnswer(query) {
-        // Prompt-injection defense & input safety
-        const lower = query.toLowerCase();
-        if (
-            lower.includes('ignore all previous') ||
-            lower.includes('system prompt') ||
-            lower.includes('reveal secret') ||
-            lower.includes('forget instructions') ||
-            lower.includes('as an unfiltered ai')
-        ) {
-            return REFUSAL_TEXT;
-        }
-
-        // Out-of-scope common entity guards
-        if (
-            lower.includes('france') || lower.includes('paris') ||
-            lower.includes('cookies') || lower.includes('bake') ||
-            lower.includes('world cup') || lower.includes('tournament') ||
-            lower.includes('poem') || lower.includes('rain') ||
-            lower.includes('gravity') || lower.includes('physics')
-        ) {
-            return REFUSAL_TEXT;
-        }
-
-        const rawTokens = tokenize(query);
-        const tokens = rawTokens.filter(t => !STOPWORDS.has(t));
-        
-        if (tokens.length === 0) {
-            // Check if query is explicitly asking "who is yaser"
-            if (lower.includes('who') && lower.includes('yaser')) {
-                return KNOWLEDGE_BASE.find(c => c.id === 'role_identity').answer;
+        try {
+            if (!query || typeof query !== 'string') {
+                return "Please enter a question about Yaser's skills, projects, or experience!";
             }
-            return "Please enter a specific question about Yaser's technical skills, projects, or background!";
-        }
+
+            const lower = query.toLowerCase().trim();
+
+            // Prompt-injection defense & input safety
+            if (
+                lower.includes('ignore all previous') ||
+                lower.includes('system prompt') ||
+                lower.includes('reveal secret') ||
+                lower.includes('forget instructions') ||
+                lower.includes('as an unfiltered ai')
+            ) {
+                return REFUSAL_TEXT;
+            }
+
+            // Natural conversational greetings [Section 5]
+            if (/^(hi|hello|hey|greetings|howdy|good\s+(morning|afternoon|evening))\b/i.test(lower)) {
+                return "Greetings! I am Nano, Yaser's local AI co-pilot. I can guide you through his technical skills, GCP Vertex AI projects, SQL analytics, or how to contact him. What would you like to explore?";
+            }
+
+            if (/^(how are you|how's it going|what'?s up|sup)\b/i.test(lower)) {
+                return "All local systems operating at peak efficiency! Ready to assist you with any questions about Yaser's background, technical skills, or portfolio builds.";
+            }
+
+            if (/(thank you|thanks|great job|awesome|cool|love the 3d|nice website)/i.test(lower)) {
+                return "Thank you! Yaser designed this portfolio with real-time Three.js WebGL physics, cyberpunk aesthetic, and local AI assistance. Let me know if you would like to know more about the tech stack!";
+            }
+
+            if (/^(what can you do|help|who are you|what is this)\b/i.test(lower)) {
+                return "I am Nano, a 100% client-side AI assistant running locally in your browser with zero external calls. Ask me about Yaser's skills, machine learning projects, Aspira work experience, or resume details!";
+            }
+
+            // Out-of-scope common entity guards
+            if (
+                lower.includes('france') || lower.includes('paris') ||
+                lower.includes('cookies') || lower.includes('bake') ||
+                lower.includes('world cup') || lower.includes('tournament') ||
+                lower.includes('poem') || lower.includes('rain') ||
+                lower.includes('gravity') || lower.includes('physics')
+            ) {
+                return REFUSAL_TEXT;
+            }
+
+            const rawTokens = tokenize(query);
+            const tokens = rawTokens.filter(t => !STOPWORDS.has(t));
+            
+            if (tokens.length === 0) {
+                // Check if query is explicitly asking "who is yaser"
+                if (lower.includes('who') && lower.includes('yaser')) {
+                    return KNOWLEDGE_BASE.find(c => c.id === 'role_identity').answer;
+                }
+                return "Please enter a specific question about Yaser's technical skills, projects, or background!";
+            }
 
         let bestScore = 0;
         let bestChunk = null;
@@ -225,6 +248,10 @@
         }
 
         return bestChunk.answer;
+        } catch (err) {
+            console.warn('[Nano] Safely handled unexpected query:', err);
+            return REFUSAL_TEXT;
+        }
     }
 
     // ─── 3. Mount Inline Cyberpunk Terminal in Footer [CB-03] ───────────────

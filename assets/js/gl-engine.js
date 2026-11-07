@@ -219,42 +219,78 @@
     grid.material.opacity = 0.28;
     backdropGroup.add(grid);
 
-    // Drifting Cosmic Dust Particles
-    const DUST_COUNT = tier === 'low' ? 80 : (tier === 'medium' ? 160 : 260);
-    const dustGeom = new THREE.BufferGeometry();
-    const dustPositions = new Float32Array(DUST_COUNT * 3);
-    const dustColors = new Float32Array(DUST_COUNT * 3);
+    // ─── Rich Multi-Depth 3D Starry Night Sky [Section 2] ─────────────────
+    // 1. Foreground Twinkling Stars (Large, vibrant, high-glow)
+    const FG_STARS = tier === 'low' ? 180 : (tier === 'medium' ? 350 : 500);
+    const fgGeom = new THREE.BufferGeometry();
+    const fgPos = new Float32Array(FG_STARS * 3);
+    const fgCol = new Float32Array(FG_STARS * 3);
+    const fgSizes = new Float32Array(FG_STARS);
 
-    const dustColorChoices = [
-        new THREE.Color(COLOR_GOLD),
-        new THREE.Color(COLOR_PURPLE),
-        new THREE.Color(COLOR_TURQUOISE),
-        new THREE.Color(COLOR_GOLD_BRIGHT)
+    const starColors = [
+        new THREE.Color(0xffffff),      // Brilliant diamond
+        new THREE.Color(COLOR_GOLD_BRIGHT), // Neon Gold
+        new THREE.Color(COLOR_TURQUOISE),   // Neon Turquoise
+        new THREE.Color(0xa855f7)       // Radiant Purple
     ];
 
-    for (let i = 0; i < DUST_COUNT; i++) {
-        dustPositions[i * 3 + 0] = (Math.random() - 0.5) * width * 1.8;
-        dustPositions[i * 3 + 1] = (Math.random() - 0.5) * height * 2.2;
-        dustPositions[i * 3 + 2] = -Math.random() * 800 + 100;
+    for (let i = 0; i < FG_STARS; i++) {
+        fgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 2.2;
+        fgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 2.5;
+        fgPos[i * 3 + 2] = -Math.random() * 650 + 150;
 
-        const c = dustColorChoices[i % dustColorChoices.length];
-        dustColors[i * 3 + 0] = c.r;
-        dustColors[i * 3 + 1] = c.g;
-        dustColors[i * 3 + 2] = c.b;
+        const c = starColors[i % starColors.length];
+        fgCol[i * 3 + 0] = c.r;
+        fgCol[i * 3 + 1] = c.g;
+        fgCol[i * 3 + 2] = c.b;
+
+        fgSizes[i] = 4.5 + Math.random() * 5.0; // 4.5px to 9.5px
     }
 
-    dustGeom.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-    dustGeom.setAttribute('color', new THREE.BufferAttribute(dustColors, 3));
+    fgGeom.setAttribute('position', new THREE.BufferAttribute(fgPos, 3));
+    fgGeom.setAttribute('color', new THREE.BufferAttribute(fgCol, 3));
 
-    const dustMat = new THREE.PointsMaterial({
-        size: 3.8,
+    const fgMat = new THREE.PointsMaterial({
+        size: 6.0,
         vertexColors: true,
         transparent: true,
-        opacity: 0.72,
-        blending: THREE.AdditiveBlending
+        opacity: 0.95,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
     });
-    const dustParticles = new THREE.Points(dustGeom, dustMat);
-    backdropGroup.add(dustParticles);
+    const fgStarfield = new THREE.Points(fgGeom, fgMat);
+    backdropGroup.add(fgStarfield);
+
+    // 2. Deep Space Background Constellations (High depth density)
+    const BG_STARS = tier === 'low' ? 300 : (tier === 'medium' ? 600 : 900);
+    const bgGeom = new THREE.BufferGeometry();
+    const bgPos = new Float32Array(BG_STARS * 3);
+    const bgCol = new Float32Array(BG_STARS * 3);
+
+    for (let i = 0; i < BG_STARS; i++) {
+        bgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 3.0;
+        bgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 3.5;
+        bgPos[i * 3 + 2] = -Math.random() * 1800 - 300; // Deep Z-space
+
+        const c = starColors[Math.floor(Math.random() * starColors.length)];
+        bgCol[i * 3 + 0] = c.r * 0.85;
+        bgCol[i * 3 + 1] = c.g * 0.85;
+        bgCol[i * 3 + 2] = c.b * 0.85;
+    }
+
+    bgGeom.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
+    bgGeom.setAttribute('color', new THREE.BufferAttribute(bgCol, 3));
+
+    const bgMat = new THREE.PointsMaterial({
+        size: 3.2,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.80,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    const bgStarfield = new THREE.Points(bgGeom, bgMat);
+    backdropGroup.add(bgStarfield);
 
     /* =========================================================================
        3D-04: 8 LOW-POLY 3D DRONES (Gold body, purple core, spinning fins, cone)
@@ -460,15 +496,26 @@
         grid.position.x = currentParallaxX * 35;
         grid.position.y = -height * 0.65 + currentParallaxY * 20;
 
-        // Cosmic dust drift
-        const positions = dustGeom.attributes.position.array;
-        for (let i = 0; i < DUST_COUNT; i++) {
-            positions[i * 3 + 1] += delta * 18; // drift upward slowly
-            if (positions[i * 3 + 1] > height * 1.1) {
-                positions[i * 3 + 1] = -height * 1.1;
+        // Starry Night Sky Dynamics (Twinkling & 3D Flight)
+        const fgPositions = fgGeom.attributes.position.array;
+        for (let i = 0; i < FG_STARS; i++) {
+            // Subtle upward float + slow cosmic drift
+            fgPositions[i * 3 + 1] += delta * 15;
+            if (fgPositions[i * 3 + 1] > height * 1.3) {
+                fgPositions[i * 3 + 1] = -height * 1.3;
             }
         }
-        dustGeom.attributes.position.needsUpdate = true;
+        fgGeom.attributes.position.needsUpdate = true;
+
+        // Twinkle pulse modulation
+        fgMat.opacity = 0.80 + Math.sin(now * 0.003) * 0.18;
+        bgMat.opacity = 0.65 + Math.cos(now * 0.002) * 0.15;
+
+        // Parallax drift on star layers
+        fgStarfield.position.x = currentParallaxX * 45;
+        fgStarfield.position.y = currentParallaxY * 30;
+        bgStarfield.position.x = currentParallaxX * 15;
+        bgStarfield.position.y = currentParallaxY * 10;
 
         // 3. 3D Drones Positioning & Dynamics [3D-04]
         // Synchronize with window.swarm if present, else follow cursor with orbit
