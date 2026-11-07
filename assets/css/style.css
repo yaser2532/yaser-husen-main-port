@@ -139,38 +139,26 @@ button, input, textarea {
     background: var(--accent-color); /* Solid accent color (no gradient) */
 }
 
-/* Mouse Glow Background Effect (Subtle Deep Arcane Aura) */
-.mouse-glow {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 14rem;
-    height: 14rem;
-    background: radial-gradient(circle, rgba(157, 77, 255, 0.15) 0%, rgba(25, 227, 208, 0.08) 35%, rgba(10, 3, 20, 0) 70%);
-    border-radius: 50%;
-    transform: translate3d(0, 0, 0) translate(-50%, -50%) scale(1);
-    pointer-events: none;
-    z-index: 1;
-    mix-blend-mode: screen;
-    will-change: transform;
-    transition: opacity 0.4s ease;
+/* Mouse Glow Disabled - Big light bulb / ball of light removed */
+.mouse-glow, #mouse-glow {
+    display: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
-/* Futuristic Mechanical Robotic Nano-Bot Swarm (Strictly <= 1px, No Interconnecting Lines) */
+/* Swarming organic cursor tracker dots - Individual Glowing Lights */
 .mouse-tracker-dot {
     position: fixed;
     top: 0;
     left: 0;
-    width: 1px !important;
-    height: 1px !important;
     border-radius: 50%;
     pointer-events: none;
     z-index: 10000;
+    mix-blend-mode: screen;
     will-change: transform;
     opacity: 0;
-    background: #19e3d0;
-    box-shadow: 0 0 2px #19e3d0, 0 0 3px rgba(25, 227, 208, 0.9);
-    transition: opacity 0.25s ease;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .mouse-tracker-dot::after {
     display: none !important;
@@ -179,34 +167,40 @@ button, input, textarea {
     opacity: 0.95;
 }
 
-body.cursor-reading .mouse-glow {
-    opacity: 0 !important;
+/* Individual Self-Emitting Light Rays */
+.mouse-tracker-dot:nth-child(4n+1) {
+    background: linear-gradient(135deg, #19e3d0 0%, #06b6d4 100%);
+    box-shadow: 0 0 10px rgba(25, 227, 208, 0.95), 0 0 22px rgba(25, 227, 208, 0.5);
+}
+.mouse-tracker-dot:nth-child(4n+2) {
+    background: linear-gradient(135deg, #ffd873 0%, #f2c14e 100%);
+    box-shadow: 0 0 10px rgba(255, 216, 115, 0.95), 0 0 22px rgba(242, 193, 78, 0.5);
+}
+.mouse-tracker-dot:nth-child(4n+3) {
+    background: linear-gradient(135deg, #c084fc 0%, #9d4dff 100%);
+    box-shadow: 0 0 10px rgba(192, 132, 252, 0.95), 0 0 22px rgba(157, 77, 255, 0.5);
+}
+.mouse-tracker-dot:nth-child(4n+4) {
+    background: linear-gradient(135deg, #5eead4 0%, #10b981 100%);
+    box-shadow: 0 0 10px rgba(94, 234, 212, 0.95), 0 0 22px rgba(16, 185, 129, 0.5);
 }
 
-/* Mechanical nano-bot micro-thruster colors (1px pinpoint) */
+/* Distinct visible dot sizing (8px - 13px) */
 .mouse-tracker-dot:nth-child(odd) {
-    width: 1px !important;
-    height: 1px !important;
-    background: #19e3d0;
-    box-shadow: 0 0 2px #19e3d0, 0 0 4px rgba(25, 227, 208, 0.85);
+    width: 0.625rem !important; /* 10px */
+    height: 0.625rem !important;
 }
 .mouse-tracker-dot:nth-child(even) {
-    width: 1px !important;
-    height: 1px !important;
-    background: #ffd873;
-    box-shadow: 0 0 2px #ffd873, 0 0 4px rgba(255, 216, 115, 0.85);
+    width: 0.8125rem !important; /* 13px */
+    height: 0.8125rem !important;
 }
 .mouse-tracker-dot:nth-child(3n) {
-    width: 1px !important;
-    height: 1px !important;
-    background: #c084fc;
-    box-shadow: 0 0 2px #c084fc, 0 0 3px rgba(192, 132, 252, 0.85);
+    width: 0.5rem !important; /* 8px */
+    height: 0.5rem !important;
 }
 .mouse-tracker-dot:nth-child(3n+2) {
-    width: 1px !important;
-    height: 1px !important;
-    background: #5eead4;
-    box-shadow: 0 0 2px #5eead4, 0 0 4px rgba(94, 234, 212, 0.85);
+    width: 0.6875rem !important; /* 11px */
+    height: 0.6875rem !important;
 }
 
 /* Keep the cursor effect from washing out readable content. */
@@ -584,41 +578,6 @@ header::before {
     border-radius: 2px;
 }
 
-/* Audio-Reactive Kinetic Visualizer Bars */
-.hero-visualizer-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.85rem;
-    padding: 0.5rem 1rem;
-    background: rgba(18, 10, 32, 0.65);
-    border: 1px solid rgba(25, 227, 208, 0.35);
-    border-radius: 2rem;
-    backdrop-filter: blur(8px);
-    margin-left: 1.25rem;
-}
-
-.visualizer-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--cp-turquoise);
-}
-
-.hero-audio-visualizer {
-    display: inline-flex;
-    align-items: flex-end;
-    gap: 3px;
-    height: 18px;
-}
-
-.hero-audio-visualizer .v-bar {
-    width: 3px;
-    height: 5px;
-    background: linear-gradient(180deg, var(--cp-turquoise), var(--cp-gold));
-    border-radius: 1px;
-    transition: height 0.08s ease;
-    box-shadow: 0 0 6px rgba(25, 227, 208, 0.5);
-}
 
 .hero-content .eyebrow {
     display: inline-flex;
@@ -3780,7 +3739,14 @@ footer.cyber-dock-footer, footer {
     z-index: -1;
     pointer-events: none;
     opacity: 1 !important;
-    background: radial-gradient(ellipse at 50% 25%, #14072b 0%, #080316 45%, #020008 100%) !important;
+    background-color: #020108;
+    background-image: 
+        linear-gradient(180deg, rgba(3, 1, 10, 0.45) 0%, rgba(3, 1, 10, 0.65) 50%, rgba(2, 0, 8, 0.85) 100%),
+        url('../images/galaxy_bg.jpg') !important;
+    background-size: cover !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
 }
 
 #cosmic-canvas {

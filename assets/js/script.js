@@ -100,25 +100,21 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(dot);
             dots.push(dot);
 
-            // Establish organic firefly physics parameters
-            const angle = (i * (Math.PI * 2 / NUM_DOTS)) + (Math.random() * 0.4);
-            const distance = 30 + i * 8 + Math.random() * 10;
+            // Establish random directional angles and offset distances to form an organic cluster (recovered original)
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 8 + Math.random() * 14;
             
             dotsData.push({
                 currentX: targetX,
                 currentY: targetY,
-                vx: 0,
-                vy: 0,
                 currentOpacity: 0,
-                ease: 0.10 + Math.random() * 0.04,
-                naturalRadius: distance,
-                swirlSpeed: (i % 2 === 0 ? 1 : -1) * (1.1 + Math.random() * 1.4),
+                ease: 0.085 + Math.random() * 0.04,
                 dx: Math.cos(angle) * distance,
                 dy: Math.sin(angle) * distance,
-                freqX: 1.4 + Math.random() * 1.8,
-                freqY: 1.4 + Math.random() * 1.8,
-                ampX: 6.0 + Math.random() * 10.0,
-                ampY: 6.0 + Math.random() * 10.0,
+                freqX: 0.7 + Math.random() * 0.8,
+                freqY: 0.7 + Math.random() * 0.8,
+                ampX: 2.0 + Math.random() * 3.0,
+                ampY: 2.0 + Math.random() * 3.0,
                 phaseX: Math.random() * Math.PI * 2,
                 phaseY: Math.random() * Math.PI * 2
             });
@@ -127,9 +123,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mousemove', (e) => {
             targetX = e.clientX;
             targetY = e.clientY;
-            if (typeof window.__triggerKineticPulse === 'function') {
-                window.__triggerKineticPulse(0.06);
-            }
             ensureGlowLoop();
 
             const readableTarget = e.target.closest(
@@ -347,36 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.currentX += (targetDotX - data.currentX) * 0.25;
                     data.currentY += (targetDotY - data.currentY) * 0.25;
                 } else {
-                    // Priority 2: Firefly attraction & repulsion dynamics around cursor
-                    const dx = targetX - data.currentX;
-                    const dy = targetY - data.currentY;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    const nx = dx / dist;
-                    const ny = dy / dist;
-
-                    // 1. Constantly attracted toward cursor
-                    const fAttract = Math.min(dist * 0.045, 5.2);
-
-                    // 2. Repelled when within close personal bubble (< 48px)
-                    let fRepelX = 0, fRepelY = 0;
-                    const repelRadius = 48;
-                    if (dist < repelRadius) {
-                        const repelForce = Math.pow(1 - dist / repelRadius, 2) * 8.0;
-                        fRepelX = -nx * repelForce;
-                        fRepelY = -ny * repelForce;
-                    }
-
-                    // 3. Tangential Swirl & Flutter: authentic organic firefly movement
-                    const fSwirlX = -ny * data.swirlSpeed;
-                    const fSwirlY = nx * data.swirlSpeed;
-                    const flutterX = Math.sin(time * data.freqX + data.phaseX) * 2.0;
-                    const flutterY = Math.cos(time * data.freqY + data.phaseY) * 2.0;
-
-                    data.vx = (data.vx || 0) * 0.86 + (nx * fAttract + fRepelX + fSwirlX + flutterX) * 0.18;
-                    data.vy = (data.vy || 0) * 0.86 + (ny * fAttract + fRepelY + fSwirlY + flutterY) * 0.18;
-
-                    data.currentX += data.vx;
-                    data.currentY += data.vy;
+                    // Priority 2: Original smooth organic cluster following the cursor
+                    const targetDotX = targetX + data.dx + driftX;
+                    const targetDotY = targetY + data.dy + driftY;
+                    data.currentX += (targetDotX - data.currentX) * data.ease;
+                    data.currentY += (targetDotY - data.currentY) * data.ease;
                 }
                 
                 data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.14;
@@ -384,7 +352,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dotXRem = data.currentX / rootFontSize;
                 const dotYRem = data.currentY / rootFontSize;
                 
-                dot.style.transform = `translate3d(${dotXRem}rem, ${dotYRem}rem, 0) translate(-50%, -50%) scale(1)`;
+                dot.style.transform = `translate3d(${dotXRem}rem, ${dotYRem}rem, 0) translate(-50%, -50%)`;
                 dot.style.opacity = data.currentOpacity.toFixed(3);
             }
 
@@ -918,9 +886,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const char = text.charAt(i);
                     element.textContent += char;
                     i++;
-                    if (typeof window.__triggerKineticPulse === 'function') {
-                        window.__triggerKineticPulse(0.35);
-                    }
                     // Natural human typing rhythm variation
                     let delay = baseSpeed * (0.75 + Math.random() * 0.65);
                     if (char === ' ') delay += 50;
@@ -1181,31 +1146,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
             updateClock();
             setInterval(updateClock, 1000);
-        }
-
-        // B. Audio-Reactive Kinetic Visualizer Bars
-        const vBars = document.querySelectorAll('.hero-audio-visualizer .v-bar');
-        let kineticEnergy = 0.35;
-
-        window.__triggerKineticPulse = (intensity = 0.5) => {
-            kineticEnergy = Math.min(1.0, kineticEnergy + intensity);
-        };
-
-        if (vBars.length > 0) {
-            let t = 0;
-            function renderVisualizer() {
-                t += 0.07;
-                kineticEnergy = Math.max(0.18, kineticEnergy * 0.955); // smooth decay
-                vBars.forEach((bar, idx) => {
-                    const wave1 = Math.sin(t * 2.8 + idx * 0.42) * 0.5 + 0.5;
-                    const wave2 = Math.cos(t * 1.9 - idx * 0.28) * 0.5 + 0.5;
-                    const combined = (wave1 * 0.55 + wave2 * 0.45) * kineticEnergy;
-                    const barHeight = Math.max(3, Math.min(18, Math.round(3 + combined * 15)));
-                    bar.style.height = `${barHeight}px`;
-                });
-                requestAnimationFrame(renderVisualizer);
-            }
-            requestAnimationFrame(renderVisualizer);
         }
     }
     initHeroKineticCollage();
@@ -1880,7 +1820,7 @@ function showToast(msg) {
 }
 
 // ════════════════════════════════════════════════════════════
-//  DYNAMIC COSMIC SPACE BACKGROUND (DEEP GALAXY & NEBULA) WITH THREE.JS
+//  DYNAMIC COSMIC SPACE BACKGROUND (MINUSCULE STARS OVER HD GALAXY)
 // ════════════════════════════════════════════════════════════
 function initCosmicBackground() {
   const container = document.getElementById('cosmic-bg-container');
@@ -1888,7 +1828,7 @@ function initCosmicBackground() {
   if (!container || !canvas || typeof THREE === 'undefined') return;
 
   const scene = new THREE.Scene();
-  scene.background = null; // Transparent to blend with container gradient
+  scene.background = null; // Transparent to blend seamlessly over the HD galaxy background
 
   // Camera - Perspective Camera for 3D astronomical depth parallax
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1200);
@@ -1899,51 +1839,26 @@ function initCosmicBackground() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  // 1. Sharp Star Texture with soft diffraction bloom
+  // Crisp Minuscule Star Texture (No Blobs)
   function createStarTexture() {
     const texCanvas = document.createElement('canvas');
-    texCanvas.width = 32;
-    texCanvas.height = 32;
+    texCanvas.width = 16;
+    texCanvas.height = 16;
     const ctx = texCanvas.getContext('2d');
     
-    // Soft outer glow
-    const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    // Crisp glowing core
+    const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
     grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.9)');
-    grad.addColorStop(0.5, 'rgba(255, 255, 255, 0.25)');
+    grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.85)');
+    grad.addColorStop(0.7, 'rgba(255, 255, 255, 0.25)');
     grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 32, 32);
+    ctx.fillRect(0, 0, 16, 16);
 
-    // Micro 4-point cross diffraction twinkle spike
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(16, 2); ctx.lineTo(16, 30);
-    ctx.moveTo(2, 16); ctx.lineTo(30, 16);
-    ctx.stroke();
-
-    return new THREE.CanvasTexture(texCanvas);
-  }
-
-  // 2. Volumetric Diffuse Nebula Dust Texture
-  function createNebulaTexture() {
-    const texCanvas = document.createElement('canvas');
-    texCanvas.width = 64;
-    texCanvas.height = 64;
-    const ctx = texCanvas.getContext('2d');
-    const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-    grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.55)');
-    grad.addColorStop(0.7, 'rgba(255, 255, 255, 0.15)');
-    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 64, 64);
     return new THREE.CanvasTexture(texCanvas);
   }
 
   const starTexture = createStarTexture();
-  const nebulaTexture = createNebulaTexture();
 
   // Multi-tier Starfield Generator
   function createStarfield(count, size, rangeX, rangeY, rangeZ, opacity) {
@@ -1953,10 +1868,10 @@ function initCosmicBackground() {
     
     const starColors = [
       new THREE.Color(0xffffff), // Diamond Pure White
-      new THREE.Color(0xa5f3fc), // Distant Cyan Stellar
-      new THREE.Color(0xfde047), // Stellar Gold
-      new THREE.Color(0xffedd5), // Warm Amber
-      new THREE.Color(0xd8b4fe)  // Deep Cosmic Lavender
+      new THREE.Color(0xa5f3fc), // Ice Blue
+      new THREE.Color(0xfde047), // Pale Gold
+      new THREE.Color(0xffedd5), // Warm Starlight
+      new THREE.Color(0xe9d5ff)  // Soft Cosmic Lavender
     ];
 
     for (let i = 0; i < count; i++) {
@@ -1986,76 +1901,13 @@ function initCosmicBackground() {
     return new THREE.Points(geo, mat);
   }
 
-  // A. Deep Universe Starfield (2,000 crisp micro-stars)
-  const deepStars = createStarfield(2000, 0.35, 420, 320, 400, 0.92);
+  // A. Deep Universe Starfield (1,800 minuscule pinprick stars, size 0.22)
+  const deepStars = createStarfield(1800, 0.22, 450, 350, 420, 0.92);
   scene.add(deepStars);
 
-  // B. Foreground Twinkling Stellar Clusters (480 stars)
-  const foregroundStars = createStarfield(480, 0.72, 280, 220, 220, 0.98);
+  // B. Foreground Twinkling Stellar Points (320 stars, size 0.45)
+  const foregroundStars = createStarfield(320, 0.45, 280, 220, 240, 0.95);
   scene.add(foregroundStars);
-
-  // C. Spiral Milky Way Galaxy Nebula Simulation
-  const galaxyGroup = new THREE.Group();
-  (function buildMilkyWayGalaxy() {
-    const geo = new THREE.BufferGeometry();
-    const positions = [];
-    const colors = [];
-    const count = 750;
-
-    const coreColor = new THREE.Color(0xfff7ed);
-    const goldColor = new THREE.Color(0xfbbf24);
-    const violetColor = new THREE.Color(0xa855f7);
-    const cyanColor = new THREE.Color(0x19e3d0);
-
-    for (let i = 0; i < count; i++) {
-      // 2 major logarithmic spiral arms
-      const armIndex = i % 2;
-      const armAngle = armIndex * Math.PI;
-      const normDist = Math.pow(Math.random(), 1.35);
-      const r = 12 + normDist * 165;
-      const angle = armAngle + r * 0.035 + (Math.random() - 0.5) * 0.55;
-      const dispersion = (Math.random() - 0.5) * (14 + r * 0.16);
-
-      const x = Math.cos(angle) * r + dispersion;
-      const y = (Math.random() - 0.5) * (12 + r * 0.08);
-      const z = Math.sin(angle) * r + dispersion;
-
-      positions.push(x, y, z);
-
-      // Color gradation: Core (Gold/White) -> Mid-Arms (Violet) -> Outer Filaments (Cyan)
-      const pColor = new THREE.Color();
-      if (r < 42) {
-        pColor.lerpColors(coreColor, goldColor, r / 42);
-      } else if (r < 105) {
-        pColor.lerpColors(goldColor, violetColor, (r - 42) / 63);
-      } else {
-        pColor.lerpColors(violetColor, cyanColor, (r - 105) / 60);
-      }
-      colors.push(pColor.r, pColor.g, pColor.b);
-    }
-
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-    const mat = new THREE.PointsMaterial({
-      size: 7.5,
-      map: nebulaTexture,
-      transparent: true,
-      opacity: 0.48,
-      vertexColors: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
-    });
-
-    const galaxyPoints = new THREE.Points(geo, mat);
-    galaxyGroup.add(galaxyPoints);
-
-    // Tilt the galaxy plane naturally as viewed from Earth's celestial sphere
-    galaxyGroup.rotation.x = 0.98;
-    galaxyGroup.rotation.z = 0.45;
-    galaxyGroup.position.set(10, 5, -50);
-  })();
-  scene.add(galaxyGroup);
 
   // Cursor Parallax Tracker
   let mouseX = 0, mouseY = 0;
@@ -2083,14 +1935,13 @@ function initCosmicBackground() {
     requestAnimationFrame(animateScene);
     time += 0.012;
 
-    // Slow celestial rotation
-    deepStars.rotation.y = time * 0.0006;
-    foregroundStars.rotation.y = -time * 0.0012;
-    galaxyGroup.rotation.y = time * 0.0010;
+    // Slow celestial rotation of minuscule stars
+    deepStars.rotation.y = time * 0.0004;
+    foregroundStars.rotation.y = -time * 0.0008;
 
-    // Organic atmospheric stellar twinkling
-    deepStars.material.opacity = 0.80 + Math.sin(time * 1.8) * 0.14;
-    foregroundStars.material.opacity = 0.88 + Math.cos(time * 2.4) * 0.12;
+    // Atmospheric stellar twinkling
+    deepStars.material.opacity = 0.82 + Math.sin(time * 1.8) * 0.12;
+    foregroundStars.material.opacity = 0.86 + Math.cos(time * 2.4) * 0.14;
 
     // Camera parallax dampening & scroll depth navigation
     mouseX += (targetMouseX - mouseX) * 0.05;

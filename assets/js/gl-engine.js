@@ -101,20 +101,10 @@
     const heroGroup = null;
 
     /* =========================================================================
-       3D-02: CYBER PERSPECTIVE GRID BACKDROP & COSMIC DUST
+       3D-02: MULTI-DEPTH COSMIC STARRY SKY BACKDROP (GRID LINES REMOVED)
        ========================================================================= */
     const backdropGroup = new THREE.Group();
     scene.add(backdropGroup);
-
-    // Grid Floor
-    const gridDim = Math.max(width * 2.4, 2800);
-    const gridDivs = 40;
-    const grid = new THREE.GridHelper(gridDim, gridDivs, COLOR_TURQUOISE, COLOR_PURPLE_DEEP);
-    grid.position.set(0, -height * 0.65, -gridDim * 0.35);
-    grid.rotation.x = 0; // horizontal floor
-    grid.material.transparent = true;
-    grid.material.opacity = 0.28;
-    backdropGroup.add(grid);
 
     // ─── Rich Multi-Depth 3D Starry Night Sky & Distant Galaxy ────────────
     function createStarTexture() {
@@ -320,12 +310,6 @@
         currentParallaxX += (targetParallaxX - currentParallaxX) * 0.06;
         currentParallaxY += (targetParallaxY - currentParallaxY) * 0.06;
         scrollY += (targetScrollY - scrollY) * 0.10;
-
-        // 1. Cyber Backdrop Perspective Drift [3D-02]
-        // Grid translates forward as scroll increases (infinite highway feeling)
-        grid.position.z = (-gridDim * 0.35) + ((scrollY * 0.85) % (gridDim / gridDivs));
-        grid.position.x = currentParallaxX * 35;
-        grid.position.y = -height * 0.65 + currentParallaxY * 20;
 
         // Starry Night Sky Dynamics (Twinkling & 3D Flight)
         const fgPositions = fgGeom.attributes.position.array;
