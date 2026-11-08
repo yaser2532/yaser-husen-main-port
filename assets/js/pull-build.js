@@ -184,6 +184,23 @@
     window.addEventListener('resize', debounce(resizeCanvas, 150), { passive: true });
     resizeCanvas();
 
+    // ─── 5b. Cursor & Swarm Pointer Tracking [PF-02] ──────────────────────
+    let cursorX = window.innerWidth * 0.5;
+    let cursorY = window.innerHeight * 0.5;
+    window.addEventListener('mousemove', (e) => {
+        cursorX = e.clientX;
+        cursorY = e.clientY;
+        ensureLoop();
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches && e.touches[0]) {
+            cursorX = e.touches[0].clientX;
+            cursorY = e.touches[0].clientY;
+            ensureLoop();
+        }
+    }, { passive: true });
+
     function initSections() {
         SECTION_IDS.forEach((id, index) => {
             const el = document.getElementById(id);
@@ -205,7 +222,13 @@
                 width: 0,
                 height: 0,
                 startTime: 0,
-                duration: 3200, // Interactive visible pace under 5s
+                currentSeqIndex: 0,
+                activePullingNode: null,
+                activePullStart: 0,
+                activePullDuration: 600,
+                nextPullEligibleAt: 0,
+                scoutDuration: 350,
+                duration: 3200,
                 animProgress: 0
             };
 
@@ -421,16 +444,12 @@
         currentPullingItem = item;
         item.state = 'scouting';
         item.startTime = performance.now();
-        
-        const nodes = SectionCoordinator.getNodesForSection(item.id);
-        const GAP_MS = fastMode ? 200 : 1100; // 1.1s observable sequential delay per element (under 1.5s per directive)
-        const ELEM_DUR_MS = fastMode ? 300 : 750; // 0.75s cinematic pull duration per element
-        const SCOUT_DUR_MS = fastMode ? 150 : 400; // 0.4s scouting pass
-        
-        item.scoutDuration = SCOUT_DUR_MS;
-        item.gapDuration = GAP_MS;
-        item.elemDuration = ELEM_DUR_MS;
-        item.duration = SCOUT_DUR_MS + Math.max(1, nodes.length) * GAP_MS + ELEM_DUR_MS;
+        item.currentSeqIndex = 0;
+        item.activePullingNode = null;
+        item.activePullStart = 0;
+        item.activePullDuration = fastMode ? 320 : 600;
+        item.scoutDuration = fastMode ? 150 : 350;
+        item.nextPullEligibleAt = performance.now() + item.scoutDuration;
         
         item.el.setAttribute('data-nb', 'pulling');
         item.el.style.willChange = 'transform, opacity';
@@ -441,7 +460,7 @@
             if (item.state !== 'built') {
                 finishPull(item, true);
             }
-        }, item.duration + 2000);
+        }, 30000);
 
         // Notify swarm to initiate Phase 1: Reconnaissance
         if (window.swarm && typeof window.swarm.setPhase === 'function') {
@@ -748,208 +767,248 @@
                 ctx.stroke();
                 ctx.restore();
 
-            } else if (elapsed < item.duration - 250) {
-                // PHASE 2: SEQUENTIAL ELEMENT-BY-ELEMENT PULL (0.5s GAP)
+            } else {
+                // PHASE 2 & 3: CURSOR CONTACT-BASED SEQUENTIAL PULL
                 item.state = 'pulling';
-                const pullElapsed = elapsed - scoutDur;
 
                 // Section container shell settles in smoothly
-                const shellT = Math.min(1.0, pullElapsed / 600);
+                const shellElapsed = elapsed - scoutDur;
+                const shellT = Math.min(1.0, shellElapsed / 450);
                 const shellEase = easeOutQuint(shellT);
                 currentOffset = maxOffset * (1 - shellEase);
-                currentOpacity = 0.40 + shellEase * 0.60;
-                currentScale = 0.96 + shellEase * 0.04;
+                currentOpacity = 0.45 + shellEase * 0.55;
+                currentScale = 0.98 + shellEase * 0.02;
 
                 const nodes = SectionCoordinator.getNodesForSection(item.id);
-                const dynamicTargets = [];
-                let activeBox = null;
 
-                nodes.forEach((n, idx) => {
-                    const startMs = idx * gapMs; // Exactly 0.5s gap later for next element!
-                    const endMs = startMs + elemDur;
+                if (item.currentSeqIndex < nodes.length) {
+                    const targetNode = nodes[item.currentSeqIndex];
 
-                    if (pullElapsed < startMs) {
-                        // Waiting its turn: stays pending and hidden
-                        n.el.style.transform = 'translate3d(0, 20px, 0)';
-                        n.el.style.opacity = '0';
-                    } else if (pullElapsed >= startMs && pullElapsed < endMs) {
-                        // ACTIVELY PULLING THIS ELEMENT (Refined & Smooth Cubic-Out Transition)
-                        const p = (pullElapsed - startMs) / elemDur;
+                    // Check if eligible to initiate pull
+                    if (!item.activePullingNode && now >= item.nextPullEligibleAt) {
+                        const r = targetNode.el.getBoundingClientRect();
+                        if (r.bottom > 0 && r.top < viewH) {
+                            const cx = r.left + r.width * 0.5;
+                            const cy = r.top + r.height * 0.5;
+                            const distToCursor = Math.hypot(cursorX - cx, cursorY - cy);
+
+                            // 1. Direct cursor contact: cursor inside/over box (+ tolerance) or within proximity
+                            const isOverBox = (cursorX >= r.left - 50 && cursorX <= r.right + 50 &&
+                                               cursorY >= r.top - 50 && cursorY <= r.bottom + 50);
+                            const isNearCursor = isOverBox || (distToCursor < 180);
+
+                            // 2. Drone swarm contact: any micro-drone hovering near or over element
+                            let droneContact = false;
+                            if (window.swarm && typeof window.swarm.getDotsData === 'function') {
+                                const dots = window.swarm.getDotsData();
+                                for (let d = 0; d < dots.length; d++) {
+                                    const dot = dots[d];
+                                    if (dot.currentX >= r.left - 35 && dot.currentX <= r.right + 35 &&
+                                        dot.currentY >= r.top - 35 && dot.currentY <= r.bottom + 35) {
+                                        droneContact = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // 3. Primary viewpoint focus: element is directly in visitor eye-line viewpoint
+                            const inDirectViewpoint = (r.top <= viewH * 0.68 && r.bottom >= viewH * 0.22);
+
+                            // Render ONLY when directly in contact with cursor / drones OR directly in viewpoint!
+                            if (isNearCursor || droneContact || inDirectViewpoint) {
+                                item.activePullingNode = targetNode;
+                                item.activePullStart = now;
+                                targetNode.state = 'pulling';
+
+                                const dynamicTargets = [
+                                    { x: r.left, y: r.top },
+                                    { x: r.left + r.width * 0.5, y: r.top },
+                                    { x: r.right, y: r.top },
+                                    { x: r.right, y: r.top + r.height * 0.5 },
+                                    { x: r.right, y: r.bottom },
+                                    { x: r.left + r.width * 0.5, y: r.bottom },
+                                    { x: r.left, y: r.bottom },
+                                    { x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 }
+                                ];
+                                if (window.swarm && typeof window.swarm.assign === 'function') {
+                                    window.swarm.assign(dynamicTargets);
+                                }
+                            }
+                        }
+                    }
+
+                    // If actively pulling targetNode:
+                    if (item.activePullingNode === targetNode) {
+                        const pullElapsed = now - item.activePullStart;
+                        const duration = item.activePullDuration || 600;
+                        const p = Math.min(1.0, pullElapsed / duration);
                         const childEase = 1 - Math.pow(1 - p, 3);
                         const childY = (1 - childEase) * 20;
                         const childScale = 0.985 + 0.015 * childEase;
-                        const childOp = 0.10 + childEase * 0.90;
+                        const childOp = 0.15 + childEase * 0.85;
 
-                        n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0) scale(${childScale.toFixed(3)})`;
-                        n.el.style.opacity = childOp.toFixed(3);
+                        targetNode.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0) scale(${childScale.toFixed(3)})`;
+                        targetNode.el.style.opacity = childOp.toFixed(3);
 
-                        const r = n.el.getBoundingClientRect();
-                        if (r.width > 10 && r.height > 6) {
-                            dynamicTargets.push({ x: r.left, y: r.top }); // 0: Top-Left
-                            dynamicTargets.push({ x: r.left + r.width * 0.5, y: r.top }); // 1: Top-Center
-                            dynamicTargets.push({ x: r.right, y: r.top }); // 2: Top-Right
-                            dynamicTargets.push({ x: r.right, y: r.top + r.height * 0.5 }); // 3: Right-Center
-                            dynamicTargets.push({ x: r.right, y: r.bottom }); // 4: Bottom-Right
-                            dynamicTargets.push({ x: r.left + r.width * 0.5, y: r.bottom }); // 5: Bottom-Center
-                            dynamicTargets.push({ x: r.left, y: r.bottom }); // 6: Bottom-Left
-                            dynamicTargets.push({ x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 }); // 7: Centroid
+                        const r = targetNode.el.getBoundingClientRect();
+                        const activeBox = {
+                            x: r.left,
+                            y: r.top,
+                            w: r.width,
+                            h: r.height,
+                            isText: targetNode.isText,
+                            progress: p
+                        };
 
-                            activeBox = {
-                                x: r.left,
-                                y: r.top,
-                                w: r.width,
-                                h: r.height,
-                                isText: n.isText,
-                                progress: p
-                            };
+                        const dynamicTargets = [
+                            { x: r.left, y: r.top },
+                            { x: r.left + r.width * 0.5, y: r.top },
+                            { x: r.right, y: r.top },
+                            { x: r.right, y: r.top + r.height * 0.5 },
+                            { x: r.right, y: r.bottom },
+                            { x: r.left + r.width * 0.5, y: r.bottom },
+                            { x: r.left, y: r.bottom },
+                            { x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 }
+                        ];
+
+                        // Keep drones assigned to the active element
+                        if (window.swarm && typeof window.swarm.assign === 'function') {
+                            window.swarm.assign(dynamicTargets);
                         }
-                    } else {
-                        // Completed its sequential turn: locked into assembled state!
-                        if (n.state !== 'assembled') {
-                            SectionCoordinator.markAssembled(n);
-                            n.el.style.transform = '';
-                            n.el.style.opacity = '1';
-                            const r = n.el.getBoundingClientRect();
-                            emitSparks(r.left + r.width * 0.5, r.top + 8, 8);
-                        }
-                    }
-                });
 
-                // Drones converge directly onto the actively pulling element
-                if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.assign === 'function') {
-                    window.swarm.assign(dynamicTargets.slice(0, 8));
-                }
-
-                // Laser weld sweep beam across the actively pulling element
-                if (activeBox) {
-                    ctx.save();
-                    // Subtle holographic construction shimmer inside element
-                    ctx.fillStyle = `rgba(255, 230, 0, ${(0.035 * (1 - activeBox.progress)).toFixed(3)})`;
-                    ctx.fillRect(activeBox.x, activeBox.y, activeBox.w, activeBox.h);
-                    if (activeBox.isText) {
-                        const cornerLen = Math.min(12, activeBox.w * 0.18);
-                        ctx.strokeStyle = 'rgba(255, 230, 0, 0.95)'; // Electric Zesty Lemon for text
-                        ctx.lineWidth = 1.5;
-                        
-                        // Top-left
-                        ctx.beginPath();
-                        ctx.moveTo(activeBox.x, activeBox.y + cornerLen);
-                        ctx.lineTo(activeBox.x, activeBox.y);
-                        ctx.lineTo(activeBox.x + cornerLen, activeBox.y);
-                        ctx.stroke();
-
-                        // Top-right
-                        ctx.beginPath();
-                        ctx.moveTo(activeBox.x + activeBox.w - cornerLen, activeBox.y);
-                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y);
-                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + cornerLen);
-                        ctx.stroke();
-
-                        // Bottom-left
-                        ctx.beginPath();
-                        ctx.moveTo(activeBox.x, activeBox.y + activeBox.h - cornerLen);
-                        ctx.lineTo(activeBox.x, activeBox.y + activeBox.h);
-                        ctx.lineTo(activeBox.x + cornerLen, activeBox.y + activeBox.h);
-                        ctx.stroke();
-
-                        // Bottom-right
-                        ctx.beginPath();
-                        ctx.moveTo(activeBox.x + activeBox.w - cornerLen, activeBox.y + activeBox.h);
-                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + activeBox.h);
-                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + activeBox.h - cornerLen);
-                        ctx.stroke();
-                    } else {
-                        ctx.strokeStyle = 'rgba(0, 240, 255, 0.75)'; // Cyber Cyan for boxes/cards
-                        ctx.lineWidth = 1.5;
-                        ctx.setLineDash([8, 6]);
-                        ctx.strokeRect(activeBox.x, activeBox.y, activeBox.w, activeBox.h);
-                    }
-
-                    // Electric Zesty Lemon laser weld line sweep with diamond white core
-                    const sweepX = activeBox.x + activeBox.w * activeBox.progress;
-                    ctx.beginPath();
-                    ctx.moveTo(sweepX, activeBox.y - 4);
-                    ctx.lineTo(sweepX, activeBox.y + activeBox.h + 4);
-                    ctx.strokeStyle = 'rgba(255, 230, 0, 0.95)';
-                    ctx.lineWidth = 2.8;
-                    ctx.shadowColor = '#ffe600';
-                    ctx.shadowBlur = 14;
-                    ctx.stroke();
-
-                    ctx.beginPath();
-                    ctx.moveTo(sweepX, activeBox.y - 2);
-                    ctx.lineTo(sweepX, activeBox.y + activeBox.h + 2);
-                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
-                    ctx.lineWidth = 1.0;
-                    ctx.shadowColor = '#ffffff';
-                    ctx.shadowBlur = 6;
-                    ctx.stroke();
-                    ctx.restore();
-                }
-
-                // Draw glowing cyberpunk tractor beams between swarm drones and active element
-                if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.getDotsData === 'function') {
-                    const dotsData = window.swarm.getDotsData();
-                    const vibration = Math.sin(now * 0.035) * 1.5;
-
-                    for (let i = 0; i < Math.min(dotsData.length, dynamicTargets.length); i++) {
-                        const dotX = dotsData[i].currentX;
-                        const dotY = dotsData[i].currentY;
-                        const anchor = dynamicTargets[i];
-
-                        const midX = (dotX + anchor.x) * 0.5 + vibration;
-                        const midY = (dotY + anchor.y) * 0.5;
-
+                        // Laser weld sweep beam across the actively pulling element
                         ctx.save();
-                        // Outer 3.5px Cyber Cyan plasma aura
-                        ctx.beginPath();
-                        ctx.moveTo(dotX, dotY);
-                        ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
-                        ctx.lineWidth = 3.5;
-                        ctx.stroke();
+                        ctx.fillStyle = `rgba(255, 230, 0, ${(0.035 * (1 - activeBox.progress)).toFixed(3)})`;
+                        ctx.fillRect(activeBox.x, activeBox.y, activeBox.w, activeBox.h);
+                        if (activeBox.isText) {
+                            const cornerLen = Math.min(12, activeBox.w * 0.18);
+                            ctx.strokeStyle = 'rgba(255, 230, 0, 0.95)'; // Electric Zesty Lemon for text
+                            ctx.lineWidth = 1.5;
+                            
+                            // Top-left
+                            ctx.beginPath();
+                            ctx.moveTo(activeBox.x, activeBox.y + cornerLen);
+                            ctx.lineTo(activeBox.x, activeBox.y);
+                            ctx.lineTo(activeBox.x + cornerLen, activeBox.y);
+                            ctx.stroke();
 
-                        // Middle 2px Electric Zesty Lemon beam
-                        ctx.beginPath();
-                        ctx.moveTo(dotX, dotY);
-                        ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = 'rgba(255, 230, 0, 0.85)';
-                        ctx.lineWidth = 2;
-                        ctx.stroke();
+                            // Top-right
+                            ctx.beginPath();
+                            ctx.moveTo(activeBox.x + activeBox.w - cornerLen, activeBox.y);
+                            ctx.lineTo(activeBox.x + activeBox.w, activeBox.y);
+                            ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + cornerLen);
+                            ctx.stroke();
 
-                        // Inner brilliant laser diamond white core
+                            // Bottom-left
+                            ctx.beginPath();
+                            ctx.moveTo(activeBox.x, activeBox.y + activeBox.h - cornerLen);
+                            ctx.lineTo(activeBox.x, activeBox.y + activeBox.h);
+                            ctx.lineTo(activeBox.x + cornerLen, activeBox.y + activeBox.h);
+                            ctx.stroke();
+
+                            // Bottom-right
+                            ctx.beginPath();
+                            ctx.moveTo(activeBox.x + activeBox.w - cornerLen, activeBox.y + activeBox.h);
+                            ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + activeBox.h);
+                            ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + activeBox.h - cornerLen);
+                            ctx.stroke();
+                        } else {
+                            ctx.strokeStyle = 'rgba(0, 240, 255, 0.75)'; // Cyber Cyan for boxes/cards
+                            ctx.lineWidth = 1.5;
+                            ctx.setLineDash([8, 6]);
+                            ctx.strokeRect(activeBox.x, activeBox.y, activeBox.w, activeBox.h);
+                        }
+
+                        // Electric Zesty Lemon laser weld line sweep with diamond white core
+                        const sweepX = activeBox.x + activeBox.w * activeBox.progress;
                         ctx.beginPath();
-                        ctx.moveTo(dotX, dotY);
-                        ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
-                        ctx.lineWidth = 1.2;
+                        ctx.moveTo(sweepX, activeBox.y - 4);
+                        ctx.lineTo(sweepX, activeBox.y + activeBox.h + 4);
+                        ctx.strokeStyle = 'rgba(255, 230, 0, 0.95)';
+                        ctx.lineWidth = 2.8;
                         ctx.shadowColor = '#ffe600';
-                        ctx.shadowBlur = 8;
+                        ctx.shadowBlur = 14;
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.moveTo(sweepX, activeBox.y - 2);
+                        ctx.lineTo(sweepX, activeBox.y + activeBox.h + 2);
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
+                        ctx.lineWidth = 1.0;
+                        ctx.shadowColor = '#ffffff';
+                        ctx.shadowBlur = 6;
                         ctx.stroke();
                         ctx.restore();
-                    }
-                }
 
-            } else {
-                // PHASE 3: FINAL SNAP & LOCK
-                if (item.state !== 'snapping') {
-                    item.state = 'snapping';
-                    item.el.setAttribute('data-nb', 'snapping');
-                    emitSparks(item.pageLeft + 25, screenTop + 15, 10);
-                    emitSparks(item.pageLeft + item.width - 25, screenTop + 15, 10);
+                        // Tractor beams from drones to active element
+                        if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.getDotsData === 'function') {
+                            const dotsData = window.swarm.getDotsData();
+                            const vibration = Math.sin(now * 0.035) * 1.5;
+
+                            for (let i = 0; i < Math.min(dotsData.length, dynamicTargets.length); i++) {
+                                const dotX = dotsData[i].currentX;
+                                const dotY = dotsData[i].currentY;
+                                const anchor = dynamicTargets[i];
+
+                                const midX = (dotX + anchor.x) * 0.5 + vibration;
+                                const midY = (dotY + anchor.y) * 0.5;
+
+                                ctx.save();
+                                // Outer 3.5px Cyber Cyan plasma aura
+                                ctx.beginPath();
+                                ctx.moveTo(dotX, dotY);
+                                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
+                                ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+                                ctx.lineWidth = 3.5;
+                                ctx.stroke();
+
+                                // Middle 2px Electric Zesty Lemon beam
+                                ctx.beginPath();
+                                ctx.moveTo(dotX, dotY);
+                                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
+                                ctx.strokeStyle = 'rgba(255, 230, 0, 0.85)';
+                                ctx.lineWidth = 2;
+                                ctx.stroke();
+
+                                // Inner brilliant laser diamond white core
+                                ctx.beginPath();
+                                ctx.moveTo(dotX, dotY);
+                                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
+                                ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
+                                ctx.lineWidth = 1.2;
+                                ctx.shadowColor = '#ffe600';
+                                ctx.shadowBlur = 8;
+                                ctx.stroke();
+                                ctx.restore();
+                            }
+                        }
+
+                        // Completed this element's sequential turn:
+                        if (p >= 1.0) {
+                            SectionCoordinator.markAssembled(targetNode);
+                            targetNode.el.style.transform = '';
+                            targetNode.el.style.opacity = '1';
+                            emitSparks(r.left + r.width * 0.5, r.top + 8, 8);
+
+                            item.activePullingNode = null;
+                            item.currentSeqIndex++;
+                            item.nextPullEligibleAt = now + 120; // 120ms gap before next element
+
+                            // Release swarm drones so they return to cursor tracking until next element is in contact
+                            if (window.swarm && typeof window.swarm.release === 'function') {
+                                window.swarm.release();
+                            }
+                        }
+                    }
+                } else {
+                    // All nodes in section assembled!
+                    finishPull(item);
                 }
-                currentOffset = 0;
-                currentOpacity = 1;
-                currentScale = 1;
             }
 
             // Apply transform to section DOM element
             item.el.style.opacity = currentOpacity.toFixed(3);
             item.el.style.transform = `translate3d(0, ${currentOffset.toFixed(1)}px, 0) scale(${currentScale.toFixed(3)})`;
-
-            if (elapsed >= item.duration) {
-                finishPull(item);
-            }
         }
 
         // 3. Draw and update sparks
