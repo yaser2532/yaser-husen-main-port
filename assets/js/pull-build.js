@@ -211,28 +211,48 @@
 
             // Register inner text blocks and cards into the coordinator
             const selectors = [
-                'h1, h2, h3, h4, .section-title, .section-header, .card-title, .section-tag',
-                '.section-desc, p, .about-text p, .trait-tag, .stat-label, .badge',
-                '.project-card, .cert-card, .expertise-card, .stat-card, .glass-card',
+                'h1, h2, h3, h4, .section-title, .card-title, .section-tag',
+                '.section-desc, .section-intro, p, .about-text p, .trait-tag, .stat-label, .badge',
+                '.project-card, .cert-card, .expertise-card, .stat-card, .glass-card, .bday-card, .profile-card-wrapper, .onboard-card',
                 '.hero-traits-list, .filter-btn, .cta-button, .message-btn, .dock-btn, .cyber-dock-bar'
             ].join(', ');
 
+            const cardSel = '.project-card, .cert-card, .expertise-card, .stat-card, .glass-card, .bday-card, .profile-card-wrapper, .cyber-dock-bar, .onboard-card';
             const childNodes = Array.from(el.querySelectorAll(selectors)).filter(childEl => {
-                if (childEl.matches('.project-card, .cert-card, .expertise-card, .stat-card, .glass-card')) {
+                if (childEl.matches(cardSel)) {
                     return true;
                 }
-                if (childEl.closest('.project-card, .cert-card, .expertise-card, .stat-card, .glass-card')) {
+                if (childEl.closest(cardSel)) {
                     return false;
                 }
                 return true;
             });
-            childNodes.forEach((childEl, order) => {
+
+            // Strict sequence ranking: Title -> Explanatory Paragraph -> Boxes/Cards/Divs -> Buttons/Links
+            const getRank = (element) => {
+                const tag = element.tagName.toLowerCase();
+                if (['h1', 'h2', 'h3'].includes(tag) || element.classList.contains('section-title')) {
+                    return 0; // 1. Title first
+                }
+                if (element.classList.contains('section-desc') || element.classList.contains('section-intro') || element.classList.contains('section-tag') || tag === 'p') {
+                    return 1; // 2. Explanatory paragraph second
+                }
+                if (element.matches(cardSel)) {
+                    return 2; // 3. Boxes, cards & containers
+                }
+                return 3; // 4. Action buttons & docks
+            };
+
+            const sortedChildNodes = childNodes.sort((a, b) => getRank(a) - getRank(b));
+
+            sortedChildNodes.forEach((childEl, order) => {
                 const tag = childEl.tagName.toLowerCase();
                 const isText = ['h1', 'h2', 'h3', 'h4', 'p', 'span', 'a', 'button'].includes(tag);
                 SectionCoordinator.register(id, childEl, isText, order);
                 if (!isReducedMotion && !isHero) {
-                    childEl.style.transform = 'translate3d(0, 24px, 0)';
-                    childEl.style.opacity = '0.22';
+                    childEl.style.transform = 'translate3d(0, 28px, 0)';
+                    childEl.style.opacity = '0';
+                    childEl.style.willChange = 'transform, opacity';
                 }
             });
 
@@ -392,8 +412,17 @@
         currentPullingItem = item;
         item.state = 'scouting';
         item.startTime = performance.now();
-        // Snappy, energetic pull-build under 1.5 seconds (~1.05s total)
-        item.duration = fastMode ? 450 : 1050;
+        
+        const nodes = SectionCoordinator.getNodesForSection(item.id);
+        const GAP_MS = fastMode ? 150 : 500; // Strict 0.5s sequence gap per user directive
+        const ELEM_DUR_MS = fastMode ? 250 : 450;
+        const SCOUT_DUR_MS = fastMode ? 150 : 300;
+        
+        item.scoutDuration = SCOUT_DUR_MS;
+        item.gapDuration = GAP_MS;
+        item.elemDuration = ELEM_DUR_MS;
+        item.duration = SCOUT_DUR_MS + Math.max(1, nodes.length) * GAP_MS + 250;
+        
         item.el.setAttribute('data-nb', 'pulling');
         item.el.style.willChange = 'transform, opacity';
 
@@ -414,27 +443,15 @@
         item.el.style.transform = '';
         item.el.style.willChange = '';
 
-        // Mark elements as assembled in coordinator and clear inline styles
+        // Mark all inner elements as assembled in coordinator and clear inline styles
         const nodes = SectionCoordinator.getNodesForSection(item.id);
-        if (instant) {
-            nodes.forEach(n => {
-                SectionCoordinator.markAssembled(n);
-                n.el.style.transform = '';
-                n.el.style.opacity = '';
-                n.el.style.filter = '';
-            });
-            SectionCoordinator.assembleAll(item.id);
-        } else {
-            nodes.forEach(n => {
-                const nr = n.el.getBoundingClientRect();
-                if (nr.top <= viewH * 0.95 && nr.bottom >= 0) {
-                    SectionCoordinator.markAssembled(n);
-                    n.el.style.transform = '';
-                    n.el.style.opacity = '';
-                    n.el.style.filter = '';
-                }
-            });
-        }
+        nodes.forEach(n => {
+            SectionCoordinator.markAssembled(n);
+            n.el.style.transform = '';
+            n.el.style.opacity = '';
+            n.el.style.filter = '';
+        });
+        SectionCoordinator.assembleAll(item.id);
 
         if (!instant) {
             // Snap sparks
@@ -483,28 +500,37 @@
     function processNextInQueue() {
         const scrollY = window.scrollY || window.pageYOffset;
 
-        // Auto-recovery: if currentPullingItem is completely scrolled offscreen, finish it instantly
+        // Auto-recovery: if currentPullingItem has scrolled out of primary focus, finish it instantly and yield
         if (currentPullingItem) {
             const r = currentPullingItem.el.getBoundingClientRect();
-            const isOffscreen = (r.bottom < -60) || (r.top > viewH + 200);
-            if (isOffscreen) {
-                finishPull(currentPullingItem, true);
+            const isOutOfFocus = (r.bottom < viewH * 0.25) || (r.top > viewH * 0.80);
+            if (isOutOfFocus) {
+                const prev = currentPullingItem;
                 currentPullingItem = null;
+                finishPull(prev, true);
+                return;
             } else {
                 return; // Currently pulling a visible item
             }
         }
 
-        // Check which pending section is currently directly under the visitor's core viewpoint
+        // Check which pending section is currently halfway scrolled into view
         let targetSection = null;
-        const isAtBottom = (window.innerHeight + scrollY >= document.documentElement.scrollHeight - 100);
+        const isAtBottom = (window.innerHeight + scrollY >= document.documentElement.scrollHeight - 80);
 
         for (let i = 0; i < sections.length; i++) {
             const s = sections[i];
             if (s.state === 'pending' && !s.isHero) {
                 const r = s.el.getBoundingClientRect();
-                // Section only triggers when visitor is directly over the core viewpoint, or reached bottom for contact footer
-                if ((r.top <= viewH * 0.65 && r.bottom >= viewH * 0.25) || (isAtBottom && s.id === 'contact')) {
+                // Section only triggers when visitor is halfway scrolled into it:
+                // 1) Midpoint of section reaches screen center, OR
+                // 2) Top of section scrolled into upper third, OR
+                // 3) Scrolled to bottom for contact footer
+                const sectionMid = r.top + r.height * 0.5;
+                const isHalfwayScrolled = (sectionMid <= viewH * 0.55 && r.bottom >= viewH * 0.15) ||
+                                          (r.top <= viewH * 0.15 && r.bottom >= viewH * 0.25) ||
+                                          (isAtBottom && s.id === 'contact');
+                if (isHalfwayScrolled) {
                     targetSection = s;
                     break;
                 }
@@ -536,8 +562,8 @@
             }
         });
     }, {
-        threshold: 0.15,
-        rootMargin: '0px 0px -25% 0px'
+        threshold: 0.35,
+        rootMargin: '0px 0px -40% 0px'
     });
 
     sections.forEach(item => {
@@ -556,14 +582,14 @@
             s.height = r.height;
 
             // Fast-scroll fail-safe: if scrolled past while not built, resolve instantly so nothing is blank!
-            if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.15)) {
+            if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.10)) {
                 finishPull(s, true);
             }
 
-            // Bi-directional deconstruct: if section was built but has now scrolled out of view (> 0.5 viewports away),
+            // Bi-directional deconstruct: if section was built but has now scrolled out of view (> 0.6 viewports away),
             // safely deconstruct it so drones reconstruct it upon scrolling back!
             if (!s.isHero && s.state === 'built') {
-                const isFarAway = (r.bottom < -viewH * 0.5) || (r.top > viewH * 1.5);
+                const isFarAway = (r.bottom < -viewH * 0.6) || (r.top > viewH * 1.6);
                 if (isFarAway) {
                     s.state = 'pending';
                     s.el.setAttribute('data-nb', 'pending');
@@ -574,29 +600,9 @@
                     nodes.forEach(n => {
                         n.state = 'unscouted';
                         n.el.removeAttribute('data-assembled');
-                        n.el.style.transform = 'translate3d(0, 24px, 0)';
-                        n.el.style.opacity = '0.22';
+                        n.el.style.transform = 'translate3d(0, 28px, 0)';
+                        n.el.style.opacity = '0';
                     });
-                }
-            }
-        });
-
-        // Viewpoint inspection for inner child elements: pull only when directly under visitor viewpoint
-        SectionCoordinator.nodes.forEach(n => {
-            if (n.state !== 'assembled') {
-                const nr = n.el.getBoundingClientRect();
-                if (nr.bottom < viewH * 0.10) {
-                    // Scrolled past above viewpoint: resolve immediately
-                    n.state = 'assembled';
-                    n.el.style.transform = '';
-                    n.el.style.opacity = '';
-                    SectionCoordinator.markAssembled(n);
-                } else if (nr.top <= viewH * 0.85 && nr.bottom >= viewH * 0.10) {
-                    // Directly entering visitor viewpoint: initiate smooth pull
-                    if (n.state === 'unscouted') {
-                        n.state = 'pulling';
-                        n.pullStart = performance.now();
-                    }
                 }
             }
         });
@@ -644,29 +650,23 @@
             hasActiveDrawing = true;
             const item = currentPullingItem;
             const elapsed = now - item.startTime;
-            const totalDur = item.duration;
-            const t = Math.min(1, elapsed / totalDur);
-
-            // Fast, energetic Phase Breakdown under 1.5 seconds:
-            // 0.0s - 0.22s (t < 0.22): Phase 1 SCOUT (Fast reconnaissance sweep)
-            // 0.22s - 0.88s (0.22 <= t < 0.88): Phase 2 PULL (Multipurpose firefly dots hoist child elements)
-            // 0.88s - 1.05s (0.88 <= t <= 1.0): Phase 3 SNAP (Lock, gold sparks, normal constant site)
-            const scoutRatio = 0.22;
-            const pullRatio = 0.88;
-            const maxOffset = Math.min(65, viewH * 0.08);
+            const scoutDur = item.scoutDuration || 300;
+            const gapMs = item.gapDuration || 500; // Strict 0.5s sequence gap per user directive
+            const elemDur = item.elemDuration || 450;
+            const maxOffset = Math.min(50, viewH * 0.06);
 
             let currentOffset = maxOffset;
             let currentOpacity = 0.25;
-            let currentScale = 0.94;
+            let currentScale = 0.96;
 
             const screenTop = item.pageTop - scrollY;
 
-            if (t < scoutRatio) {
-                // PHASE 1: SCOUT / RECONNAISSANCE
+            if (elapsed < scoutDur) {
+                // PHASE 1: SCOUT / RECONNAISSANCE SWEEP
                 item.state = 'scouting';
                 currentOffset = maxOffset;
-                currentOpacity = 0.15 + (t / scoutRatio) * 0.15;
-                currentScale = 0.94;
+                currentOpacity = 0.20 + (elapsed / scoutDur) * 0.20;
+                currentScale = 0.96;
 
                 // Pass drone proximity coordinates to coordinator
                 if (window.swarm && typeof window.swarm.getDotsData === 'function') {
@@ -715,7 +715,7 @@
                 ctx.stroke();
 
                 // Scanner sweep beam moving down
-                const scanLineY = sy + (sh * (t / scoutRatio));
+                const scanLineY = sy + (sh * (elapsed / scoutDur));
                 ctx.beginPath();
                 ctx.moveTo(sx, scanLineY);
                 ctx.lineTo(sx + sw, scanLineY);
@@ -726,145 +726,139 @@
                 ctx.stroke();
                 ctx.restore();
 
-            } else if (t < pullRatio) {
-                // PHASE 2: MECHANICAL ANCHOR & PULL
+            } else if (elapsed < item.duration - 250) {
+                // PHASE 2: SEQUENTIAL ELEMENT-BY-ELEMENT PULL (0.5s GAP)
                 item.state = 'pulling';
-                const pullT = (t - scoutRatio) / (pullRatio - scoutRatio);
-                const eased = easeOutQuint(pullT);
-                currentOffset = maxOffset * (1 - eased);
-                currentOpacity = 0.30 + eased * 0.70;
-                currentScale = 0.94 + eased * 0.06;
+                const pullElapsed = elapsed - scoutDur;
 
-                // Individual child element micro-hoist & progressive assembly:
-                // Pull elements ONLY when directly under the visitor's viewpoint!
+                // Section container shell settles in smoothly
+                const shellT = Math.min(1.0, pullElapsed / 600);
+                const shellEase = easeOutQuint(shellT);
+                currentOffset = maxOffset * (1 - shellEase);
+                currentOpacity = 0.40 + shellEase * 0.60;
+                currentScale = 0.96 + shellEase * 0.04;
+
                 const nodes = SectionCoordinator.getNodesForSection(item.id);
                 const dynamicTargets = [];
+                let activeBox = null;
 
-                // Filter nodes that are currently in the visitor's direct reading viewpoint
-                const inViewNodes = [];
-                nodes.forEach(n => {
-                    const nr = n.el.getBoundingClientRect();
-                    if (nr.bottom < viewH * 0.10) {
-                        // Scrolled past above viewpoint: resolve immediately
-                        n.el.style.transform = '';
-                        n.el.style.opacity = '';
-                        if (n.state !== 'assembled') {
-                            SectionCoordinator.markAssembled(n);
-                        }
-                    } else if (nr.top > viewH * 0.86) {
-                        // Below visitor viewpoint: keep in 3D pending depth
-                        if (n.state !== 'assembled') {
-                            n.el.style.transform = 'translate3d(0, 24px, 0)';
-                            n.el.style.opacity = '0.22';
-                        }
-                    } else {
-                        // Directly under visitor's viewpoint!
-                        inViewNodes.push(n);
-                    }
-                });
+                nodes.forEach((n, idx) => {
+                    const startMs = idx * gapMs; // Exactly 0.5s gap later for next element!
+                    const endMs = startMs + elemDur;
 
-                const totalInView = Math.max(1, inViewNodes.length);
-                inViewNodes.forEach((n, idx) => {
-                    const staggerStart = (idx / totalInView) * 0.60;
-                    const childProgress = Math.max(0, Math.min(1, (pullT - staggerStart) / 0.40));
-                    const childEase = easeOutQuint(childProgress);
-                    
-                    const childY = (1 - childEase) * 24;
-                    const childOp = 0.22 + childEase * 0.78;
-                    
-                    n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0)`;
-                    n.el.style.opacity = childOp.toFixed(3);
-                    
-                    if (childProgress > 0 && childProgress < 0.95) {
+                    if (pullElapsed < startMs) {
+                        // Waiting its turn: stays pending and hidden
+                        n.el.style.transform = 'translate3d(0, 28px, 0)';
+                        n.el.style.opacity = '0';
+                    } else if (pullElapsed >= startMs && pullElapsed < endMs) {
+                        // ACTIVELY PULLING THIS ELEMENT!
+                        const p = (pullElapsed - startMs) / elemDur;
+                        const childEase = easeOutQuint(p);
+                        const childY = (1 - childEase) * 28;
+                        const childOp = 0.15 + childEase * 0.85;
+
+                        n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0)`;
+                        n.el.style.opacity = childOp.toFixed(3);
+
                         const r = n.el.getBoundingClientRect();
-                        if (r.width > 20 && r.height > 10) {
+                        if (r.width > 15 && r.height > 8) {
                             dynamicTargets.push({
                                 x: r.left + r.width * 0.5,
                                 y: r.top + r.height * 0.5
                             });
+                            dynamicTargets.push({ x: r.left + 15, y: r.top + 8 });
+                            dynamicTargets.push({ x: r.right - 15, y: r.top + 8 });
+
+                            activeBox = {
+                                x: r.left,
+                                y: r.top,
+                                w: r.width,
+                                h: r.height,
+                                isText: n.isText,
+                                progress: p
+                            };
                         }
-                    }
-                    
-                    if (childProgress >= 0.95 && n.state !== 'assembled') {
-                        SectionCoordinator.markAssembled(n);
+                    } else {
+                        // Completed its sequential turn: locked into assembled state!
+                        if (n.state !== 'assembled') {
+                            SectionCoordinator.markAssembled(n);
+                            n.el.style.transform = '';
+                            n.el.style.opacity = '1';
+                            const r = n.el.getBoundingClientRect();
+                            emitSparks(r.left + r.width * 0.5, r.top + 8, 8);
+                        }
                     }
                 });
 
-                // Update swarm anchor targets so drones actively hoist the current active elements
-                const anchors = dynamicTargets.length > 0 
-                    ? dynamicTargets.slice(0, 8) 
-                    : computeAnchorPoints(item, currentOffset);
-
-                if (window.swarm && typeof window.swarm.assign === 'function') {
-                    window.swarm.assign(anchors);
+                // Drones converge directly onto the actively pulling element
+                if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.assign === 'function') {
+                    window.swarm.assign(dynamicTargets.slice(0, 8));
                 }
 
-                // Inner box & text laser scan & weld line sweep
-                const innerBoxes = getInnerBoxes(item, currentOffset);
-                innerBoxes.forEach(b => {
+                // Laser weld sweep beam across the actively pulling element
+                if (activeBox) {
                     ctx.save();
-                    if (b.isText) {
-                        const cornerLen = Math.min(10, b.w * 0.15);
-                        ctx.strokeStyle = 'rgba(255, 216, 115, 0.80)'; // Neon Gold for text
+                    if (activeBox.isText) {
+                        const cornerLen = Math.min(12, activeBox.w * 0.18);
+                        ctx.strokeStyle = 'rgba(255, 216, 115, 0.90)'; // Neon Gold for text
                         ctx.lineWidth = 1.5;
                         
                         // Top-left
                         ctx.beginPath();
-                        ctx.moveTo(b.x, b.y + cornerLen);
-                        ctx.lineTo(b.x, b.y);
-                        ctx.lineTo(b.x + cornerLen, b.y);
+                        ctx.moveTo(activeBox.x, activeBox.y + cornerLen);
+                        ctx.lineTo(activeBox.x, activeBox.y);
+                        ctx.lineTo(activeBox.x + cornerLen, activeBox.y);
                         ctx.stroke();
 
                         // Top-right
                         ctx.beginPath();
-                        ctx.moveTo(b.x + b.w - cornerLen, b.y);
-                        ctx.lineTo(b.x + b.w, b.y);
-                        ctx.lineTo(b.x + b.w, b.y + cornerLen);
+                        ctx.moveTo(activeBox.x + activeBox.w - cornerLen, activeBox.y);
+                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y);
+                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + cornerLen);
                         ctx.stroke();
 
                         // Bottom-left
                         ctx.beginPath();
-                        ctx.moveTo(b.x, b.y + b.h - cornerLen);
-                        ctx.lineTo(b.x, b.y + b.h);
-                        ctx.lineTo(b.x + cornerLen, b.y + b.h);
+                        ctx.moveTo(activeBox.x, activeBox.y + activeBox.h - cornerLen);
+                        ctx.lineTo(activeBox.x, activeBox.y + activeBox.h);
+                        ctx.lineTo(activeBox.x + cornerLen, activeBox.y + activeBox.h);
                         ctx.stroke();
 
                         // Bottom-right
                         ctx.beginPath();
-                        ctx.moveTo(b.x + b.w - cornerLen, b.y + b.h);
-                        ctx.lineTo(b.x + b.w, b.y + b.h);
-                        ctx.lineTo(b.x + b.w, b.y + b.h - cornerLen);
+                        ctx.moveTo(activeBox.x + activeBox.w - cornerLen, activeBox.y + activeBox.h);
+                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + activeBox.h);
+                        ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + activeBox.h - cornerLen);
                         ctx.stroke();
                     } else {
-                        ctx.strokeStyle = 'rgba(25, 227, 208, 0.60)';
+                        ctx.strokeStyle = 'rgba(25, 227, 208, 0.70)'; // Turquoise for boxes/cards
                         ctx.lineWidth = 1.5;
                         ctx.setLineDash([8, 6]);
-                        ctx.strokeRect(b.x, b.y, b.w, b.h);
+                        ctx.strokeRect(activeBox.x, activeBox.y, activeBox.w, activeBox.h);
                     }
 
-                    // Bright gold weld line sweep
-                    const sweepProgress = Math.min(1.0, pullT);
-                    const sweepX = b.x + b.w * sweepProgress;
+                    // Bright gold laser weld line sweep
+                    const sweepX = activeBox.x + activeBox.w * activeBox.progress;
                     ctx.beginPath();
-                    ctx.moveTo(sweepX, b.y - 2);
-                    ctx.lineTo(sweepX, b.y + b.h + 2);
+                    ctx.moveTo(sweepX, activeBox.y - 2);
+                    ctx.lineTo(sweepX, activeBox.y + activeBox.h + 2);
                     ctx.strokeStyle = 'rgba(255, 216, 115, 0.95)';
                     ctx.lineWidth = 2.5;
                     ctx.shadowColor = '#ffd873';
-                    ctx.shadowBlur = 10;
+                    ctx.shadowBlur = 12;
                     ctx.stroke();
                     ctx.restore();
-                });
+                }
 
-                // Draw glowing tethers between swarm dots and element anchors
-                if (window.swarm && typeof window.swarm.getDotsData === 'function') {
+                // Draw glowing tethers between swarm dots and active element
+                if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.getDotsData === 'function') {
                     const dotsData = window.swarm.getDotsData();
                     const vibration = Math.sin(now * 0.035) * 1.5;
 
-                    for (let i = 0; i < Math.min(dotsData.length, anchors.length); i++) {
+                    for (let i = 0; i < Math.min(dotsData.length, dynamicTargets.length); i++) {
                         const dotX = dotsData[i].currentX;
                         const dotY = dotsData[i].currentY;
-                        const anchor = anchors[i];
+                        const anchor = dynamicTargets[i];
 
                         const midX = (dotX + anchor.x) * 0.5 + vibration;
                         const midY = (dotY + anchor.y) * 0.5;
@@ -882,7 +876,7 @@
                         ctx.beginPath();
                         ctx.moveTo(dotX, dotY);
                         ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = 'rgba(25, 227, 208, 0.65)';
+                        ctx.strokeStyle = 'rgba(25, 227, 208, 0.85)';
                         ctx.lineWidth = 2;
                         ctx.stroke();
 
@@ -898,12 +892,12 @@
                 }
 
             } else {
-                // PHASE 3: SNAP & LOCK
+                // PHASE 3: FINAL SNAP & LOCK
                 if (item.state !== 'snapping') {
                     item.state = 'snapping';
                     item.el.setAttribute('data-nb', 'snapping');
-                    emitSparks(item.pageLeft + 25, screenTop + 15, 8);
-                    emitSparks(item.pageLeft + item.width - 25, screenTop + 15, 8);
+                    emitSparks(item.pageLeft + 25, screenTop + 15, 10);
+                    emitSparks(item.pageLeft + item.width - 25, screenTop + 15, 10);
                 }
                 currentOffset = 0;
                 currentOpacity = 1;
@@ -914,46 +908,8 @@
             item.el.style.opacity = currentOpacity.toFixed(3);
             item.el.style.transform = `translate3d(0, ${currentOffset.toFixed(1)}px, 0) scale(${currentScale.toFixed(3)})`;
 
-            if (t >= 1) {
+            if (elapsed >= item.duration) {
                 finishPull(item);
-            }
-        }
-
-        // 2b. Animate progressive hoist for individual child elements triggered while scrolling
-        const activeNodeTargets = [];
-        SectionCoordinator.nodes.forEach(n => {
-            if (n.state === 'pulling') {
-                hasActiveDrawing = true;
-                const elapsed = now - (n.pullStart || now);
-                const progress = Math.min(1.0, elapsed / 550);
-                const eased = easeOutQuint(progress);
-                const childY = (1 - eased) * 24;
-                const childOp = 0.22 + eased * 0.78;
-                n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0)`;
-                n.el.style.opacity = childOp.toFixed(3);
-
-                const nr = n.el.getBoundingClientRect();
-                if (nr.width > 20 && nr.height > 10) {
-                    activeNodeTargets.push({
-                        x: nr.left + nr.width * 0.5,
-                        y: nr.top + nr.height * 0.5
-                    });
-                }
-
-                if (progress >= 1.0) {
-                    n.state = 'assembled';
-                    n.el.style.transform = '';
-                    n.el.style.opacity = '';
-                    SectionCoordinator.markAssembled(n);
-                    emitSparks(nr.left + nr.width * 0.5, nr.top + 10, 6);
-                }
-            }
-        });
-
-        // If no section is actively pulling but individual nodes are pulling, assign drones to them
-        if (!currentPullingItem && activeNodeTargets.length > 0) {
-            if (window.swarm && typeof window.swarm.assign === 'function') {
-                window.swarm.assign(activeNodeTargets.slice(0, 8));
             }
         }
 

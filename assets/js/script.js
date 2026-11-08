@@ -97,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < NUM_DOTS; i++) {
             const dot = document.createElement('div');
             dot.className = 'mouse-tracker-dot';
+            dot.style.setProperty('--dot-idx', i);
             document.body.appendChild(dot);
             dots.push(dot);
 
