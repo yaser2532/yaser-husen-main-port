@@ -155,13 +155,15 @@ document.addEventListener('DOMContentLoaded', () => {
             isVisible = false;
         });
 
-        // Hover tracking using event delegation
+        // Hover tracking using event delegation - make dots transparent over text for clear reading
         const readableSelector = [
             'a', 'button', 'input', 'textarea', 'select', 'label',
             'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'span',
+            'code', 'pre', 'blockquote', 'strong', 'em', 'b', 'i',
             '.logo', '.badge', '.trait-tag', '.section-tag', '.section-desc',
             '.project-type', '.status-txt', '.stat-label', '.stat-number',
-            '.highlight-text', '.bday-tag', '.bday-title', '.bday-desc'
+            '.highlight-text', '.bday-tag', '.bday-title', '.bday-desc',
+            '.about-text', '.expertise-card', '.project-card', '.cert-card'
         ].join(', ');
 
         const getEventElement = (target) => target instanceof Element ? target : null;
@@ -172,7 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('mouseover', (e) => {
             const target = e.target;
-            document.body.classList.toggle('cursor-reading', isReadableTarget(target));
+            const isText = isReadableTarget(target);
+            document.body.classList.toggle('cursor-reading', isText);
+            targetDotOpacity = isText ? 0.0 : 0.95;
+
             const element = getEventElement(target);
             if (element && element.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
                 targetScale = 1.35;
@@ -180,10 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.addEventListener('mouseout', (e) => {
-            const target = e.target;
             const nextTarget = e.relatedTarget;
-            document.body.classList.toggle('cursor-reading', isReadableTarget(nextTarget));
-            const element = getEventElement(target);
+            const isText = isReadableTarget(nextTarget);
+            document.body.classList.toggle('cursor-reading', isText);
+            targetDotOpacity = isText ? 0.0 : 0.95;
+
+            const element = getEventElement(e.target);
             if (element && element.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
                 targetScale = 1.0;
             }
@@ -420,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 3. Render final positions and 3D depth scale to DOM
+            const isReadingText = document.body.classList.contains('cursor-reading');
             for (let i = 0; i < NUM_DOTS; i++) {
                 const dot = dots[i];
                 const data = dotsData[i];
@@ -428,7 +436,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scale3d = (0.85 + 0.30 * (depthZ * 0.5 + 0.5)).toFixed(3);
                 
                 dot.style.transform = `translate3d(${data.currentX.toFixed(1)}px, ${data.currentY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${scale3d})`;
-                dot.style.opacity = Math.max(0.70, data.currentOpacity).toFixed(3);
+                const finalOpacity = isReadingText ? 0 : Math.max(0.65, data.currentOpacity);
+                dot.style.opacity = finalOpacity.toFixed(3);
             }
 
             requestAnimationFrame(animateGlow);
@@ -658,12 +667,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize navbar class on page load
     handleNavbarScroll();
 
-    /* --- Modern Butter-Smooth Momentum Scrolling Engine --- */
+    /* --- Modern Butter-Smooth Native & Anchor Glide Engine --- */
     (function initSmoothMomentumScroll() {
-        // Step aside on coarse/touch devices to preserve 120Hz native touch momentum
-        const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia('(hover: none)').matches;
-        if (isTouch) return;
-
         let currentScrollY = window.scrollY || window.pageYOffset || 0;
         let targetScrollY = currentScrollY;
         let isScrolling = false;
@@ -674,30 +679,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.addEventListener('resize', updateMaxScroll, { passive: true });
 
-        // Wheel interceptor with normalized delta & inertial decay
-        window.addEventListener('wheel', (e) => {
-            if (e.ctrlKey || e.metaKey || e.altKey) return;
-            if (e.target.closest('#nano-chat-messages, .wishes-scroll-box, .modal-content, textarea')) return;
-
-            e.preventDefault();
-            updateMaxScroll();
-
-            let delta = e.deltaY;
-            if (e.deltaMode === 1) delta *= 32;
-            else if (e.deltaMode === 2) delta *= window.innerHeight;
-
-            targetScrollY = Math.max(0, Math.min(maxScroll, targetScrollY + delta * 0.95));
-
+        window.addEventListener('scroll', () => {
             if (!isScrolling) {
-                isScrolling = true;
-                requestAnimationFrame(scrollLoop);
+                currentScrollY = window.scrollY || window.pageYOffset || 0;
+                targetScrollY = currentScrollY;
             }
-        }, { passive: false });
+        }, { passive: true });
 
         function scrollLoop() {
             const diff = targetScrollY - currentScrollY;
             if (Math.abs(diff) > 0.4) {
-                currentScrollY += diff * 0.082;
+                currentScrollY += diff * 0.12;
                 window.scrollTo(0, currentScrollY);
                 requestAnimationFrame(scrollLoop);
             } else {
@@ -707,12 +699,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        window.addEventListener('scroll', () => {
-            if (!isScrolling) {
-                currentScrollY = window.scrollY || window.pageYOffset || 0;
-                targetScrollY = currentScrollY;
-            }
-        }, { passive: true });
+        // Native hardware-accelerated scrolling handles mouse wheel with zero jitter.
+        // Smooth anchor links and programmatic navigation:
 
         // Keyboard navigation
         window.addEventListener('keydown', (e) => {

@@ -83,7 +83,7 @@
 }
 
 html {
-    scroll-behavior: auto; /* Handled smoothly by modern momentum lerp engine */
+    scroll-behavior: smooth;
 }
 
 body {
@@ -147,7 +147,7 @@ button, input, textarea {
     pointer-events: none !important;
 }
 
-/* Cyberpunk Nano-Drone Swarm — Metallic Chassis & Zesty Lemon Plasma Core */
+/* Sleek Cyber Micro-Drones — Obsidian Black & Polished Silver with Bright White Border & Glow */
 .mouse-tracker-dot {
     position: fixed;
     top: 0;
@@ -155,107 +155,90 @@ button, input, textarea {
     border-radius: 50%;
     pointer-events: none;
     z-index: 10000;
-    will-change: transform, background, box-shadow, opacity;
+    will-change: transform, opacity;
     opacity: 0.98;
-    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    border: 1px solid rgba(255, 255, 255, 0.75);
-    /* Metallic specular cycle with high-voltage zesty lemon thruster glow */
-    animation: cyberpunk-drone-specular 2.2s infinite linear, cyberpunk-drone-pulse 0.7s infinite alternate ease-in-out;
-    animation-delay: calc(var(--dot-idx, 0) * -0.15s);
+    transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid #ffffff !important; /* Bright white border */
+    box-shadow: 0 0 3px #ffffff, 0 0 7px rgba(255, 255, 255, 0.9) !important; /* Bright white box shadow */
 }
 .mouse-tracker-dot::after {
     display: none !important;
 }
-.mouse-tracker-dot.active {
-    opacity: 0.98;
+
+/* Reduced Precision Micro-Drone Sizing: 5px to 6px diameter (2.5px to 3px radius) */
+.mouse-tracker-dot {
+    width: 5px !important;
+    height: 5px !important;
+}
+.mouse-tracker-dot[style*="--dot-idx:0"],
+.mouse-tracker-dot[style*="--dot-idx: 0"],
+.mouse-tracker-dot[style*="--dot-idx:2"],
+.mouse-tracker-dot[style*="--dot-idx: 2"],
+.mouse-tracker-dot[style*="--dot-idx:4"],
+.mouse-tracker-dot[style*="--dot-idx: 4"],
+.mouse-tracker-dot[style*="--dot-idx:6"],
+.mouse-tracker-dot[style*="--dot-idx: 6"] {
+    width: 5px !important;
+    height: 5px !important;
+    background: radial-gradient(circle at 35% 35%, #27272a 0%, #09090b 70%, #000000 100%) !important; /* Obsidian Black */
+}
+.mouse-tracker-dot[style*="--dot-idx:1"],
+.mouse-tracker-dot[style*="--dot-idx: 1"],
+.mouse-tracker-dot[style*="--dot-idx:3"],
+.mouse-tracker-dot[style*="--dot-idx: 3"],
+.mouse-tracker-dot[style*="--dot-idx:5"],
+.mouse-tracker-dot[style*="--dot-idx: 5"],
+.mouse-tracker-dot[style*="--dot-idx:7"],
+.mouse-tracker-dot[style*="--dot-idx: 7"] {
+    width: 6px !important;
+    height: 6px !important;
+    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 55%, #64748b 90%, #334155 100%) !important; /* Polished Silver */
 }
 
-/* High-Energy Zesty Lemon & Cyber Cyan Thruster Plume */
+/* Text Hover Transparency: Disappear instantly so visitor can read clearly */
+body.cursor-reading .mouse-tracker-dot {
+    opacity: 0 !important;
+    transform: scale(0.2) !important;
+    pointer-events: none !important;
+    transition: opacity 0.18s ease-out, transform 0.18s ease-out !important;
+}
+
+/* Crisp Colorful Micro-Aura / Thruster Flare */
 .mouse-tracker-dot::before {
     content: '';
     position: absolute;
-    inset: -5px;
+    inset: -3px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(255, 230, 0, 0.65) 32%, rgba(0, 240, 255, 0.30) 65%, transparent 85%);
     pointer-events: none;
     z-index: -1;
-    filter: blur(2.5px);
+    filter: blur(1.5px);
     mix-blend-mode: screen;
-    animation: cyberpunk-thruster-flare 0.7s infinite alternate ease-in-out;
-    animation-delay: calc(var(--dot-idx, 0) * -0.15s);
+    animation: micro-thruster-pulse 1.2s infinite alternate ease-in-out;
 }
 
-/* Metallic & Zesty Lemon Cyberpunk Specular Cycle */
-@keyframes cyberpunk-drone-specular {
-    0% {
-        background: radial-gradient(circle, #ffffff 25%, #ffe600 58%, #cbd5e1 88%, #0f172a 100%);
-        box-shadow: 
-            0 0 5px #ffffff, 
-            0 0 12px #ffe600, 
-            0 0 22px rgba(250, 204, 21, 0.85);
-    }
-    33% {
-        background: radial-gradient(circle, #f8fafc 25%, #facc15 55%, #94a3b8 85%, #1e293b 100%);
-        box-shadow: 
-            0 0 5px #ffffff, 
-            0 0 14px #facc15, 
-            0 0 24px rgba(234, 179, 8, 0.85);
-    }
-    66% {
-        background: radial-gradient(circle, #ffffff 25%, #00f0ff 55%, #e2e8f0 85%, #0f172a 100%);
-        box-shadow: 
-            0 0 5px #ffffff, 
-            0 0 12px #00f0ff, 
-            0 0 22px rgba(0, 240, 255, 0.80);
-    }
-    100% {
-        background: radial-gradient(circle, #ffffff 25%, #ffe600 58%, #cbd5e1 88%, #0f172a 100%);
-        box-shadow: 
-            0 0 5px #ffffff, 
-            0 0 12px #ffe600, 
-            0 0 22px rgba(250, 204, 21, 0.85);
-    }
+/* Colorful Aura Assignments for the 8 Micro-Drones */
+.mouse-tracker-dot[style*="--dot-idx:0"], .mouse-tracker-dot[style*="--dot-idx: 0"] { --aura-color: rgba(255, 230, 0, 0.85); }   /* Electric Zesty Lemon */
+.mouse-tracker-dot[style*="--dot-idx:1"], .mouse-tracker-dot[style*="--dot-idx: 1"] { --aura-color: rgba(0, 240, 255, 0.85); }   /* Cyber Cyan */
+.mouse-tracker-dot[style*="--dot-idx:2"], .mouse-tracker-dot[style*="--dot-idx: 2"] { --aura-color: rgba(192, 132, 252, 0.85); } /* Neon Violet */
+.mouse-tracker-dot[style*="--dot-idx:3"], .mouse-tracker-dot[style*="--dot-idx: 3"] { --aura-color: rgba(74, 222, 128, 0.85); }  /* Electric Emerald */
+.mouse-tracker-dot[style*="--dot-idx:4"], .mouse-tracker-dot[style*="--dot-idx: 4"] { --aura-color: rgba(245, 158, 11, 0.85); }  /* Radiant Amber */
+.mouse-tracker-dot[style*="--dot-idx:5"], .mouse-tracker-dot[style*="--dot-idx: 5"] { --aura-color: rgba(244, 63, 94, 0.85); }   /* Neon Magenta */
+.mouse-tracker-dot[style*="--dot-idx:6"], .mouse-tracker-dot[style*="--dot-idx: 6"] { --aura-color: rgba(56, 189, 248, 0.85); }  /* Sky Azure */
+.mouse-tracker-dot[style*="--dot-idx:7"], .mouse-tracker-dot[style*="--dot-idx: 7"] { --aura-color: rgba(45, 212, 191, 0.85); }  /* Neon Turquoise */
+
+.mouse-tracker-dot::before {
+    background: radial-gradient(circle, #ffffff 15%, var(--aura-color, rgba(255, 230, 0, 0.8)) 60%, transparent 90%);
 }
 
-/* Sharp Cyber Drone Thruster Pulse */
-@keyframes cyberpunk-drone-pulse {
-    0% {
-        filter: brightness(1.1) drop-shadow(0 0 3px #ffe600);
-        opacity: 0.88;
-    }
-    100% {
-        filter: brightness(1.7) drop-shadow(0 0 8px #ffffff);
-        opacity: 1;
-    }
-}
-
-@keyframes cyberpunk-thruster-flare {
+@keyframes micro-thruster-pulse {
     0% {
         transform: scale(0.9);
-        opacity: 0.65;
+        opacity: 0.7;
     }
     100% {
         transform: scale(1.3);
-        opacity: 1;
+        opacity: 1.0;
     }
-}
-
-/* Aerodynamic Cyber Drone Sizing (7px to 10px) */
-.mouse-tracker-dot:nth-child(odd) {
-    width: 0.5rem !important; /* 8px */
-    height: 0.5rem !important;
-}
-.mouse-tracker-dot:nth-child(even) {
-    width: 0.625rem !important; /* 10px */
-    height: 0.625rem !important;
-}
-.mouse-tracker-dot:nth-child(3n) {
-    width: 0.4375rem !important; /* 7px */
-    height: 0.4375rem !important;
-}
-.mouse-tracker-dot:nth-child(3n+2) {
-    width: 0.5625rem !important; /* 9px */
-    height: 0.5625rem !important;
 }
 
 /* Keep the cursor effect from washing out readable content. */

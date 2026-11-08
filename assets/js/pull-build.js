@@ -228,17 +228,29 @@
                 return true;
             });
 
-            // Sequential interpreter order: Title strictly first, then subsequent properties in DOM tree order
-            const isTitle = (element) => {
+            // Sequential interpreter order: Title strictly first, then paragraphs, then cards/divs, then buttons/links
+            const getPriority = (element) => {
                 const tag = element.tagName.toLowerCase();
-                return ['h1', 'h2', 'h3'].includes(tag) || element.classList.contains('section-title');
+                // 1. First line: Main section title / heading
+                if (['h1', 'h2', 'h3'].includes(tag) || element.classList.contains('section-title') || element.classList.contains('section-tag')) {
+                    return 1;
+                }
+                // 2. Second: Section descriptions, paragraphs, intro text
+                if (['h4', 'h5', 'h6', 'p'].includes(tag) || element.classList.contains('section-desc') || element.classList.contains('section-intro') || element.classList.contains('about-text')) {
+                    return 2;
+                }
+                // 3. Third: Content blocks, showcase cards, visual code blocks, stats
+                if (element.matches(cardSel) || element.classList.contains('code-block-visual') || element.classList.contains('stats-row')) {
+                    return 3;
+                }
+                // 4. Fourth: Buttons, controls, links, footer actions
+                return 4;
             };
 
             const sortedChildNodes = childNodes.sort((a, b) => {
-                const aTitle = isTitle(a);
-                const bTitle = isTitle(b);
-                if (aTitle && !bTitle) return -1;
-                if (!aTitle && bTitle) return 1;
+                const prioA = getPriority(a);
+                const prioB = getPriority(b);
+                if (prioA !== prioB) return prioA - prioB;
                 return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
             });
 
@@ -247,7 +259,7 @@
                 const isText = ['h1', 'h2', 'h3', 'h4', 'p', 'span', 'a', 'button'].includes(tag);
                 SectionCoordinator.register(id, childEl, isText, order);
                 if (!isReducedMotion && !isHero) {
-                    childEl.style.transform = 'translate3d(0, 28px, 0)';
+                    childEl.style.transform = 'translate3d(0, 20px, 0)';
                     childEl.style.opacity = '0';
                     childEl.style.willChange = 'transform, opacity';
                 }
@@ -564,7 +576,7 @@
         }
     });
 
-    // 60FPS Smooth Throttled Scroll Listener (zero layout thrashing)
+    // 60FPS Smooth Throttled Scroll Listener (zero layout thrashing using cached geometry)
     let scrollScheduled = false;
     window.addEventListener('scroll', () => {
         if (!scrollScheduled) {
@@ -572,12 +584,11 @@
                 const scrollY = window.scrollY || window.pageYOffset;
 
                 sections.forEach(s => {
-                    const r = s.el.getBoundingClientRect();
-                    s.pageTop = r.top + scrollY;
-                    s.height = r.height;
+                    const screenTop = s.pageTop - scrollY;
+                    const screenBottom = screenTop + s.height;
 
                     // Fast-scroll fail-safe: if scrolled past while not built, resolve instantly so nothing is blank
-                    if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.10)) {
+                    if (s.state !== 'built' && (screenTop < -60 || screenBottom < viewH * 0.10)) {
                         finishPull(s, true);
                     }
                 });
@@ -737,16 +748,17 @@
 
                     if (pullElapsed < startMs) {
                         // Waiting its turn: stays pending and hidden
-                        n.el.style.transform = 'translate3d(0, 28px, 0)';
+                        n.el.style.transform = 'translate3d(0, 20px, 0)';
                         n.el.style.opacity = '0';
                     } else if (pullElapsed >= startMs && pullElapsed < endMs) {
-                        // ACTIVELY PULLING THIS ELEMENT!
+                        // ACTIVELY PULLING THIS ELEMENT (Refined & Smooth Cubic-Out Transition)
                         const p = (pullElapsed - startMs) / elemDur;
-                        const childEase = easeOutQuint(p);
-                        const childY = (1 - childEase) * 28;
-                        const childOp = 0.15 + childEase * 0.85;
+                        const childEase = 1 - Math.pow(1 - p, 3);
+                        const childY = (1 - childEase) * 20;
+                        const childScale = 0.985 + 0.015 * childEase;
+                        const childOp = 0.10 + childEase * 0.90;
 
-                        n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0)`;
+                        n.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0) scale(${childScale.toFixed(3)})`;
                         n.el.style.opacity = childOp.toFixed(3);
 
                         const r = n.el.getBoundingClientRect();
@@ -789,6 +801,9 @@
                 // Laser weld sweep beam across the actively pulling element
                 if (activeBox) {
                     ctx.save();
+                    // Subtle holographic construction shimmer inside element
+                    ctx.fillStyle = `rgba(255, 230, 0, ${(0.035 * (1 - activeBox.progress)).toFixed(3)})`;
+                    ctx.fillRect(activeBox.x, activeBox.y, activeBox.w, activeBox.h);
                     if (activeBox.isText) {
                         const cornerLen = Math.min(12, activeBox.w * 0.18);
                         ctx.strokeStyle = 'rgba(255, 230, 0, 0.95)'; // Electric Zesty Lemon for text
