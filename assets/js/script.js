@@ -101,19 +101,22 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(dot);
             dots.push(dot);
 
-            // Establish angular assignment & harmonic firefly cluster properties (tight, organic, closer to cursor)
+            // Establish angular assignment & harmonic firefly cluster properties (spacious, dynamic attract-repel)
             const baseAngle = i * (Math.PI * 2 / NUM_DOTS);
             
             dotsData.push({
-                currentX: targetX + Math.cos(baseAngle) * 20,
-                currentY: targetY + Math.sin(baseAngle) * 20,
+                currentX: targetX + Math.cos(baseAngle) * 45,
+                currentY: targetY + Math.sin(baseAngle) * 45,
+                vx: 0,
+                vy: 0,
                 currentOpacity: 0.95,
                 baseAngle: baseAngle,
                 orbitSpeed: 1.1 + (i % 3) * 0.25,
                 pulseSpeed: 2.2 + (i % 3) * 0.4,
                 phase: i * (Math.PI / 4),
-                minDist: 9 + (i % 3) * 3, // closest approach point to cursor (9px to 15px - close cluster)
-                bounceDist: 18 + (i % 4) * 4, // gentle repulsion bounce (18px to 30px)
+                cursorRepelDist: 34 + (i % 4) * 8, // 34px to 58px dynamic repulsion threshold from cursor core
+                minDist: 30 + (i % 3) * 8,
+                bounceDist: 50 + (i % 4) * 10,
                 ease: 0.18 + (i % 3) * 0.04,
                 freqX: 1.2 + (i % 3) * 0.4,
                 freqY: 0.9 + (i % 4) * 0.3,
@@ -308,12 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dot = dots[i];
                 const data = dotsData[i];
                 
-                // Swarming drift offset calculation [B-03 alive in crew mode]
-                const driftX = Math.sin(time * data.freqX + data.phaseX) * data.ampX;
-                const driftY = Math.cos(time * data.freqY + data.phaseY) * data.ampY;
-                
-                let targetDotX, targetDotY;
-
                 if (currentPhase === 'scout') {
                     // Phase 1: Scouting reconnaissance sweep across incoming section
                     const tScout = time * 2.8;
@@ -327,73 +324,106 @@ document.addEventListener('DOMContentLoaded', () => {
                     const angle = tScout * (1.8 + (i % 3) * 0.6) + (i * Math.PI * 2 / NUM_DOTS);
                     const rx = Math.min(window.innerWidth * 0.38, 200 + (i % 4) * 40);
                     const ry = Math.min(window.innerHeight * 0.28, 120 + (i % 3) * 35);
-                    targetDotX = cx + Math.cos(angle) * rx + Math.sin(tScout * 2.5 + i) * 25;
-                    targetDotY = cy + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.0 + i) * 20;
-                    data.currentX += (targetDotX - data.currentX) * 0.18;
-                    data.currentY += (targetDotY - data.currentY) * 0.18;
+                    const targetDotX = cx + Math.cos(angle) * rx + Math.sin(tScout * 2.5 + i) * 25;
+                    const targetDotY = cy + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.0 + i) * 20;
+
+                    data.vx += (targetDotX - data.currentX) * 0.14;
+                    data.vy += (targetDotY - data.currentY) * 0.14;
                 } else if (assignedTargets && assignedTargets.length > 0) {
                     // Priority 1: Multipurpose firefly drones pull and construct incoming section elements
                     const pt = assignedTargets[i % assignedTargets.length];
-                    // Dynamic 3D hovering oscillation around the construction anchor point
                     const hoverAngle = time * (3.4 + (i % 3) * 0.8) + (i * Math.PI / 4);
-                    const hoverR = 5 + Math.sin(time * 3.8 + i) * 3;
-                    const jitterX = Math.sin(time * 5.0 + data.phaseX) * 3;
-                    const jitterY = Math.cos(time * 4.6 + data.phaseY) * 3;
+                    const hoverR = 6 + Math.sin(time * 3.8 + i) * 3;
+                    const targetDotX = pt.x + Math.cos(hoverAngle) * hoverR;
+                    const targetDotY = pt.y + Math.sin(hoverAngle) * hoverR;
 
-                    targetDotX = pt.x + Math.cos(hoverAngle) * hoverR + jitterX;
-                    targetDotY = pt.y + Math.sin(hoverAngle) * hoverR + jitterY;
-
-                    data.currentX += (targetDotX - data.currentX) * 0.22;
-                    data.currentY += (targetDotY - data.currentY) * 0.22;
+                    data.vx += (targetDotX - data.currentX) * 0.18;
+                    data.vy += (targetDotY - data.currentY) * 0.18;
                 } else {
-                    // Priority 2: Reassemble and tightly cluster around Cursor (hover, organic flutter, close clustering)
-                    const curAngle = data.baseAngle + time * data.orbitSpeed;
-                    const cycle = time * data.pulseSpeed + data.phase;
-                    const bounceFactor = Math.pow(Math.abs(Math.sin(cycle)), 0.65);
-                    const currentDist = data.minDist + bounceFactor * (data.bounceDist - data.minDist);
-                    const flutterX = Math.sin(time * 3.8 + i * 1.7) * 2.8 + Math.cos(time * 1.9 + i) * 1.8;
-                    const flutterY = Math.cos(time * 3.4 + i * 1.4) * 2.8 + Math.sin(time * 2.1 + i) * 1.8;
+                    // Priority 2: Cursor Boids Attract-Repel Swarm (Attract towards cursor + Bounce/Repel from cursor core + Flocking Orbit)
+                    const dx = targetX - data.currentX;
+                    const dy = targetY - data.currentY;
+                    const distToCursor = Math.hypot(dx, dy);
 
-                    targetDotX = targetX + Math.cos(curAngle) * currentDist + flutterX;
-                    targetDotY = targetY + Math.sin(curAngle) * currentDist + flutterY;
+                    if (distToCursor > 0.001) {
+                        const ux = dx / distToCursor;
+                        const uy = dy / distToCursor;
 
-                    // Responsive recall ease: fly back quickly from distant sections, then hover gently
-                    const distToTarget = Math.hypot(targetDotX - data.currentX, targetDotY - data.currentY);
-                    const activeEase = distToTarget > 60 ? 0.30 : data.ease;
+                        // 1. Attraction force: pull towards cursor (accelerate when distant, balanced when near)
+                        const attractMag = Math.min(Math.max(distToCursor * 0.038, 0.45), 6.5);
+                        data.vx += ux * attractMag;
+                        data.vy += uy * attractMag;
 
-                    data.currentX += (targetDotX - data.currentX) * activeEase;
-                    data.currentY += (targetDotY - data.currentY) * activeEase;
+                        // 2. Cursor Core Repulsion: bounce off when approaching cursor center
+                        // Prevents clustering on the pointer; creates dynamic bounce-and-orbit behavior
+                        const repelZone = data.cursorRepelDist || 38;
+                        if (distToCursor < repelZone) {
+                            const repelFactor = Math.pow((repelZone - distToCursor) / repelZone, 1.3) * 5.2;
+                            data.vx -= ux * repelFactor;
+                            data.vy -= uy * repelFactor;
+                        }
+
+                        // 3. Gentle tangential swirl around cursor for fluid cyberpunk flight
+                        const swirlDir = (i % 2 === 0) ? 1 : -1;
+                        const swirlSpeed = 0.70 + (i % 3) * 0.25;
+                        data.vx += -uy * swirlDir * swirlSpeed;
+                        data.vy += ux * swirlDir * swirlSpeed;
+                    }
+
+                    // Organic micro-flutter
+                    data.vx += Math.sin(time * 3.2 + data.phaseX) * 0.35;
+                    data.vy += Math.cos(time * 2.8 + data.phaseY) * 0.35;
                 }
-                
+
                 data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.14;
             }
 
-            // Mutual Dot-to-Dot Electrostatic Repulsion Force: guarantees dots NEVER cluster or touch
+            // 1. Apply damping and integrate velocity to position
             for (let i = 0; i < NUM_DOTS; i++) {
-                const di = dotsData[i];
-                for (let j = i + 1; j < NUM_DOTS; j++) {
-                    const dj = dotsData[j];
-                    const dx = di.currentX - dj.currentX;
-                    const dy = di.currentY - dj.currentY;
-                    const d2 = dx * dx + dy * dy;
-                    const minSeparation = 10; // 10px physical exclusion zone - close cluster without overlapping
-                    if (d2 < minSeparation * minSeparation && d2 > 0.0001) {
-                        const dist = Math.sqrt(d2);
-                        const push = (minSeparation - dist) * 0.5;
-                        const nx = dx / dist;
-                        const ny = dy / dist;
-                        di.currentX += nx * push;
-                        di.currentY += ny * push;
-                        dj.currentX -= nx * push;
-                        dj.currentY -= ny * push;
+                const data = dotsData[i];
+                data.vx *= 0.86;
+                data.vy *= 0.86;
+                data.currentX += data.vx;
+                data.currentY += data.vy;
+            }
+
+            // 2. Pairwise Mutual Repulsion & Physical Exclusion Constraint:
+            // Mathematically guarantees drones NEVER cluster, overlap, or touch each other
+            const minSeparation = 36; // 36px physical exclusion zone
+            for (let iter = 0; iter < 2; iter++) {
+                for (let i = 0; i < NUM_DOTS; i++) {
+                    const di = dotsData[i];
+                    for (let j = i + 1; j < NUM_DOTS; j++) {
+                        const dj = dotsData[j];
+                        const pdx = di.currentX - dj.currentX;
+                        const pdy = di.currentY - dj.currentY;
+                        const pdist = Math.hypot(pdx, pdy);
+
+                        if (pdist < minSeparation && pdist > 0.0001) {
+                            const pushHalf = (minSeparation - pdist) * 0.5;
+                            const pux = pdx / pdist;
+                            const puy = pdy / pdist;
+
+                            di.currentX += pux * pushHalf;
+                            di.currentY += puy * pushHalf;
+                            dj.currentX -= pux * pushHalf;
+                            dj.currentY -= puy * pushHalf;
+
+                            // Deflect velocities outward
+                            di.vx += pux * pushHalf * 0.15;
+                            di.vy += puy * pushHalf * 0.15;
+                            dj.vx -= pux * pushHalf * 0.15;
+                            dj.vy -= puy * pushHalf * 0.15;
+                        }
                     }
                 }
             }
 
-            // Commit final position and 3D depth scale to DOM
+            // 3. Render final positions and 3D depth scale to DOM
             for (let i = 0; i < NUM_DOTS; i++) {
                 const dot = dots[i];
                 const data = dotsData[i];
+
                 const depthZ = Math.sin(time * 2.6 + i * 1.3);
                 const scale3d = (0.85 + 0.30 * (depthZ * 0.5 + 0.5)).toFixed(3);
                 

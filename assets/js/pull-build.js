@@ -497,10 +497,10 @@
     function processNextInQueue() {
         const scrollY = window.scrollY || window.pageYOffset;
 
-        // Auto-recovery: if currentPullingItem has scrolled out of primary focus, finish it instantly and yield
+        // Auto-recovery: if currentPullingItem has scrolled completely out of view, finish it instantly
         if (currentPullingItem) {
             const r = currentPullingItem.el.getBoundingClientRect();
-            const isOutOfFocus = (r.bottom < viewH * 0.25) || (r.top > viewH * 0.80);
+            const isOutOfFocus = (r.bottom < 0) || (r.top > viewH + 100);
             if (isOutOfFocus) {
                 const prev = currentPullingItem;
                 currentPullingItem = null;
@@ -511,7 +511,7 @@
             }
         }
 
-        // Check which pending section is currently halfway scrolled into view
+        // Check which pending section is in view to begin cinematic assembly
         let targetSection = null;
         const isAtBottom = (window.innerHeight + scrollY >= document.documentElement.scrollHeight - 80);
 
@@ -519,15 +519,10 @@
             const s = sections[i];
             if (s.state === 'pending' && !s.isHero) {
                 const r = s.el.getBoundingClientRect();
-                // Section only triggers when visitor is halfway scrolled into it:
-                // 1) Midpoint of section reaches screen center, OR
-                // 2) Top of section scrolled into upper third, OR
-                // 3) Scrolled to bottom for contact footer
-                const sectionMid = r.top + r.height * 0.5;
-                const isHalfwayScrolled = (sectionMid <= viewH * 0.55 && r.bottom >= viewH * 0.15) ||
-                                          (r.top <= viewH * 0.15 && r.bottom >= viewH * 0.25) ||
-                                          (isAtBottom && s.id === 'contact');
-                if (isHalfwayScrolled) {
+                // Cinematic trigger: begins when top enters upper 75% of viewport so user sees the full pull
+                const inCinematicView = (r.top <= viewH * 0.75 && r.bottom >= viewH * 0.15) ||
+                                        (isAtBottom && s.id === 'contact');
+                if (inCinematicView) {
                     targetSection = s;
                     break;
                 }
@@ -569,43 +564,30 @@
         }
     });
 
-    // Handle scroll for bi-directional deconstruct/reconstruct & fast-scroll fail-safe
+    // 60FPS Smooth Throttled Scroll Listener (zero layout thrashing)
+    let scrollScheduled = false;
     window.addEventListener('scroll', () => {
-        const scrollY = window.scrollY || window.pageYOffset;
+        if (!scrollScheduled) {
+            requestAnimationFrame(() => {
+                const scrollY = window.scrollY || window.pageYOffset;
 
-        sections.forEach(s => {
-            const r = s.el.getBoundingClientRect();
-            s.pageTop = r.top + scrollY;
-            s.height = r.height;
+                sections.forEach(s => {
+                    const r = s.el.getBoundingClientRect();
+                    s.pageTop = r.top + scrollY;
+                    s.height = r.height;
 
-            // Fast-scroll fail-safe: if scrolled past while not built, resolve instantly so nothing is blank!
-            if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.10)) {
-                finishPull(s, true);
-            }
+                    // Fast-scroll fail-safe: if scrolled past while not built, resolve instantly so nothing is blank
+                    if (s.state !== 'built' && (r.top < -60 || r.bottom < viewH * 0.10)) {
+                        finishPull(s, true);
+                    }
+                });
 
-            // Bi-directional deconstruct: if section was built but has now scrolled out of view (> 0.6 viewports away),
-            // safely deconstruct it so drones reconstruct it upon scrolling back!
-            if (!s.isHero && s.state === 'built') {
-                const isFarAway = (r.bottom < -viewH * 0.6) || (r.top > viewH * 1.6);
-                if (isFarAway) {
-                    s.state = 'pending';
-                    s.el.setAttribute('data-nb', 'pending');
-                    s.el.style.opacity = '0.2';
-                    s.el.style.transform = 'translate3d(0, 45px, 0) scale(0.96)';
-                    
-                    const nodes = SectionCoordinator.getNodesForSection(s.id);
-                    nodes.forEach(n => {
-                        n.state = 'unscouted';
-                        n.el.removeAttribute('data-assembled');
-                        n.el.style.transform = 'translate3d(0, 28px, 0)';
-                        n.el.style.opacity = '0';
-                    });
-                }
-            }
-        });
-
-        processNextInQueue();
-        ensureLoop();
+                processNextInQueue();
+                ensureLoop();
+                scrollScheduled = false;
+            });
+            scrollScheduled = true;
+        }
     }, { passive: true });
 
     // ─── 10. Animation Frame Loop ──────────────────────────────────────────
@@ -671,11 +653,11 @@
                     SectionCoordinator.checkProximity(dotsData, item.id);
                 }
 
-                // Draw cyber scanning reticles and corner brackets across empty section
+                // Draw cyberpunk scanning reticles and corner brackets across empty section
                 ctx.save();
-                ctx.strokeStyle = 'rgba(25, 227, 208, 0.45)';
-                ctx.lineWidth = 1.5;
-                const bracketLen = 22;
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.70)'; // Cyber Cyan
+                ctx.lineWidth = 1.6;
+                const bracketLen = 24;
                 
                 // Outer corners of the scouted area
                 const sx = item.pageLeft + 12;
@@ -711,15 +693,25 @@
                 ctx.lineTo(sx + sw, sy + sh - bracketLen);
                 ctx.stroke();
 
-                // Scanner sweep beam moving down
+                // Scanner sweep beam moving down: High-voltage Zesty Lemon laser sweep
                 const scanLineY = sy + (sh * (elapsed / scoutDur));
                 ctx.beginPath();
                 ctx.moveTo(sx, scanLineY);
                 ctx.lineTo(sx + sw, scanLineY);
-                ctx.strokeStyle = 'rgba(25, 227, 208, 0.65)';
-                ctx.lineWidth = 2;
-                ctx.shadowColor = '#19e3d0';
-                ctx.shadowBlur = 8;
+                ctx.strokeStyle = 'rgba(255, 230, 0, 0.90)';
+                ctx.lineWidth = 2.5;
+                ctx.shadowColor = '#ffe600';
+                ctx.shadowBlur = 12;
+                ctx.stroke();
+
+                // White laser core for the sweep beam
+                ctx.beginPath();
+                ctx.moveTo(sx, scanLineY);
+                ctx.lineTo(sx + sw, scanLineY);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+                ctx.lineWidth = 1.0;
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 5;
                 ctx.stroke();
                 ctx.restore();
 
@@ -799,7 +791,7 @@
                     ctx.save();
                     if (activeBox.isText) {
                         const cornerLen = Math.min(12, activeBox.w * 0.18);
-                        ctx.strokeStyle = 'rgba(255, 216, 115, 0.90)'; // Neon Gold for text
+                        ctx.strokeStyle = 'rgba(255, 230, 0, 0.95)'; // Electric Zesty Lemon for text
                         ctx.lineWidth = 1.5;
                         
                         // Top-left
@@ -830,26 +822,35 @@
                         ctx.lineTo(activeBox.x + activeBox.w, activeBox.y + activeBox.h - cornerLen);
                         ctx.stroke();
                     } else {
-                        ctx.strokeStyle = 'rgba(25, 227, 208, 0.70)'; // Turquoise for boxes/cards
+                        ctx.strokeStyle = 'rgba(0, 240, 255, 0.75)'; // Cyber Cyan for boxes/cards
                         ctx.lineWidth = 1.5;
                         ctx.setLineDash([8, 6]);
                         ctx.strokeRect(activeBox.x, activeBox.y, activeBox.w, activeBox.h);
                     }
 
-                    // Bright gold laser weld line sweep
+                    // Electric Zesty Lemon laser weld line sweep with diamond white core
                     const sweepX = activeBox.x + activeBox.w * activeBox.progress;
+                    ctx.beginPath();
+                    ctx.moveTo(sweepX, activeBox.y - 4);
+                    ctx.lineTo(sweepX, activeBox.y + activeBox.h + 4);
+                    ctx.strokeStyle = 'rgba(255, 230, 0, 0.95)';
+                    ctx.lineWidth = 2.8;
+                    ctx.shadowColor = '#ffe600';
+                    ctx.shadowBlur = 14;
+                    ctx.stroke();
+
                     ctx.beginPath();
                     ctx.moveTo(sweepX, activeBox.y - 2);
                     ctx.lineTo(sweepX, activeBox.y + activeBox.h + 2);
-                    ctx.strokeStyle = 'rgba(255, 216, 115, 0.95)';
-                    ctx.lineWidth = 2.5;
-                    ctx.shadowColor = '#ffd873';
-                    ctx.shadowBlur = 12;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
+                    ctx.lineWidth = 1.0;
+                    ctx.shadowColor = '#ffffff';
+                    ctx.shadowBlur = 6;
                     ctx.stroke();
                     ctx.restore();
                 }
 
-                // Draw glowing tethers between swarm dots and active element
+                // Draw glowing cyberpunk tractor beams between swarm drones and active element
                 if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.getDotsData === 'function') {
                     const dotsData = window.swarm.getDotsData();
                     const vibration = Math.sin(now * 0.035) * 1.5;
@@ -863,30 +864,30 @@
                         const midY = (dotY + anchor.y) * 0.5;
 
                         ctx.save();
-                        // Outer 3.5px violet beam
+                        // Outer 3.5px Cyber Cyan plasma aura
                         ctx.beginPath();
                         ctx.moveTo(dotX, dotY);
                         ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = 'rgba(157, 77, 255, 0.40)';
+                        ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
                         ctx.lineWidth = 3.5;
                         ctx.stroke();
 
-                        // Middle 2px turquoise beam
+                        // Middle 2px Electric Zesty Lemon beam
                         ctx.beginPath();
                         ctx.moveTo(dotX, dotY);
                         ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = 'rgba(25, 227, 208, 0.85)';
+                        ctx.strokeStyle = 'rgba(255, 230, 0, 0.85)';
                         ctx.lineWidth = 2;
                         ctx.stroke();
 
-                        // Inner bright gold and firefly crimson/white laser core
+                        // Inner brilliant laser diamond white core
                         ctx.beginPath();
                         ctx.moveTo(dotX, dotY);
                         ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = (i % 2 === 0) ? 'rgba(255, 42, 85, 0.92)' : 'rgba(255, 255, 255, 0.95)';
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
                         ctx.lineWidth = 1.2;
-                        ctx.shadowColor = (i % 2 === 0) ? '#ff2a55' : '#ffd873';
-                        ctx.shadowBlur = 6;
+                        ctx.shadowColor = '#ffe600';
+                        ctx.shadowBlur = 8;
                         ctx.stroke();
                         ctx.restore();
                     }
@@ -929,7 +930,11 @@
                 }
 
                 ctx.save();
-                ctx.fillStyle = `rgba(255, 216, 115, ${s.life.toFixed(2)})`;
+                ctx.fillStyle = (i % 2 === 0) 
+                    ? `rgba(255, 230, 0, ${s.life.toFixed(2)})` 
+                    : `rgba(0, 240, 255, ${s.life.toFixed(2)})`;
+                ctx.shadowColor = (i % 2 === 0) ? '#ffe600' : '#00f0ff';
+                ctx.shadowBlur = 4;
                 ctx.beginPath();
                 ctx.arc(s.x, s.y, s.size * s.life, 0, Math.PI * 2);
                 ctx.fill();

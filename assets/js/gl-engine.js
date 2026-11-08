@@ -113,9 +113,9 @@
         texCanvas.height = 32;
         const c = texCanvas.getContext('2d');
         const grad = c.createRadialGradient(16, 16, 0, 16, 16, 16);
-        grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-        grad.addColorStop(0.2, 'rgba(255, 255, 255, 0.85)');
-        grad.addColorStop(0.55, 'rgba(255, 255, 255, 0.30)');
+        grad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.98)');
+        grad.addColorStop(0.70, 'rgba(255, 255, 255, 0.60)');
         grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
         c.fillStyle = grad;
         c.fillRect(0, 0, 32, 32);
@@ -123,23 +123,25 @@
     }
     const starTex = createStarTexture();
 
-    // 1. Foreground Twinkling Stars (Vibrant, luminous, high-depth parallax)
-    const FG_STARS = 450;
+    // 1. Foreground Twinkling Stars (Crisp, brilliant diamond white & bright cyber accents)
+    const FG_STARS = 850;
     const fgGeom = new THREE.BufferGeometry();
     const fgPos = new Float32Array(FG_STARS * 3);
     const fgCol = new Float32Array(FG_STARS * 3);
 
     const starColors = [
-        new THREE.Color(0xffffff),          // Brilliant diamond white
-        new THREE.Color(COLOR_GOLD_BRIGHT), // Neon Cyberpunk Gold
-        new THREE.Color(COLOR_TURQUOISE),   // Neon Turquoise
-        new THREE.Color(0xc084fc),          // Radiant Purple
-        new THREE.Color(0x7ff5e8)           // Cyan Glow
+        new THREE.Color(0xffffff), // Pure brilliant diamond white
+        new THREE.Color(0xffffff), // Pure brilliant diamond white
+        new THREE.Color(0xf8fafc), // Crisp bright white
+        new THREE.Color(0xf1f5f9), // Platinum white
+        new THREE.Color(0xfef08a), // Zesty cyber lemon
+        new THREE.Color(0x7ff5e8), // Cyber cyan glow
+        new THREE.Color(0xffffff)  // Pure brilliant diamond white
     ];
 
     for (let i = 0; i < FG_STARS; i++) {
-        fgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 2.6;
-        fgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 3.2;
+        fgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 2.8;
+        fgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 3.4;
         fgPos[i * 3 + 2] = -Math.random() * 550 + 120;
 
         const c = starColors[i % starColors.length];
@@ -152,32 +154,32 @@
     fgGeom.setAttribute('color', new THREE.BufferAttribute(fgCol, 3));
 
     const fgMat = new THREE.PointsMaterial({
-        size: 3.8,
+        size: 3.5,
         map: starTex,
         vertexColors: true,
         transparent: true,
-        opacity: 0.95,
+        opacity: 0.98,
         blending: THREE.AdditiveBlending,
         depthWrite: false
     });
     const fgStarfield = new THREE.Points(fgGeom, fgMat);
     backdropGroup.add(fgStarfield);
 
-    // 2. Deep Space Background Constellations (High depth density distant galaxy)
-    const BG_STARS = 1400;
+    // 2. Deep Space Background Constellations (High depth density distant galaxy - 2800 stars)
+    const BG_STARS = 2800;
     const bgGeom = new THREE.BufferGeometry();
     const bgPos = new Float32Array(BG_STARS * 3);
     const bgCol = new Float32Array(BG_STARS * 3);
 
     for (let i = 0; i < BG_STARS; i++) {
-        bgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 3.5;
-        bgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 4.0;
+        bgPos[i * 3 + 0] = (Math.random() - 0.5) * width * 3.8;
+        bgPos[i * 3 + 1] = (Math.random() - 0.5) * height * 4.2;
         bgPos[i * 3 + 2] = -Math.random() * 1900 - 250; // Deep Z-space
 
         const c = starColors[Math.floor(Math.random() * starColors.length)];
-        bgCol[i * 3 + 0] = c.r * 0.95;
-        bgCol[i * 3 + 1] = c.g * 0.95;
-        bgCol[i * 3 + 2] = c.b * 0.95;
+        bgCol[i * 3 + 0] = c.r;
+        bgCol[i * 3 + 1] = c.g;
+        bgCol[i * 3 + 2] = c.b;
     }
 
     bgGeom.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
@@ -188,7 +190,7 @@
         map: starTex,
         vertexColors: true,
         transparent: true,
-        opacity: 0.88,
+        opacity: 0.94,
         blending: THREE.AdditiveBlending,
         depthWrite: false
     });
@@ -322,9 +324,9 @@
         }
         fgGeom.attributes.position.needsUpdate = true;
 
-        // Twinkle pulse modulation
-        fgMat.opacity = 0.80 + Math.sin(now * 0.003) * 0.18;
-        bgMat.opacity = 0.65 + Math.cos(now * 0.002) * 0.15;
+        // Twinkle pulse modulation (high opacity and brilliant whiteness maintained)
+        fgMat.opacity = 0.92 + Math.sin(now * 0.003) * 0.08;
+        bgMat.opacity = 0.90 + Math.cos(now * 0.002) * 0.06;
 
         // Parallax drift on star layers
         fgStarfield.position.x = currentParallaxX * 45;
