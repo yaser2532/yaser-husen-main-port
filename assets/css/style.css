@@ -195,12 +195,12 @@ button, input, textarea {
     background: radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 55%, #64748b 90%, #334155 100%) !important; /* Polished Silver */
 }
 
-/* Text Hover Transparency: Disappear instantly so visitor can read clearly */
+/* Text Hover Semi-Transparency: Drones become subtle ghost-drones so visitor can read clearly */
 body.cursor-reading .mouse-tracker-dot {
-    opacity: 0 !important;
-    transform: scale(0.2) !important;
+    opacity: 0.22 !important;
+    transform: scale(0.85) !important;
     pointer-events: none !important;
-    transition: opacity 0.18s ease-out, transform 0.18s ease-out !important;
+    transition: opacity 0.2s ease-out, transform 0.2s ease-out !important;
 }
 
 /* Crisp Colorful Micro-Aura / Thruster Flare */
@@ -847,6 +847,33 @@ header::before {
     color: var(--cp-turquoise) !important;
     border-color: var(--cp-turquoise) !important;
     box-shadow: 0 0 14px rgba(25, 227, 208, 0.45) !important;
+}
+
+/* Cyberpunk Nav Resume Download Button */
+.nav-resume-btn {
+    background: linear-gradient(135deg, rgba(255, 230, 0, 0.16), rgba(242, 193, 78, 0.08)) !important;
+    border: 1px solid rgba(255, 230, 0, 0.55) !important;
+    color: #ffffff !important;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 14px rgba(255, 230, 0, 0.28);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-resume-btn:hover {
+    border-color: #ffffff !important;
+    color: #ffe600 !important;
+    box-shadow: 0 0 24px rgba(255, 230, 0, 0.75), inset 0 0 10px rgba(255, 230, 0, 0.25) !important;
+    transform: scale(1.06) translateY(-1px);
 }
 
 /* ==========================================================================
@@ -1854,14 +1881,32 @@ header::before {
     top: 4.8rem;
     left: 50%;
     transform: translateX(-50%);
-    width: 26rem;
-    height: 26rem;
-    background: radial-gradient(ellipse 65% 100% at 50% 0%, rgba(255, 245, 215, 0.5) 0%, rgba(242, 193, 78, 0.28) 35%, rgba(25, 227, 208, 0.14) 70%, transparent 100%);
+    width: 22rem;
+    height: 28rem;
+    /* Straight conical spotlight with crisp geometric projection */
+    clip-path: polygon(36% 0%, 64% 0%, 96% 100%, 4% 100%);
+    background: linear-gradient(to bottom, 
+        rgba(255, 255, 255, 0.85) 0%, 
+        rgba(255, 245, 200, 0.55) 20%, 
+        rgba(250, 220, 100, 0.28) 55%, 
+        rgba(25, 227, 208, 0.10) 85%, 
+        transparent 100%);
     opacity: 0;
-    filter: blur(14px);
-    transition: opacity 0.5s ease-out;
+    /* Razor-sharp beam with edges blurred slightly, ever so slightly */
+    filter: blur(1.5px);
+    transition: opacity 0.4s ease-out;
     pointer-events: none;
     z-index: 6;
+}
+
+.light-beam-visual::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(44% 0%, 56% 0%, 78% 100%, 22% 100%);
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.35) 35%, transparent 85%);
+    filter: blur(1px);
+    pointer-events: none;
 }
 
 .light-floor-reflection {
@@ -2066,6 +2111,20 @@ footer.cyber-dock-footer, footer {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dock-btn-resume {
+    background: linear-gradient(135deg, rgba(255, 230, 0, 0.18), rgba(242, 193, 78, 0.28)) !important;
+    border: 1px solid rgba(255, 230, 0, 0.75) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(255, 230, 0, 0.35);
+}
+
+.dock-btn-resume:hover {
+    box-shadow: 0 0 24px rgba(255, 230, 0, 0.85) !important;
+    border-color: #ffffff !important;
+    color: #ffe600 !important;
+    transform: translateY(-2px);
 }
 
 .dock-btn-ai {

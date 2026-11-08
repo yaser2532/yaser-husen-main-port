@@ -423,17 +423,25 @@
         item.startTime = performance.now();
         
         const nodes = SectionCoordinator.getNodesForSection(item.id);
-        const GAP_MS = fastMode ? 150 : 500; // Strict 0.5s sequence gap per user directive
-        const ELEM_DUR_MS = fastMode ? 250 : 450;
-        const SCOUT_DUR_MS = fastMode ? 150 : 300;
+        const GAP_MS = fastMode ? 200 : 1100; // 1.1s observable sequential delay per element (under 1.5s per directive)
+        const ELEM_DUR_MS = fastMode ? 300 : 750; // 0.75s cinematic pull duration per element
+        const SCOUT_DUR_MS = fastMode ? 150 : 400; // 0.4s scouting pass
         
         item.scoutDuration = SCOUT_DUR_MS;
         item.gapDuration = GAP_MS;
         item.elemDuration = ELEM_DUR_MS;
-        item.duration = SCOUT_DUR_MS + Math.max(1, nodes.length) * GAP_MS + 250;
+        item.duration = SCOUT_DUR_MS + Math.max(1, nodes.length) * GAP_MS + ELEM_DUR_MS;
         
         item.el.setAttribute('data-nb', 'pulling');
         item.el.style.willChange = 'transform, opacity';
+
+        // Slow-scroll and freeze failsafe: guarantees completion even if scroll stalls or tab backgrounded
+        if (item.failsafeTimer) clearTimeout(item.failsafeTimer);
+        item.failsafeTimer = setTimeout(() => {
+            if (item.state !== 'built') {
+                finishPull(item, true);
+            }
+        }, item.duration + 2000);
 
         // Notify swarm to initiate Phase 1: Reconnaissance
         if (window.swarm && typeof window.swarm.setPhase === 'function') {
@@ -445,6 +453,11 @@
 
     function finishPull(item, instant = false) {
         if (!item || item.state === 'built') return;
+
+        if (item.failsafeTimer) {
+            clearTimeout(item.failsafeTimer);
+            item.failsafeTimer = null;
+        }
 
         item.state = 'built';
         item.el.setAttribute('data-nb', 'built');
@@ -509,10 +522,11 @@
     function processNextInQueue() {
         const scrollY = window.scrollY || window.pageYOffset;
 
-        // Auto-recovery: if currentPullingItem has scrolled completely out of view, finish it instantly
+        // Fast-scroll and offscreen auto-recovery: if currentPullingItem has scrolled out of view, finish instantly
         if (currentPullingItem) {
-            const r = currentPullingItem.el.getBoundingClientRect();
-            const isOutOfFocus = (r.bottom < 0) || (r.top > viewH + 100);
+            const screenTop = currentPullingItem.pageTop - scrollY;
+            const screenBottom = screenTop + currentPullingItem.height;
+            const isOutOfFocus = (screenBottom < 0) || (screenTop > viewH + 120);
             if (isOutOfFocus) {
                 const prev = currentPullingItem;
                 currentPullingItem = null;
@@ -530,9 +544,17 @@
         for (let i = 0; i < sections.length; i++) {
             const s = sections[i];
             if (s.state === 'pending' && !s.isHero) {
-                const r = s.el.getBoundingClientRect();
+                const screenTop = s.pageTop - scrollY;
+                const screenBottom = screenTop + s.height;
+
+                // Fast-scroll fail-safe: if already scrolled past without building, resolve immediately
+                if (screenBottom < 0 || screenTop < -80) {
+                    finishPull(s, true);
+                    continue;
+                }
+
                 // Cinematic trigger: begins when top enters upper 75% of viewport so user sees the full pull
-                const inCinematicView = (r.top <= viewH * 0.75 && r.bottom >= viewH * 0.15) ||
+                const inCinematicView = (screenTop <= viewH * 0.75 && screenBottom >= viewH * 0.15) ||
                                         (isAtBottom && s.id === 'contact');
                 if (inCinematicView) {
                     targetSection = s;

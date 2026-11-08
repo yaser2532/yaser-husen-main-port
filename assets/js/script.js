@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const target = e.target;
             const isText = isReadableTarget(target);
             document.body.classList.toggle('cursor-reading', isText);
-            targetDotOpacity = isText ? 0.0 : 0.95;
+            targetDotOpacity = isText ? 0.22 : 0.95;
 
             const element = getEventElement(target);
             if (element && element.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const nextTarget = e.relatedTarget;
             const isText = isReadableTarget(nextTarget);
             document.body.classList.toggle('cursor-reading', isText);
-            targetDotOpacity = isText ? 0.0 : 0.95;
+            targetDotOpacity = isText ? 0.22 : 0.95;
 
             const element = getEventElement(e.target);
             if (element && element.closest('a, button, .glass-card, .skill-tag, .modern-switch, .project-card, .cert-card')) {
@@ -436,7 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scale3d = (0.85 + 0.30 * (depthZ * 0.5 + 0.5)).toFixed(3);
                 
                 dot.style.transform = `translate3d(${data.currentX.toFixed(1)}px, ${data.currentY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${scale3d})`;
-                const finalOpacity = isReadingText ? 0 : Math.max(0.65, data.currentOpacity);
+                const finalOpacity = isReadingText ? 0.22 : Math.max(0.65, data.currentOpacity);
                 dot.style.opacity = finalOpacity.toFixed(3);
             }
 

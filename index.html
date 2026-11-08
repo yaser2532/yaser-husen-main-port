@@ -58,6 +58,9 @@
     <div class="mouse-glow" id="mouse-glow"></div>
     <canvas id="nb-canvas" aria-hidden="true"></canvas>
 
+    <!-- Global Deep Space Gaming Ambient Audio -->
+    <audio id="bgMusic" src="assets/audio/bg.mp3" loop preload="auto"></audio>
+
     <!-- Navigation -->
     <nav id="navbar" aria-label="Primary navigation">
         <div class="nav-container">
@@ -70,6 +73,11 @@
                 <li><a href="#creative-lab" class="nav-link">Creative Lab</a></li>
                 <li><a href="#certificates" class="nav-link">Certificates</a></li>
                 <li><a href="#contact" class="nav-link">Contact</a></li>
+                <li>
+                    <a href="assets/docs/Yaser_Husen_Resume.pdf" download="Yaser_Husen_Resume.pdf" class="nav-resume-btn" aria-label="Download Resume" title="Download Resume (PDF)">
+                        <i class="fa-solid fa-file-arrow-down"></i> <span>Resume</span>
+                    </a>
+                </li>
                 <li>
                     <button id="sound-toggle-btn" class="nav-sound-btn" aria-label="Toggle Ambient Audio" title="Toggle Ambient Audio">
                         <i class="fa-solid fa-volume-xmark"></i>
@@ -697,6 +705,9 @@
 
                 <!-- Right: Action Buttons -->
                 <div class="dock-actions-col">
+                    <a href="assets/docs/Yaser_Husen_Resume.pdf" download="Yaser_Husen_Resume.pdf" class="dock-btn dock-btn-resume" id="footer-resume-btn" title="Download Resume (PDF)">
+                        <i class="fa-solid fa-file-arrow-down"></i> <span>Resume</span>
+                    </a>
                     <button class="dock-btn dock-btn-ai" id="nano-chat-trigger-btn" title="Chat with My AI Assistant">
                         <i class="fa-solid fa-robot"></i> <span>Chat with AI</span>
                     </button>
@@ -723,8 +734,6 @@
             <source src="assets/video/bg.mp4" type="video/mp4">
         </video>
 
-        <!-- Background Music -->
-        <audio id="bgMusic" src="assets/audio/bg.mp3" loop preload="auto"></audio>
 
         <!-- Floating Emojis Canvas/Layer -->
         <div class="floating-emojis" id="floatingEmojis"></div>

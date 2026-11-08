@@ -320,11 +320,41 @@
             });
         });
 
-        // Initialize state on background music if already loaded
+        // Initialize state on background music and auto-start calm deep space music on first interaction
         const bgMusic = document.getElementById('bgMusic');
         if (bgMusic) {
             bgMusic.muted = isMuted;
+            bgMusic.volume = 0.22;
         }
+
+        function startAmbientSpaceMusic() {
+            if (isMuted) return;
+            const musicEl = document.getElementById('bgMusic');
+            if (musicEl) {
+                musicEl.muted = false;
+                musicEl.volume = 0.22;
+                musicEl.play().then(() => {
+                    isMuted = false;
+                    updateSoundButtonUI();
+                }).catch(() => {
+                    // Browser requires user gesture
+                });
+            }
+        }
+
+        const handleUserGesture = () => {
+            initAudio();
+            startAmbientSpaceMusic();
+            document.removeEventListener('click', handleUserGesture);
+            document.removeEventListener('keydown', handleUserGesture);
+            document.removeEventListener('touchstart', handleUserGesture);
+        };
+
+        document.addEventListener('click', handleUserGesture, { once: true });
+        document.addEventListener('keydown', handleUserGesture, { once: true });
+        document.addEventListener('touchstart', handleUserGesture, { once: true });
+        // Attempt immediate playback (works if permissions already granted)
+        startAmbientSpaceMusic();
 
         // Attach event listeners for Hover and Click sounds using event delegation
         const interactiveSelectors = [
