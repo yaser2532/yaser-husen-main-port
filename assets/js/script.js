@@ -70,17 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
     /* --- 1. Mouse Glow Swarm & Cursor Tracker --- */
     const mouseGlow = document.getElementById('mouse-glow');
     if (mouseGlow) {
-        let targetX = 0;
-        let targetY = 0;
-        let currentX = 0;
-        let currentY = 0;
+        let targetX = window.innerWidth * 0.5;
+        let targetY = window.innerHeight * 0.45;
+        let currentX = targetX;
+        let currentY = targetY;
         const ease = 0.08;
         let targetScale = 1;
         let currentScale = 1;
-        let isVisible = false;
+        let isVisible = true;
 
-        // Position initial offscreen
-        mouseGlow.style.opacity = '0';
+        // Position initial center
+        mouseGlow.style.opacity = '0.7';
 
         // Pre-resolve root font size for rem conversions and handle resize
         let rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const NUM_DOTS = 8;
         const dots = [];
         const dotsData = [];
-        let targetDotOpacity = 0;
+        let targetDotOpacity = 0.95;
 
         for (let i = 0; i < NUM_DOTS; i++) {
             const dot = document.createElement('div');
@@ -101,35 +101,37 @@ document.addEventListener('DOMContentLoaded', () => {
             document.body.appendChild(dot);
             dots.push(dot);
 
-            // Establish angular assignment & harmonic attract-repel bounce properties (never clusters to a single point)
+            // Establish angular assignment & harmonic firefly cluster properties (tight, organic, closer to cursor)
             const baseAngle = i * (Math.PI * 2 / NUM_DOTS);
             
             dotsData.push({
-                currentX: targetX + Math.cos(baseAngle) * 50,
-                currentY: targetY + Math.sin(baseAngle) * 50,
-                currentOpacity: 0,
+                currentX: targetX + Math.cos(baseAngle) * 20,
+                currentY: targetY + Math.sin(baseAngle) * 20,
+                currentOpacity: 0.95,
                 baseAngle: baseAngle,
-                orbitSpeed: 0.82,
-                pulseSpeed: 1.8 + (i % 3) * 0.35,
+                orbitSpeed: 1.1 + (i % 3) * 0.25,
+                pulseSpeed: 2.2 + (i % 3) * 0.4,
                 phase: i * (Math.PI / 4),
-                minDist: 26 + (i % 3) * 5, // closest approach point to cursor
-                bounceDist: 62 + (i % 4) * 8, // repelled bounce distance
-                ease: 0.16 + (i % 3) * 0.03
+                minDist: 9 + (i % 3) * 3, // closest approach point to cursor (9px to 15px - close cluster)
+                bounceDist: 18 + (i % 4) * 4, // gentle repulsion bounce (18px to 30px)
+                ease: 0.18 + (i % 3) * 0.04,
+                freqX: 1.2 + (i % 3) * 0.4,
+                freqY: 0.9 + (i % 4) * 0.3,
+                phaseX: i * 1.1,
+                phaseY: i * 0.85,
+                ampX: 6 + (i % 3) * 3,
+                ampY: 5 + (i % 4) * 2
             });
         }
 
         document.addEventListener('mousemove', (e) => {
+            isTouchDevice = false;
             targetX = e.clientX;
             targetY = e.clientY;
+            lastPointerTime = performance.now();
             ensureGlowLoop();
 
-            const readableTarget = e.target.closest(
-                'a, button, p, h1, h2, h3, h4, h5, h6, li, label, code, blockquote, ' +
-                'input, textarea, .trait-tag, .section-tag, .badge, .status-txt, ' +
-                '.project-type, .stat-label, .secret-text, .bday-title, .bday-desc'
-            );
-            document.body.classList.toggle('cursor-reading', Boolean(readableTarget));
-            targetDotOpacity = readableTarget ? 0 : 0.9;
+            targetDotOpacity = 0.95; // Fireflies stay luminescent and active across the entire screen
 
             if (!isVisible) {
                 currentX = targetX;
@@ -148,7 +150,6 @@ document.addEventListener('DOMContentLoaded', () => {
             mouseGlow.style.opacity = '0';
             targetDotOpacity = 0;
             isVisible = false;
-            document.body.classList.remove('cursor-reading');
         });
 
         // Hover tracking using event delegation
@@ -297,8 +298,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update individual dots in the cluster
             const time = performance.now() * 0.001;
 
-            // [B-04] Touch idle orbit at lower third of viewport
-            if (isTouchDevice && !assignedTargets && (currentPhase === 'idle') && (performance.now() - lastTouchTime > 2000)) {
+            // [B-04] Touch idle orbit at lower third of viewport (only when touch-only and no pointer activity)
+            if (isTouchDevice && !assignedTargets && (currentPhase === 'idle') && (performance.now() - lastPointerTime > 4000)) {
                 targetX = window.innerWidth * 0.5 + Math.cos(time * 0.8) * 35;
                 targetY = window.innerHeight * 0.78 + Math.sin(time * 0.6) * 20;
             }
@@ -324,32 +325,44 @@ document.addEventListener('DOMContentLoaded', () => {
                         cx = currentPhaseMeta.bounds.pageLeft + (currentPhaseMeta.bounds.width * 0.5);
                     }
                     const angle = tScout * (1.8 + (i % 3) * 0.6) + (i * Math.PI * 2 / NUM_DOTS);
-                    const rx = Math.min(window.innerWidth * 0.38, 220 + (i % 4) * 50);
-                    const ry = Math.min(window.innerHeight * 0.28, 140 + (i % 3) * 40);
-                    const targetDotX = cx + Math.cos(angle) * rx + Math.sin(tScout * 2.5 + i) * 30;
-                    const targetDotY = cy + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.0 + i) * 25;
-                    data.currentX += (targetDotX - data.currentX) * 0.16;
-                    data.currentY += (targetDotY - data.currentY) * 0.16;
+                    const rx = Math.min(window.innerWidth * 0.38, 200 + (i % 4) * 40);
+                    const ry = Math.min(window.innerHeight * 0.28, 120 + (i % 3) * 35);
+                    targetDotX = cx + Math.cos(angle) * rx + Math.sin(tScout * 2.5 + i) * 25;
+                    targetDotY = cy + Math.sin(angle * 1.3) * ry + Math.cos(tScout * 2.0 + i) * 20;
+                    data.currentX += (targetDotX - data.currentX) * 0.18;
+                    data.currentY += (targetDotY - data.currentY) * 0.18;
                 } else if (assignedTargets && assignedTargets.length > 0) {
-                    // Priority 1: Multipurpose firefly drones pull and hoist incoming section elements
+                    // Priority 1: Multipurpose firefly drones pull and construct incoming section elements
                     const pt = assignedTargets[i % assignedTargets.length];
-                    const targetDotX = pt.x + driftX * 0.5;
-                    const targetDotY = pt.y + driftY * 0.5;
-                    data.currentX += (targetDotX - data.currentX) * 0.25;
-                    data.currentY += (targetDotY - data.currentY) * 0.25;
+                    // Dynamic 3D hovering oscillation around the construction anchor point
+                    const hoverAngle = time * (3.4 + (i % 3) * 0.8) + (i * Math.PI / 4);
+                    const hoverR = 5 + Math.sin(time * 3.8 + i) * 3;
+                    const jitterX = Math.sin(time * 5.0 + data.phaseX) * 3;
+                    const jitterY = Math.cos(time * 4.6 + data.phaseY) * 3;
+
+                    targetDotX = pt.x + Math.cos(hoverAngle) * hoverR + jitterX;
+                    targetDotY = pt.y + Math.sin(hoverAngle) * hoverR + jitterY;
+
+                    data.currentX += (targetDotX - data.currentX) * 0.22;
+                    data.currentY += (targetDotY - data.currentY) * 0.22;
                 } else {
-                    // Priority 2: Harmonic Attract & Repel Bounce around Cursor (hover, approach, bounce off, never cluster)
+                    // Priority 2: Reassemble and tightly cluster around Cursor (hover, organic flutter, close clustering)
                     const curAngle = data.baseAngle + time * data.orbitSpeed;
                     const cycle = time * data.pulseSpeed + data.phase;
                     const bounceFactor = Math.pow(Math.abs(Math.sin(cycle)), 0.65);
                     const currentDist = data.minDist + bounceFactor * (data.bounceDist - data.minDist);
-                    const flutter = Math.sin(time * 3.2 + i * 1.5) * 3.0;
+                    const flutterX = Math.sin(time * 3.8 + i * 1.7) * 2.8 + Math.cos(time * 1.9 + i) * 1.8;
+                    const flutterY = Math.cos(time * 3.4 + i * 1.4) * 2.8 + Math.sin(time * 2.1 + i) * 1.8;
 
-                    const targetDotX = targetX + Math.cos(curAngle) * (currentDist + flutter);
-                    const targetDotY = targetY + Math.sin(curAngle) * (currentDist + flutter);
+                    targetDotX = targetX + Math.cos(curAngle) * currentDist + flutterX;
+                    targetDotY = targetY + Math.sin(curAngle) * currentDist + flutterY;
 
-                    data.currentX += (targetDotX - data.currentX) * data.ease;
-                    data.currentY += (targetDotY - data.currentY) * data.ease;
+                    // Responsive recall ease: fly back quickly from distant sections, then hover gently
+                    const distToTarget = Math.hypot(targetDotX - data.currentX, targetDotY - data.currentY);
+                    const activeEase = distToTarget > 60 ? 0.30 : data.ease;
+
+                    data.currentX += (targetDotX - data.currentX) * activeEase;
+                    data.currentY += (targetDotY - data.currentY) * activeEase;
                 }
                 
                 data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.14;
@@ -363,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const dx = di.currentX - dj.currentX;
                     const dy = di.currentY - dj.currentY;
                     const d2 = dx * dx + dy * dy;
-                    const minSeparation = 18; // 18px physical exclusion zone
+                    const minSeparation = 10; // 10px physical exclusion zone - close cluster without overlapping
                     if (d2 < minSeparation * minSeparation && d2 > 0.0001) {
                         const dist = Math.sqrt(d2);
                         const push = (minSeparation - dist) * 0.5;
@@ -377,21 +390,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Commit final position to DOM
+            // Commit final position and 3D depth scale to DOM
             for (let i = 0; i < NUM_DOTS; i++) {
                 const dot = dots[i];
                 const data = dotsData[i];
-                const dotXRem = data.currentX / rootFontSize;
-                const dotYRem = data.currentY / rootFontSize;
+                const depthZ = Math.sin(time * 2.6 + i * 1.3);
+                const scale3d = (0.85 + 0.30 * (depthZ * 0.5 + 0.5)).toFixed(3);
                 
-                dot.style.transform = `translate3d(${dotXRem}rem, ${dotYRem}rem, 0) translate(-50%, -50%)`;
-                dot.style.opacity = data.currentOpacity.toFixed(3);
+                dot.style.transform = `translate3d(${data.currentX.toFixed(1)}px, ${data.currentY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${scale3d})`;
+                dot.style.opacity = Math.max(0.70, data.currentOpacity).toFixed(3);
             }
 
             requestAnimationFrame(animateGlow);
         }
 
-        // Start glow loop
+        // Start glow loop and keep alive during scroll
+        window.addEventListener('scroll', ensureGlowLoop, { passive: true });
         ensureGlowLoop();
     }
 

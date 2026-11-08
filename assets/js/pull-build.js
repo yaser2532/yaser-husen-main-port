@@ -228,22 +228,19 @@
                 return true;
             });
 
-            // Strict sequence ranking: Title -> Explanatory Paragraph -> Boxes/Cards/Divs -> Buttons/Links
-            const getRank = (element) => {
+            // Sequential interpreter order: Title strictly first, then subsequent properties in DOM tree order
+            const isTitle = (element) => {
                 const tag = element.tagName.toLowerCase();
-                if (['h1', 'h2', 'h3'].includes(tag) || element.classList.contains('section-title')) {
-                    return 0; // 1. Title first
-                }
-                if (element.classList.contains('section-desc') || element.classList.contains('section-intro') || element.classList.contains('section-tag') || tag === 'p') {
-                    return 1; // 2. Explanatory paragraph second
-                }
-                if (element.matches(cardSel)) {
-                    return 2; // 3. Boxes, cards & containers
-                }
-                return 3; // 4. Action buttons & docks
+                return ['h1', 'h2', 'h3'].includes(tag) || element.classList.contains('section-title');
             };
 
-            const sortedChildNodes = childNodes.sort((a, b) => getRank(a) - getRank(b));
+            const sortedChildNodes = childNodes.sort((a, b) => {
+                const aTitle = isTitle(a);
+                const bTitle = isTitle(b);
+                if (aTitle && !bTitle) return -1;
+                if (!aTitle && bTitle) return 1;
+                return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
+            });
 
             sortedChildNodes.forEach((childEl, order) => {
                 const tag = childEl.tagName.toLowerCase();
@@ -761,13 +758,15 @@
                         n.el.style.opacity = childOp.toFixed(3);
 
                         const r = n.el.getBoundingClientRect();
-                        if (r.width > 15 && r.height > 8) {
-                            dynamicTargets.push({
-                                x: r.left + r.width * 0.5,
-                                y: r.top + r.height * 0.5
-                            });
-                            dynamicTargets.push({ x: r.left + 15, y: r.top + 8 });
-                            dynamicTargets.push({ x: r.right - 15, y: r.top + 8 });
+                        if (r.width > 10 && r.height > 6) {
+                            dynamicTargets.push({ x: r.left, y: r.top }); // 0: Top-Left
+                            dynamicTargets.push({ x: r.left + r.width * 0.5, y: r.top }); // 1: Top-Center
+                            dynamicTargets.push({ x: r.right, y: r.top }); // 2: Top-Right
+                            dynamicTargets.push({ x: r.right, y: r.top + r.height * 0.5 }); // 3: Right-Center
+                            dynamicTargets.push({ x: r.right, y: r.bottom }); // 4: Bottom-Right
+                            dynamicTargets.push({ x: r.left + r.width * 0.5, y: r.bottom }); // 5: Bottom-Center
+                            dynamicTargets.push({ x: r.left, y: r.bottom }); // 6: Bottom-Left
+                            dynamicTargets.push({ x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 }); // 7: Centroid
 
                             activeBox = {
                                 x: r.left,
@@ -880,12 +879,14 @@
                         ctx.lineWidth = 2;
                         ctx.stroke();
 
-                        // Inner 1px bright gold core
+                        // Inner bright gold and firefly crimson/white laser core
                         ctx.beginPath();
                         ctx.moveTo(dotX, dotY);
                         ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                        ctx.strokeStyle = 'rgba(255, 216, 115, 0.95)';
-                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = (i % 2 === 0) ? 'rgba(255, 42, 85, 0.92)' : 'rgba(255, 255, 255, 0.95)';
+                        ctx.lineWidth = 1.2;
+                        ctx.shadowColor = (i % 2 === 0) ? '#ff2a55' : '#ffd873';
+                        ctx.shadowBlur = 6;
                         ctx.stroke();
                         ctx.restore();
                     }
