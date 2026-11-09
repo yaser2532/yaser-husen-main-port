@@ -248,7 +248,7 @@
 
             // Smooth DIM transition: 150ms fade to 0.3 over text, 250ms restore to 1.0
             const targetOp = (!cursorInWindow) ? 0.60 : (isOverText ? 0.30 : 1.0);
-            const fadeSpeed = (targetOp < this.opacity) ? 0.24 : 0.16;
+            const fadeSpeed = (targetOp < this.opacity) ? 0.24 : 0.22;
             this.opacity += (targetOp - this.opacity) * fadeSpeed;
 
             this.pushTrail();
