@@ -208,11 +208,23 @@
 
 
 
+    let lastCursorMoveTime = performance.now();
+
     window.addEventListener('mousemove', (e) => {
 
         isTouchMode = false;
 
         cursorInWindow = true;
+
+        const dx = e.clientX - targetCursorX;
+
+        const dy = e.clientY - targetCursorY;
+
+        if (Math.hypot(dx, dy) > 1.2) {
+
+            lastCursorMoveTime = performance.now();
+
+        }
 
         targetCursorX = e.clientX;
 
@@ -231,6 +243,16 @@
         cursorInWindow = true;
 
         if (e.touches && e.touches[0]) {
+
+            const dx = e.touches[0].clientX - targetCursorX;
+
+            const dy = e.touches[0].clientY - targetCursorY;
+
+            if (Math.hypot(dx, dy) > 1.2) {
+
+                lastCursorMoveTime = performance.now();
+
+            }
 
             targetCursorX = e.touches[0].clientX;
 
@@ -440,11 +462,15 @@
 
 
 
-            // Firefly Light Tail: 16 history points of dissolving light trace
+            // Firefly Light Tail: Sleek, thin, agile trace appearing only when relocating to new positions
 
             this.trail = [];
 
-            this.maxTrail = 16;
+            this.maxTrail = 6; // Reduced from 16 to 6 for a short, crisp tail
+
+            this.tailAlpha = 0.0; // Dynamic intensity multiplier
+
+            this.isRelocating = false;
 
         }
 
@@ -554,6 +580,34 @@
 
 
 
+            // Tail appears ONLY when moving from a fixed position to a new position
+
+            const droneSpeed = Math.hypot(this.vx, this.vy);
+
+            const distToDesired = Math.hypot(desiredX - this.x, desiredY - this.y);
+
+            const cursorIsMoving = (now - lastCursorMoveTime < 240);
+
+            const isRelocating = cursorIsMoving && (distToDesired > 5.0 || droneSpeed > 2.2);
+
+            this.isRelocating = isRelocating;
+
+
+
+            const targetTailAlpha = isRelocating ? Math.min(1.0, Math.max(0.25, (droneSpeed - 1.8) / 2.8)) : 0.0;
+
+            const tailFadeRate = isRelocating ? Math.min(1.0, dt * 16) : Math.min(1.0, dt * 24);
+
+            this.tailAlpha += (targetTailAlpha - this.tailAlpha) * tailFadeRate;
+
+            if (!isRelocating && this.trail.length === 0) {
+
+                this.tailAlpha = 0.0;
+
+            }
+
+
+
             this.pushTrail();
 
         }
@@ -600,6 +654,18 @@
 
             this.opacity = 1.0;
 
+
+
+            // Active mission flight between fixed positions across screen
+
+            this.isRelocating = true;
+
+            const targetTailAlpha = 1.0;
+
+            this.tailAlpha += (targetTailAlpha - this.tailAlpha) * Math.min(1.0, dt * 14);
+
+
+
             this.pushTrail();
 
 
@@ -644,6 +710,18 @@
 
             this.opacity = 1.0;
 
+
+
+            // Stationed at fixed anchor while pulling: no tail
+
+            this.isRelocating = false;
+
+            const targetTailAlpha = 0.0;
+
+            this.tailAlpha += (targetTailAlpha - this.tailAlpha) * Math.min(1.0, dt * 16);
+
+
+
             this.pushTrail();
 
         }
@@ -652,11 +730,37 @@
 
         pushTrail() {
 
-            this.trail.unshift({ x: this.x, y: this.y, opacity: this.opacity });
+            if (this.isRelocating && this.tailAlpha > 0.08) {
 
-            if (this.trail.length > this.maxTrail) {
+                this.trail.unshift({ x: this.x, y: this.y, alpha: this.tailAlpha });
 
-                this.trail.pop();
+                if (this.trail.length > this.maxTrail) {
+
+                    this.trail.pop();
+
+                }
+
+            } else {
+
+                // Clean rapid dissolution when settled at fixed position
+
+                if (this.trail.length > 2) {
+
+                    this.trail.splice(-2);
+
+                } else {
+
+                    this.trail = [];
+
+                }
+
+                if (this.tailAlpha <= 0.05) {
+
+                    this.trail = [];
+
+                    this.tailAlpha = 0.0;
+
+                }
 
             }
 
@@ -666,15 +770,15 @@
 
         draw(ctx) {
 
-            // Firefly Light Tail: Smooth glowing ribbon of disappearing bioluminescent light
+            // Firefly Light Tail: Appearing ONLY when moving to a new position; thin and sleek
 
-            if (this.trail.length > 2) {
+            if (this.tailAlpha > 0.03 && this.trail.length >= 2) {
 
                 ctx.save();
 
-                
 
-                // 1. Outer luminous aura ribbon
+
+                // 1. Outer luminous aura ribbon - ultra thin (0.65px to 1.5px)
 
                 ctx.beginPath();
 
@@ -692,15 +796,15 @@
 
                 ctx.strokeStyle = this.color;
 
-                ctx.lineWidth = Math.max(1.4, this.size * 1.5);
+                ctx.lineWidth = Math.max(0.65, this.size * 0.30) * this.tailAlpha;
 
                 ctx.lineCap = 'round';
 
                 ctx.lineJoin = 'round';
 
-                ctx.globalAlpha = this.opacity * 0.35;
+                ctx.globalAlpha = this.opacity * 0.40 * this.tailAlpha;
 
-                ctx.shadowBlur = 10;
+                ctx.shadowBlur = 4 * this.tailAlpha;
 
                 ctx.shadowColor = this.color;
 
@@ -708,7 +812,7 @@
 
 
 
-                // 2. Inner intense white filament core of disappearing light
+                // 2. Inner intense white filament core - razor thin (0.32px to 0.7px)
 
                 ctx.beginPath();
 
@@ -724,13 +828,13 @@
 
                 }
 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.90)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
 
-                ctx.lineWidth = Math.max(0.7, this.size * 0.65);
+                ctx.lineWidth = Math.max(0.32, this.size * 0.14) * this.tailAlpha;
 
-                ctx.globalAlpha = this.opacity * 0.70;
+                ctx.globalAlpha = this.opacity * 0.75 * this.tailAlpha;
 
-                ctx.shadowBlur = 6;
+                ctx.shadowBlur = 2 * this.tailAlpha;
 
                 ctx.shadowColor = THEME.gold;
 
@@ -738,35 +842,31 @@
 
 
 
-                // 3. Fading bioluminescent firefly embers along the trail
+                // 3. Delicate micro-ember spore at tail tip
 
-                for (let i = 2; i < this.trail.length; i += 2) {
+                if (this.trail.length >= 4) {
 
-                    const pt = this.trail[i];
+                    const tip = this.trail[this.trail.length - 1];
 
-                    const age = i / this.trail.length;
-
-                    const sporeAlpha = this.opacity * Math.pow(1 - age, 1.6) * 0.42;
+                    const sporeAlpha = this.opacity * 0.25 * this.tailAlpha;
 
                     if (sporeAlpha > 0.02) {
 
                         ctx.beginPath();
 
-                        ctx.arc(pt.x, pt.y, Math.max(0.6, this.size * (1 - age * 0.65)), 0, Math.PI * 2);
+                        ctx.arc(tip.x, tip.y, Math.max(0.4, this.size * 0.18), 0, Math.PI * 2);
 
                         ctx.fillStyle = this.color;
 
                         ctx.globalAlpha = sporeAlpha;
-
-                        ctx.shadowBlur = 5;
-
-                        ctx.shadowColor = this.color;
 
                         ctx.fill();
 
                     }
 
                 }
+
+
 
                 ctx.restore();
 
