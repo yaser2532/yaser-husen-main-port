@@ -46,6 +46,8 @@
 
         turquoise: '#19E3D1',
 
+        cyan: '#19E3D1',
+
         black: '#07060B',
 
         white: '#FFFFFF'
@@ -210,6 +212,8 @@
 
     let lastCursorMoveTime = performance.now();
 
+    let lastSonarPingTime = 0;
+
     window.addEventListener('mousemove', (e) => {
 
         isTouchMode = false;
@@ -220,9 +224,19 @@
 
         const dy = e.clientY - targetCursorY;
 
-        if (Math.hypot(dx, dy) > 1.2) {
+        const distMoved = Math.hypot(dx, dy);
+
+        if (distMoved > 1.2) {
 
             lastCursorMoveTime = performance.now();
+
+        }
+
+        if (distMoved > 24 && performance.now() - lastSonarPingTime > 400) {
+
+            lastSonarPingTime = performance.now();
+
+            emitPulseRing(e.clientX, e.clientY, THEME.cyan, 26, 260);
 
         }
 
@@ -517,6 +531,10 @@
                 this.vx += Math.cos(dartAngle) * dartForce;
 
                 this.vy += Math.sin(dartAngle) * dartForce;
+
+
+
+
 
             }
 
@@ -1068,11 +1086,21 @@
 
 
 
-    // ─── 6. SPARK PARTICLES & TRACTOR BEAMS ────────────────────────────────
+    function easeOutCubic(x) {
+
+        return 1 - Math.pow(1 - x, 3);
+
+    }
+
+
+
+    // ─── 6. SPARK PARTICLES, PULSE RINGS & QUANTUM WELDING ──────────────────
 
     const sparks = [];
 
     function emitSparks(x, y, count = 12) {
+
+        if (sparks.length >= 100) sparks.splice(0, count);
 
         for (let i = 0; i < count; i++) {
 
@@ -1090,11 +1118,53 @@
 
                 vy: Math.sin(angle) * speed - 1.2,
 
+                isPlasma: false,
+
                 life: 1.0,
 
                 decay: 0.035 + Math.random() * 0.045,
 
                 color: PALETTE[Math.floor(Math.random() * PALETTE.length)]
+
+            });
+
+        }
+
+    }
+
+
+
+    // Quantum Welding Plasma Sparks: Directional molten plasma streaks spraying off tractor contact points
+
+    function emitPlasmaSparks(x, y, count = 3) {
+
+        if (sparks.length >= 100) sparks.splice(0, count);
+
+        const plasmaPalette = [THEME.cyan, THEME.gold, THEME.white];
+
+        for (let i = 0; i < count; i++) {
+
+            const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * Math.PI * 1.35;
+
+            const speed = 2.5 + Math.random() * 4.8;
+
+            sparks.push({
+
+                x,
+
+                y,
+
+                vx: Math.cos(angle) * speed,
+
+                vy: Math.sin(angle) * speed,
+
+                isPlasma: true,
+
+                life: 1.0,
+
+                decay: 0.055 + Math.random() * 0.045, // fast 160-220ms life
+
+                color: plasmaPalette[Math.floor(Math.random() * plasmaPalette.length)]
 
             });
 
@@ -1114,7 +1184,9 @@
 
             s.y += s.vy;
 
-            s.vy += 0.08; // gravity
+            s.vy += s.isPlasma ? 0.04 : 0.08; // subtle gravity
+
+            s.vx *= 0.94; // aerodynamic drag
 
             s.life -= s.decay;
 
@@ -1130,19 +1202,159 @@
 
 
 
-            ctx.beginPath();
+            ctx.save();
 
-            ctx.arc(s.x, s.y, 1.0 * s.life, 0, Math.PI * 2);
+            if (s.isPlasma) {
 
-            ctx.fillStyle = s.color;
+                // Directional molten plasma streak
 
-            ctx.globalAlpha = s.life;
+                ctx.beginPath();
 
-            ctx.fill();
+                ctx.moveTo(s.x, s.y);
+
+                ctx.lineTo(s.x - s.vx * 1.5, s.y - s.vy * 1.5);
+
+                ctx.strokeStyle = s.color;
+
+                ctx.lineWidth = Math.max(0.6, 1.3 * s.life);
+
+                ctx.globalAlpha = s.life * 0.95;
+
+                ctx.shadowColor = s.color;
+
+                ctx.shadowBlur = 4;
+
+                ctx.stroke();
+
+            } else {
+
+                ctx.beginPath();
+
+                ctx.arc(s.x, s.y, 1.0 * s.life, 0, Math.PI * 2);
+
+                ctx.fillStyle = s.color;
+
+                ctx.globalAlpha = s.life;
+
+                ctx.fill();
+
+            }
+
+            ctx.restore();
 
         }
 
         ctx.globalAlpha = 1.0;
+
+    }
+
+
+
+    // Gravitational Pulse Rings (Micro-Sonar Radar Pings)
+
+    // Single ultra-fine concentric rings that rapidly expand & fade over ~250ms
+
+    const pulseRings = [];
+
+    function emitPulseRing(x, y, color = THEME.cyan, maxRadius = 26, duration = 260) {
+
+        if (pulseRings.length >= 14) pulseRings.shift();
+
+        pulseRings.push({
+
+            x,
+
+            y,
+
+            color,
+
+            maxRadius,
+
+            duration,
+
+            startTime: performance.now()
+
+        });
+
+    }
+
+
+
+    function updateAndDrawPulseRings(ctx, now) {
+
+        for (let i = pulseRings.length - 1; i >= 0; i--) {
+
+            const ring = pulseRings[i];
+
+            const elapsed = Math.max(0, now - ring.startTime);
+
+            const progress = Math.min(1.0, elapsed / ring.duration);
+
+
+
+            if (progress >= 1.0) {
+
+                pulseRings.splice(i, 1);
+
+                continue;
+
+            }
+
+
+
+            const easeP = easeOutCubic(progress);
+
+            const r = Math.max(0.2, easeP * ring.maxRadius);
+
+            const fade = (1.0 - progress);
+
+            const alpha = fade * fade * 0.85;
+
+
+
+            ctx.save();
+
+            // Outer ultra-fine expanding gravitational wave ring
+
+            ctx.beginPath();
+
+            ctx.arc(ring.x, ring.y, r, 0, Math.PI * 2);
+
+            ctx.strokeStyle = ring.color || THEME.turquoise;
+
+            ctx.lineWidth = Math.max(0.4, 1.1 * fade);
+
+            ctx.globalAlpha = alpha;
+
+            ctx.shadowColor = ring.color || THEME.turquoise;
+
+            ctx.shadowBlur = 4 * fade;
+
+            ctx.stroke();
+
+
+
+            // Inner faint echo ping
+
+            if (progress < 0.65) {
+
+                ctx.beginPath();
+
+                ctx.arc(ring.x, ring.y, Math.max(0.1, r * 0.45), 0, Math.PI * 2);
+
+                ctx.strokeStyle = THEME.white;
+
+                ctx.lineWidth = 0.5 * fade;
+
+                ctx.globalAlpha = alpha * 0.45;
+
+                ctx.stroke();
+
+            }
+
+            ctx.restore();
+
+        }
 
     }
 
@@ -1729,6 +1941,14 @@
 
                 this.arrivedCount++;
 
+                if (drone.targetAnchor) {
+
+                    emitPulseRing(drone.targetAnchor.x, drone.targetAnchor.y, THEME.cyan, 22, 220);
+
+                    emitPlasmaSparks(drone.targetAnchor.x, drone.targetAnchor.y, 4);
+
+                }
+
                 if (this.arrivedCount >= this.crew.length) {
 
                     this.startPull(performance.now());
@@ -1771,7 +1991,13 @@
 
 
 
-                this.anchors.forEach(a => emitSparks(a.x, a.y, 8));
+                this.anchors.forEach(a => {
+
+                    emitPulseRing(a.x, a.y, THEME.gold, 26, 260);
+
+                    emitPlasmaSparks(a.x, a.y, 8);
+
+                });
 
             }
 
@@ -1779,7 +2005,7 @@
 
 
 
-        // Assign procedural path to each crew drone
+        // Assign procedural path to each crew drone & emit launch gravitational pulse ring
 
         crewDrones.forEach((drone, idx) => {
 
@@ -1800,6 +2026,12 @@
             drone.targetAnchor = anchor;
 
             drone.pathPoints = generateProceduralPath(drone.x, drone.y, anchor.x, anchor.y, drone.flightDuration);
+
+
+
+            // Gravitational launch pulse ring
+
+            emitPulseRing(drone.x, drone.y, drone.color, 24, 250);
 
         });
 
@@ -1993,6 +2225,12 @@
 
         crewDrones.forEach((drone, idx) => {
 
+            if (drone.targetAnchor) {
+
+                emitPulseRing(drone.targetAnchor.x, drone.targetAnchor.y, THEME.cyan, 24, 240);
+
+            }
+
             drone.state = 'RETURN';
 
             drone.flightStart = now;
@@ -2119,6 +2357,86 @@
                 ctx.stroke();
 
                 ctx.restore();
+
+
+
+                // ─── QUANTUM WELDING CONTACT-POINT LENS BLOOM & CROSS-FLARE ─
+
+                ctx.save();
+
+                // 1. Diffuse glowing plasma halo at weld anchor
+
+                const haloRadius = 7.0 + 2.0 * Math.sin(now * 0.025 + idx * 1.5);
+
+                ctx.beginPath();
+
+                ctx.arc(anchor.x, anchor.y, haloRadius, 0, Math.PI * 2);
+
+                ctx.fillStyle = (idx % 2 === 0) ? 'rgba(25, 227, 209, 0.40)' : 'rgba(245, 197, 66, 0.40)';
+
+                ctx.shadowColor = THEME.cyan;
+
+                ctx.shadowBlur = 10;
+
+                ctx.fill();
+
+
+
+                // 2. High-energy diamond white welding core
+
+                ctx.beginPath();
+
+                ctx.arc(anchor.x, anchor.y, 2.4 + 0.6 * Math.cos(now * 0.035 + idx), 0, Math.PI * 2);
+
+                ctx.fillStyle = '#FFFFFF';
+
+                ctx.shadowColor = THEME.white;
+
+                ctx.shadowBlur = 6;
+
+                ctx.fill();
+
+
+
+                // 3. Rotating 4-ray diffraction cross-flare lens spikes
+
+                const flareAngle = now * 0.003 + idx * 0.78;
+
+                const flareLen = 7.0 + 3.0 * Math.sin(now * 0.04 + idx);
+
+                ctx.beginPath();
+
+                for (let k = 0; k < 4; k++) {
+
+                    const a = flareAngle + (k * Math.PI / 2);
+
+                    ctx.moveTo(anchor.x, anchor.y);
+
+                    ctx.lineTo(anchor.x + Math.cos(a) * flareLen, anchor.y + Math.sin(a) * flareLen);
+
+                }
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+
+                ctx.lineWidth = 0.8;
+
+                ctx.shadowColor = THEME.gold;
+
+                ctx.shadowBlur = 5;
+
+                ctx.stroke();
+
+                ctx.restore();
+
+
+
+                // 4. Directional quantum welding plasma sparks
+
+                if (Math.random() < 0.45) {
+
+                    emitPlasmaSparks(anchor.x, anchor.y, 2);
+
+                }
 
             });
 
@@ -2248,11 +2566,13 @@
 
 
 
-        // 4. Draw tractor beams & sparks
+        // 4. Draw tractor beams, welding sparks & pulse rings
 
         drawTractorBeams(ctx);
 
         updateAndDrawSparks(ctx);
+
+        updateAndDrawPulseRings(ctx, now);
 
 
 
@@ -2351,6 +2671,14 @@
         getElements: () => elementList,
 
         getMissions: () => activeMissions,
+
+        getPulseRings: () => pulseRings,
+
+        getSparks: () => sparks,
+
+        emitPulseRing,
+
+        emitPlasmaSparks,
 
         revealAll: revealAllInstantly,
 
