@@ -1842,11 +1842,11 @@ function initCosmicBackground() {
     texCanvas.height = 16;
     const ctx = texCanvas.getContext('2d');
     
-    // Crisp glowing core
+    // Crisp glowing core - refined soft starlight
     const grad = ctx.createRadialGradient(8, 8, 0, 8, 8, 8);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.35, 'rgba(255, 255, 255, 0.85)');
-    grad.addColorStop(0.7, 'rgba(255, 255, 255, 0.25)');
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    grad.addColorStop(0.25, 'rgba(255, 255, 255, 0.65)');
+    grad.addColorStop(0.6, 'rgba(255, 255, 255, 0.15)');
     grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 16, 16);
@@ -1905,8 +1905,8 @@ function initCosmicBackground() {
   const midStars = createStarfield(850, 2.4, 480, 360, 400, 0.96);
   scene.add(midStars);
 
-  // C. Foreground Twinkling Stellar Points (350 stars, size 3.8)
-  const foregroundStars = createStarfield(350, 3.8, 320, 240, 260, 0.98);
+  // C. Foreground Twinkling Stellar Points (90 stars, size 1.6, wide panoramic ratio, soft starlight)
+  const foregroundStars = createStarfield(90, 1.6, 900, 680, 500, 0.58);
   scene.add(foregroundStars);
 
   // Expose window.__gl for diagnostics and test suites
@@ -1954,19 +1954,19 @@ function initCosmicBackground() {
     midStars.rotation.y = -time * 0.0006;
     foregroundStars.rotation.y = time * 0.0008;
 
-    // 3D Depth Travel: Foreground stars travel through Z space towards camera
+    // 3D Depth Travel: Foreground stars gently drift through Z space
     const fgPos = foregroundStars.geometry.attributes.position.array;
     for (let i = 2; i < fgPos.length; i += 3) {
-      fgPos[i] += 0.28;
-      if (fgPos[i] > 75) {
-        fgPos[i] = -220;
+      fgPos[i] += 0.10;
+      if (fgPos[i] > 80) {
+        fgPos[i] = -350;
       }
     }
     foregroundStars.geometry.attributes.position.needsUpdate = true;
 
-    // Atmospheric stellar twinkling
-    deepStars.material.opacity = 0.84 + Math.sin(time * 1.8) * 0.12;
-    foregroundStars.material.opacity = 0.88 + Math.cos(time * 2.4) * 0.12;
+    // Atmospheric stellar twinkling with balanced brightness
+    deepStars.material.opacity = 0.82 + Math.sin(time * 1.5) * 0.10;
+    foregroundStars.material.opacity = 0.52 + Math.cos(time * 1.6) * 0.12;
 
     // Smooth inertial pan across the zoomed-in celestial star screen
     camX += (targetCamX - camX) * 0.045;

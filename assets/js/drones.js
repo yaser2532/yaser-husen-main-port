@@ -40,8 +40,8 @@
     const BAND_TOP = 0.08;   // 8% viewport height
     const BAND_BOTTOM = 0.88; // 88% viewport height
     const SCROLL_VELOCITY_LIMIT = 800; // px/s
-    const SCROLL_SETTLE_MS = 200;      // ms
-    const SECTION_DWELL_MS = 400;      // ms
+    const SCROLL_SETTLE_MS = 100;      // ms (responsive settle)
+    const SECTION_DWELL_MS = 100;      // ms (reduced dwell for 0.5s faster build trigger)
     const MAX_ACTIVE_CREWS = 3;
 
     const isMobile = window.innerWidth < 768;
@@ -182,7 +182,7 @@
         constructor(id) {
             this.id = id;
             this.color = PALETTE[id % PALETTE.length];
-            this.size = 3.2 + (id % 3) * 0.7; // 3.2px to 4.6px
+            this.size = 1.8 + (id % 3) * 0.4; // 1.8px to 2.6px (sleek, shorter dots)
             
             // Orbit geometry
             this.orbitRadius = R_MIN + (id / DRONE_COUNT) * (R_MAX - R_MIN);
@@ -212,9 +212,9 @@
             this.pathPoints = [];
             this.targetAnchor = { x: 0, y: 0 };
 
-            // Trail history (short fading trail)
+            // Trail history (compact tight trail)
             this.trail = [];
-            this.maxTrail = 4;
+            this.maxTrail = 2;
         }
 
         updateFollow(now, dt) {
@@ -309,31 +309,31 @@
             // Draw short fading trail
             for (let i = this.trail.length - 1; i >= 1; i--) {
                 const p = this.trail[i];
-                const trailAlpha = (p.opacity * (1 - i / this.trail.length) * 0.35);
+                const trailAlpha = (p.opacity * (1 - i / this.trail.length) * 0.28);
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, Math.max(1, this.size * 0.65), 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, Math.max(0.6, this.size * 0.45), 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
                 ctx.globalAlpha = trailAlpha;
                 ctx.fill();
             }
 
-            // Outer soft glow halo
+            // Outer soft glow halo (shorter, crisper perimeter)
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size * 2.2, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.size * 1.4, 0, Math.PI * 2);
             ctx.fillStyle = this.color;
-            ctx.globalAlpha = this.opacity * 0.28;
+            ctx.globalAlpha = this.opacity * 0.18;
             ctx.fill();
 
             // Main drone core
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size * 0.85, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.size * 0.72, 0, Math.PI * 2);
             ctx.fillStyle = this.color;
             ctx.globalAlpha = this.opacity * 0.95;
             ctx.fill();
 
             // Intense white specular center
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.size * 0.35, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.size * 0.26, 0, Math.PI * 2);
             ctx.fillStyle = THEME.white;
             ctx.globalAlpha = this.opacity * 0.98;
             ctx.fill();
@@ -501,7 +501,7 @@
             }
 
             ctx.beginPath();
-            ctx.arc(s.x, s.y, 1.8 * s.life, 0, Math.PI * 2);
+            ctx.arc(s.x, s.y, 1.0 * s.life, 0, Math.PI * 2);
             ctx.fillStyle = s.color;
             ctx.globalAlpha = s.life;
             ctx.fill();
@@ -571,20 +571,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let minDuration = 600;
+                let minDuration = 350; // was 600ms (-250ms)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    minDuration = 1100;
+                    minDuration = 600; // was 1100ms (-500ms / 0.5s faster!)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    minDuration = 900;
+                    minDuration = 450; // was 900ms (-450ms / 0.5s faster!)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn')) {
                     type = 'button';
-                    minDuration = 450;
+                    minDuration = 250; // was 450ms (-200ms)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    minDuration = 1400;
+                    minDuration = 850; // was 1400ms (-550ms / 0.55s faster!)
                 }
 
                 const item = {
@@ -766,7 +766,7 @@
         const anchors = computeAnchors(item);
         item.anchors = anchors;
 
-        const flightDuration = Math.round(650 + Math.random() * 450); // 650-1100ms (>= 500ms guaranteed)
+        const flightDuration = Math.round(250 + Math.random() * 200); // 250-450ms (0.5s faster arrival)
         
         const mission = {
             item,
@@ -810,7 +810,7 @@
             drone.activeMission = mission;
             drone.crewIndex = idx;
             drone.flightStart = now;
-            drone.flightDuration = flightDuration + idx * 40; // subtle stagger
+            drone.flightDuration = flightDuration + idx * 20; // tighter stagger
 
             const anchor = anchors[idx % anchors.length];
             drone.targetAnchor = anchor;
@@ -913,7 +913,7 @@
         crewDrones.forEach((drone, idx) => {
             drone.state = 'RETURN';
             drone.flightStart = now;
-            drone.flightDuration = Math.round(450 + Math.random() * 350); // 450-800ms return
+            drone.flightDuration = Math.round(200 + Math.random() * 150); // 200-350ms agile return
 
             // Random return orbit slot around cursor
             const returnAngle = Math.random() * Math.PI * 2;
@@ -954,7 +954,7 @@
                 ctx.moveTo(drone.x, drone.y);
                 ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
                 ctx.strokeStyle = 'rgba(25, 227, 209, 0.38)';
-                ctx.lineWidth = 3.2;
+                ctx.lineWidth = 1.6;
                 ctx.stroke();
 
                 // Middle gold beam
@@ -962,7 +962,7 @@
                 ctx.moveTo(drone.x, drone.y);
                 ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
                 ctx.strokeStyle = 'rgba(245, 197, 66, 0.85)';
-                ctx.lineWidth = 1.8;
+                ctx.lineWidth = 0.9;
                 ctx.stroke();
 
                 // Inner diamond white core
@@ -970,7 +970,7 @@
                 ctx.moveTo(drone.x, drone.y);
                 ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
-                ctx.lineWidth = 1.0;
+                ctx.lineWidth = 0.5;
                 ctx.shadowColor = THEME.gold;
                 ctx.shadowBlur = 8;
                 ctx.stroke();
