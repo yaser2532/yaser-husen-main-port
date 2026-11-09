@@ -38,7 +38,7 @@
     /* =========================================================================
        H-03: MAGNETIC BUTTON PULL & PRESS SPARK
        ========================================================================= */
-    const buttons = document.querySelectorAll('.btn, .cta-btn, .filter-btn, .nav-btn, .submit-btn, button[type="submit"]');
+    const buttons = document.querySelectorAll('.btn, .cta-btn, .cta-button, .filter-btn, .nav-btn, .nav-resume-btn, .dock-btn, .hero-scroll-pill, .btn-ai-chat, .message-btn, .submit-btn, button[type="submit"]');
     buttons.forEach(btn => {
         btn.classList.add('cp-magnetic-btn');
 
@@ -47,18 +47,18 @@
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
             
-            // Limit pull to 6px maximum
-            const maxPull = 5.0;
-            const pullX = Math.max(-maxPull, Math.min(maxPull, (e.clientX - centerX) * 0.22));
-            const pullY = Math.max(-maxPull, Math.min(maxPull, (e.clientY - centerY) * 0.22));
+            // Limit pull to 5px maximum
+            const maxPull = 4.5;
+            const pullX = Math.max(-maxPull, Math.min(maxPull, (e.clientX - centerX) * 0.2));
+            const pullY = Math.max(-maxPull, Math.min(maxPull, (e.clientY - centerY) * 0.2));
 
             btn.style.transition = 'none';
-            btn.style.transform = `translate3d(${pullX.toFixed(1)}px, ${pullY.toFixed(1)}px, 0)`;
+            btn.style.transform = `translate3d(${pullX.toFixed(1)}px, ${(pullY - 3).toFixed(1)}px, 0) scale(1.02)`;
         });
 
         btn.addEventListener('mouseleave', () => {
             btn.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease';
-            btn.style.transform = 'translate3d(0, 0, 0)';
+            btn.style.transform = '';
         });
 
         btn.addEventListener('mousedown', () => {
@@ -68,7 +68,7 @@
 
         btn.addEventListener('mouseup', () => {
             btn.style.transition = 'transform 0.2s ease';
-            btn.style.transform = 'translate3d(0, 0, 0) scale(1.0)';
+            btn.style.transform = '';
         });
     });
 

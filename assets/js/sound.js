@@ -88,6 +88,26 @@
             osc.stop(audioCtx.currentTime + 0.04);
         },
 
+        // Cyber glitch micro-blip (dual-tone high-frequency burst)
+        glitch: () => {
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(1350, now);
+            osc.frequency.setValueAtTime(820, now + 0.015);
+            osc.frequency.exponentialRampToValueAtTime(1750, now + 0.035);
+
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+
+            osc.start(now);
+            osc.stop(now + 0.035);
+        },
+
         // Clean UI click
         click: () => {
             const osc = audioCtx.createOscillator();
@@ -274,6 +294,7 @@
     // Expose sound playback interface globally
     window.PortfolioSounds = {
         playHover: () => playSound(synths.hover),
+        playGlitch: () => playSound(synths.glitch),
         playClick: () => playSound(synths.click),
         playSwitchOn: () => playSound(synths.switchOn),
         playSwitchOff: () => playSound(synths.switchOff),
@@ -362,17 +383,45 @@
             'button', 
             '.project-card', 
             '.cert-card', 
+            '.expertise-card',
+            '.stat-card',
+            '.glass-card',
             '.filter-btn', 
+            '.cta-button',
+            '.nav-resume-btn',
+            '.dock-btn',
+            '.hero-scroll-pill',
             '.back-to-top',
             '#lamp-toggle',
-            '.crystal-ball'
+            '.crystal-ball',
+            '.hero-3d-char',
+            '.marquee-item'
+        ];
+
+        const glitchSelectors = [
+            '.hero-3d-char',
+            '.cta-button',
+            '.filter-btn',
+            '.nav-resume-btn',
+            '.dock-btn',
+            '.hero-scroll-pill',
+            '.project-card',
+            '.expertise-card',
+            '.cert-card',
+            '.stat-card',
+            '.marquee-item'
         ];
 
         // Delegated mouseenter/hover sound (using capture since mouseenter doesn't bubble)
         document.body.addEventListener('mouseenter', (e) => {
             const target = e.target.closest && e.target.closest(interactiveSelectors.join(','));
             if (target && target.id !== 'sound-toggle-btn') {
-                window.PortfolioSounds.playHover();
+                const isGlitchTarget = target.closest && target.closest(glitchSelectors.join(','));
+                if (isGlitchTarget) {
+                    window.PortfolioSounds.playGlitch();
+                } else {
+                    window.PortfolioSounds.playHover();
+                }
             }
         }, true);
 
