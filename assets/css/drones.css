@@ -95,18 +95,11 @@ html.drones-active [data-drone-state="built"] {
     height: 24rem;
     pointer-events: none;
     z-index: 3;
-    background: linear-gradient(to bottom, 
-        transparent 0%, 
-        rgba(5, 2, 10, 0.20) 20%, 
-        rgba(139, 61, 255, 0.05) 38%,
-        rgba(3, 1, 8, 0.70) 50%, 
-        rgba(139, 61, 255, 0.05) 62%,
-        rgba(5, 2, 10, 0.20) 80%, 
-        transparent 100%);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.6) 25%, black 50%, rgba(0, 0, 0, 0.6) 75%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.6) 25%, black 50%, rgba(0, 0, 0, 0.6) 75%, transparent 100%);
+    background: transparent;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.5) 25%, black 50%, rgba(0, 0, 0, 0.5) 75%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.5) 25%, black 50%, rgba(0, 0, 0, 0.5) 75%, transparent 100%);
     display: block;
 }
 
