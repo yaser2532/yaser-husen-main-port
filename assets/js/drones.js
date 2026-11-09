@@ -28,13 +28,9 @@
 
  */
 
-
-
 (function () {
 
     'use strict';
-
-
 
     // ─── 1. CONSTANTS & CONFIGURATION ───────────────────────────────────────
 
@@ -54,17 +50,11 @@
 
     };
 
-
-
     const PALETTE = [THEME.gold, THEME.purple, THEME.turquoise];
-
-
 
     const R_MIN = 18;
 
     const R_MAX = 46;
-
-
 
     const READABLE_TAGS = new Set([
 
@@ -75,8 +65,6 @@
         'CODE', 'PRE', 'BLOCKQUOTE', 'STRONG', 'EM', 'B', 'I'
 
     ]);
-
-
 
     const BAND_TOP = 0.08;   // 8% viewport height
 
@@ -90,19 +78,13 @@
 
     const MAX_ACTIVE_CREWS = 3;
 
-
-
     const isMobile = window.innerWidth < 768;
 
     const DRONE_COUNT = isMobile ? 8 : 14;
 
     const CREW_SIZE = isMobile ? 3 : 4;
 
-
-
     const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-
 
     // ─── 2. CANVAS & SIZING SETUP ───────────────────────────────────────────
 
@@ -120,8 +102,6 @@
 
     }
 
-
-
     const ctx = canvas.getContext('2d');
 
     let viewW = window.innerWidth;
@@ -129,8 +109,6 @@
     let viewH = window.innerHeight;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-
 
     function resizeCanvas() {
 
@@ -154,13 +132,9 @@
 
     }
 
-
-
     window.addEventListener('resize', debounce(resizeCanvas, 120), { passive: true });
 
     window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 150), { passive: true });
-
-
 
     function debounce(fn, wait) {
 
@@ -175,8 +149,6 @@
         };
 
     }
-
-
 
     // ─── 3. CURSOR & TOUCH TRACKER (FOLLOW & DIM STATE) ────────────────────
 
@@ -196,8 +168,6 @@
 
     let swarmGlobalDim = 1.0; // 0.3 to 1.0
 
-
-
     // Measure scroll speed
 
     let lastScrollY = window.scrollY || window.pageYOffset;
@@ -207,8 +177,6 @@
     let currentScrollSpeed = 0; // px/s
 
     let lastFastScrollTime = 0;
-
-
 
     let lastCursorMoveTime = performance.now();
 
@@ -248,8 +216,6 @@
 
     }, { passive: true });
 
-
-
     window.addEventListener('touchmove', (e) => {
 
         isTouchMode = true;
@@ -278,8 +244,6 @@
 
     }, { passive: true });
 
-
-
     window.addEventListener('touchstart', (e) => {
 
         isTouchMode = true;
@@ -296,23 +260,17 @@
 
     }, { passive: true });
 
-
-
     document.addEventListener('mouseleave', () => {
 
         cursorInWindow = false;
 
     });
 
-
-
     document.addEventListener('mouseenter', () => {
 
         cursorInWindow = true;
 
     });
-
-
 
     // Throttled elementFromPoint for DIM state
 
@@ -326,8 +284,6 @@
 
         lastDimCheck = now;
 
-
-
         const el = document.elementFromPoint(x, y);
 
         if (!el) {
@@ -338,8 +294,6 @@
 
         }
 
-
-
         if (READABLE_TAGS.has(el.tagName)) {
 
             isOverText = true;
@@ -348,8 +302,6 @@
 
         }
 
-
-
         // Check if directly inside a readable container or text class
 
         const textAncestor = el.closest('p, h1, h2, h3, h4, h5, h6, a, button, label, li, code, span, .trait-tag, .section-desc');
@@ -357,8 +309,6 @@
         isOverText = Boolean(textAncestor);
 
     }
-
-
 
     // Scroll listener: passive, tracks scroll speed without geometry reads
 
@@ -390,8 +340,6 @@
 
     }, { passive: true });
 
-
-
     // ─── 4. DRONE OBJECTS & POOL ───────────────────────────────────────────
 
     class Drone {
@@ -402,9 +350,7 @@
 
             this.color = PALETTE[id % PALETTE.length];
 
-            this.size = 3.2 + (id % 4) * 0.8; // 3.2px to 5.6px vibrant glowing core
-
-
+            this.size = 2.2 + (id % 4) * 0.55; // 3.2px to 5.6px vibrant glowing core
 
             // Organic firefly multi-frequency oscillators for unpredictable wandering
 
@@ -417,8 +363,6 @@
             this.lastDartTime = 0;
 
             this.nextDartInterval = 600 + Math.random() * 2000;
-
-
 
             // Orbit geometry
 
@@ -436,8 +380,6 @@
 
             this.damping = 0.78 + (id % 3) * 0.04;
 
-
-
             // Coordinates
 
             this.x = cursorX + Math.cos(this.orbitAngle) * this.orbitRadius;
@@ -452,8 +394,6 @@
 
             this.targetOpacity = 1.0;
 
-
-
             // State: 'FOLLOW' | 'DISPATCH' | 'PULL' | 'RETURN'
 
             this.state = 'FOLLOW';
@@ -461,8 +401,6 @@
             this.activeMission = null;
 
             this.crewIndex = -1;
-
-
 
             // Procedural path tracking
 
@@ -474,21 +412,15 @@
 
             this.targetAnchor = { x: 0, y: 0 };
 
-
-
             this.trail = [];
 
         }
-
-
 
         updateFollow(now, dt) {
 
             // Unpredictable organic firefly flight: multi-harmonic bio-flutter
 
             this.orbitAngle += this.orbitSpeed * this.orbitDir * dt;
-
-
 
             const wanderX = Math.sin(now * this.wanderFreq1 + this.noisePhase) * 11
 
@@ -502,19 +434,13 @@
 
                           + Math.cos(now * this.wanderFreq3 + this.id) * 4;
 
-
-
             // Dynamic fluctuating radius for unpredictable distance
 
             const dynamicR = R_MIN + (R_MAX - R_MIN) * (0.35 + 0.45 * Math.sin(now * 0.0016 + this.id * 2.3));
 
-
-
             const desiredX = cursorX + Math.cos(this.orbitAngle) * dynamicR + wanderX;
 
             const desiredY = cursorY + Math.sin(this.orbitAngle) * dynamicR + wanderY;
-
-
 
             // Spontaneous erratic micro-dart impulses (like live firefly fluttering)
 
@@ -532,13 +458,7 @@
 
                 this.vy += Math.sin(dartAngle) * dartForce;
 
-
-
-
-
             }
-
-
 
             // Spring-damper physics
 
@@ -553,8 +473,6 @@
             this.x += this.vx;
 
             this.y += this.vy;
-
-
 
             // Strict R_MAX boundary clamp: Never exceed R_max from cursor in FOLLOW
 
@@ -578,8 +496,6 @@
 
             }
 
-
-
             // Smooth DIM transition: 150ms fade to 0.3 over text, 250ms restore to 1.0
 
             const targetOp = (!cursorInWindow) ? 0.60 : (isOverText ? 0.30 : 1.0);
@@ -588,13 +504,7 @@
 
             this.opacity += (targetOp - this.opacity) * fadeSpeed;
 
-
-
-
-
         }
-
-
 
         updateFlight(now, dt) {
 
@@ -603,8 +513,6 @@
             const t = Math.min(1.0, elapsed / this.flightDuration);
 
             const easeT = easeInOutCubic(t);
-
-
 
             if (this.pathPoints.length >= 4) {
 
@@ -632,15 +540,7 @@
 
             }
 
-
-
             this.opacity = 1.0;
-
-
-
-
-
-
 
             if (t >= 1.0) {
 
@@ -666,8 +566,6 @@
 
         }
 
-
-
         updatePull(now, dt) {
 
             // Latch onto target anchor with slight high-frequency micro-jitter
@@ -682,29 +580,15 @@
 
             this.opacity = 1.0;
 
-
-
-
-
         }
 
-
-
-
-
-
-
         draw(ctx) {
-
-
-
-
 
             // Outer vivid neon firefly halo
 
             ctx.beginPath();
 
-            ctx.arc(this.x, this.y, this.size * 2.4, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.size * 2.0, 0, Math.PI * 2);
 
             ctx.fillStyle = this.color;
 
@@ -712,13 +596,11 @@
 
             ctx.fill();
 
-
-
             // Main glowing firefly core
 
             ctx.beginPath();
 
-            ctx.arc(this.x, this.y, this.size * 0.95, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.size * 0.88, 0, Math.PI * 2);
 
             ctx.fillStyle = this.color;
 
@@ -726,13 +608,11 @@
 
             ctx.fill();
 
-
-
             // Intense white specular center
 
             ctx.beginPath();
 
-            ctx.arc(this.x, this.y, this.size * 0.40, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.size * 0.36, 0, Math.PI * 2);
 
             ctx.fillStyle = THEME.white;
 
@@ -740,15 +620,11 @@
 
             ctx.fill();
 
-
-
             ctx.globalAlpha = 1.0;
 
         }
 
     }
-
-
 
     const drones = [];
 
@@ -757,8 +633,6 @@
         drones.push(new Drone(i));
 
     }
-
-
 
     // ─── 5. PROCEDURAL RANDOM PATHS GENERATOR (PHASE 5) ─────────────────────
 
@@ -784,11 +658,7 @@
 
     ];
 
-
-
     let lastPathTypeIndex = -1;
-
-
 
     function generateProceduralPath(startX, startY, endX, endY, flightDuration) {
 
@@ -804,8 +674,6 @@
 
         const type = PATH_TYPES[typeIndex];
 
-
-
         const midX = (startX + endX) * 0.5;
 
         const midY = (startY + endY) * 0.5;
@@ -820,13 +688,9 @@
 
         const normY = dx / dist;
 
-
-
         const waypoints = [{ x: startX, y: startY }];
 
         const curvatureScale = Math.min(180, Math.max(50, dist * (0.28 + Math.random() * 0.22)));
-
-
 
         switch (type) {
 
@@ -982,11 +846,7 @@
 
         }
 
-
-
         waypoints.push({ x: endX, y: endY });
-
-
 
         if (waypoints.length < 4) {
 
@@ -1000,8 +860,6 @@
 
         }
 
-
-
         const pathPoints = [
 
             { x: startX - (waypoints[1].x - startX) * 0.5, y: startY - (waypoints[1].y - startY) * 0.5 },
@@ -1012,13 +870,9 @@
 
         ];
 
-
-
         return pathPoints;
 
     }
-
-
 
     function catmullRom(p0, p1, p2, p3, t) {
 
@@ -1040,8 +894,6 @@
 
     }
 
-
-
     function getSplinePoint(points, t) {
 
         const numSections = points.length - 3;
@@ -1054,8 +906,6 @@
 
         const u = p - section;
 
-
-
         const p0 = points[section];
 
         const p1 = points[section + 1];
@@ -1063,8 +913,6 @@
         const p2 = points[section + 2];
 
         const p3 = points[section + 3];
-
-
 
         return {
 
@@ -1076,23 +924,17 @@
 
     }
 
-
-
     function easeInOutCubic(x) {
 
         return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 
     }
 
-
-
     function easeOutCubic(x) {
 
         return 1 - Math.pow(1 - x, 3);
 
     }
-
-
 
     // ─── 6. SPARK PARTICLES, PULSE RINGS & QUANTUM WELDING ──────────────────
 
@@ -1132,8 +974,6 @@
 
     }
 
-
-
     // Quantum Welding Plasma Sparks: Directional molten plasma streaks spraying off tractor contact points
 
     function emitPlasmaSparks(x, y, count = 3) {
@@ -1172,8 +1012,6 @@
 
     }
 
-
-
     function updateAndDrawSparks(ctx) {
 
         for (let i = sparks.length - 1; i >= 0; i--) {
@@ -1190,8 +1028,6 @@
 
             s.life -= s.decay;
 
-
-
             if (s.life <= 0) {
 
                 sparks.splice(i, 1);
@@ -1199,8 +1035,6 @@
                 continue;
 
             }
-
-
 
             ctx.save();
 
@@ -1248,8 +1082,6 @@
 
     }
 
-
-
     // Gravitational Pulse Rings (Micro-Sonar Radar Pings)
 
     // Single ultra-fine concentric rings that rapidly expand & fade over ~250ms
@@ -1278,8 +1110,6 @@
 
     }
 
-
-
     function updateAndDrawPulseRings(ctx, now) {
 
         for (let i = pulseRings.length - 1; i >= 0; i--) {
@@ -1290,8 +1120,6 @@
 
             const progress = Math.min(1.0, elapsed / ring.duration);
 
-
-
             if (progress >= 1.0) {
 
                 pulseRings.splice(i, 1);
@@ -1300,8 +1128,6 @@
 
             }
 
-
-
             const easeP = easeOutCubic(progress);
 
             const r = Math.max(0.2, easeP * ring.maxRadius);
@@ -1309,8 +1135,6 @@
             const fade = (1.0 - progress);
 
             const alpha = fade * fade * 0.85;
-
-
 
             ctx.save();
 
@@ -1331,8 +1155,6 @@
             ctx.shadowBlur = 4 * fade;
 
             ctx.stroke();
-
-
 
             // Inner faint echo ping
 
@@ -1358,8 +1180,6 @@
 
     }
 
-
-
     // ─── 7. BUILD MISSIONS & THE BUILD GATE (PHASE 4) ───────────────────────
 
     const SECTION_ORDER = [
@@ -1382,13 +1202,9 @@
 
     ];
 
-
-
     const elementList = [];
 
     const sectionMap = {};
-
-
 
     function registerElements() {
 
@@ -1397,8 +1213,6 @@
             const secEl = document.getElementById(secId);
 
             if (!secEl) return;
-
-
 
             const isHero = (secId === 'home');
 
@@ -1422,8 +1236,6 @@
 
             sectionMap[secId] = secInfo;
 
-
-
             // Collect and sequence elements:
 
             // 1. Titles / Section Tag
@@ -1446,23 +1258,14 @@
 
             });
 
-
-
             const getPrio = (el) => {
-
                 const tag = el.tagName.toLowerCase();
-
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) return 1;
-
-                if (['p'].includes(tag) || el.classList.contains('section-desc')) return 2;
-
-                if (el.matches(cardSelector) || el.classList.contains('code-block-visual') || el.classList.contains('stats-row')) return 3;
-
-                return 4;
-
+                if (el.classList.contains('code-block-visual')) return 2; // Pull code card early
+                if (['p'].includes(tag) || el.classList.contains('section-desc')) return 3;
+                if (el.matches(cardSelector) || el.classList.contains('stats-row')) return 4;
+                return 5;
             };
-
-
 
             const sorted = rawElements.sort((a, b) => {
 
@@ -1476,8 +1279,6 @@
 
             });
 
-
-
             sorted.forEach((el, order) => {
 
                 const tag = el.tagName.toLowerCase();
@@ -1485,8 +1286,6 @@
                 let type = 'card';
 
                 let minDuration = 350; // accelerated duration for cards (was 650ms)
-
-
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
 
@@ -1513,8 +1312,6 @@
                     minDuration = 850; // accelerated duration for code card (was 1400ms)
 
                 }
-
-
 
                 const item = {
 
@@ -1550,8 +1347,6 @@
 
                 };
 
-
-
                 if (isHero) {
 
                     el.setAttribute('data-drone-state', 'built');
@@ -1562,8 +1357,6 @@
 
                 }
 
-
-
                 elementList.push(item);
 
                 secInfo.elements.push(item);
@@ -1572,15 +1365,11 @@
 
         });
 
-
-
         document.documentElement.classList.add('drones-active');
 
         refreshAllElementRects();
 
     }
-
-
 
     function refreshAllElementRects() {
 
@@ -1606,8 +1395,6 @@
 
     }
 
-
-
     function computeAnchors(item) {
 
         const r = item.el.getBoundingClientRect();
@@ -1618,8 +1405,6 @@
 
         const h = r.height;
 
-
-
         anchors.push({ x: r.left + 16, y: r.top + h * 0.5 });
 
         anchors.push({ x: r.right - 16, y: r.top + h * 0.5 });
@@ -1628,19 +1413,13 @@
 
         anchors.push({ x: r.left + w * 0.65, y: r.bottom - 8 });
 
-
-
         return anchors;
 
     }
 
-
-
     // ─── 8. GATE EVALUATOR & MISSION DISPATCHER ────────────────────────────
 
     const activeMissions = [];
-
-
 
     function checkBuildGate(now) {
 
@@ -1652,11 +1431,7 @@
 
         }
 
-
-
         const scrollY = window.scrollY || window.pageYOffset;
-
-
 
         // Footer reached: guarantee all elements are built
 
@@ -1677,8 +1452,6 @@
             return;
 
         }
-
-
 
         // ─── FAST-SCROLL FAILSAFE SYSTEM ──────────────────────────────────
 
@@ -1703,8 +1476,6 @@
             }
 
         });
-
-
 
         // Failsafe 2: High-Velocity Rapid Scroll Catch-up
 
@@ -1733,8 +1504,6 @@
             });
 
         }
-
-
 
         // Failsafe 3: Active Viewport Emergency Watchdog
 
@@ -1766,8 +1535,6 @@
 
         });
 
-
-
         // Automatic Section-Triggered Sequence: When section covers most of the screen
 
         SECTION_ORDER.forEach(secId => {
@@ -1775,8 +1542,6 @@
             const sec = sectionMap[secId];
 
             if (!sec || sec.isHero) return;
-
-
 
             const r = sec.el.getBoundingClientRect();
 
@@ -1786,13 +1551,9 @@
 
             const visHeight = Math.max(0, visBottom - visTop);
 
-
-
             const coversMostOfScreen = (visHeight >= viewH * 0.42) || 
 
                                        (r.top <= viewH * 0.45 && r.bottom >= viewH * 0.50);
-
-
 
             if (coversMostOfScreen) {
 
@@ -1801,8 +1562,6 @@
             }
 
         });
-
-
 
         // Failsafe Watchdog: elements never stay hidden > 3.0s after gate open
 
@@ -1820,25 +1579,17 @@
 
         });
 
-
-
         const scrollSettled = (now - lastFastScrollTime >= SCROLL_SETTLE_MS);
 
         if (!scrollSettled) return;
-
-
 
         // Strictly ONE element pulled at a time across the viewport
 
         if (activeMissions.length >= 1) return;
 
-
-
         const availableDrones = drones.filter(d => d.state === 'FOLLOW');
 
         if (availableDrones.length < CREW_SIZE) return;
-
-
 
         for (let s = 0; s < SECTION_ORDER.length; s++) {
 
@@ -1848,19 +1599,13 @@
 
             if (!sec || (!sec.dwellMet && !sec.isHero)) continue;
 
-
-
             const secRect = sec.el.getBoundingClientRect();
 
             if (secRect.bottom < 0 || secRect.top > viewH * 1.15) continue;
 
-
-
             const isSectionBusy = sec.elements.some(e => e.state === 'dispatched' || e.state === 'pulling');
 
             if (isSectionBusy) continue;
-
-
 
             const reachablePending = sec.elements.filter(item => {
 
@@ -1872,19 +1617,13 @@
 
             });
 
-
-
             if (reachablePending.length === 0) continue;
-
-
 
             // Pick a RANDOM pending element in this section (random order, one at a time!)
 
             const randomIndex = Math.floor(Math.random() * reachablePending.length);
 
             const chosenItem = reachablePending[randomIndex];
-
-
 
             dispatchMission(chosenItem, availableDrones.slice(0, CREW_SIZE), now);
 
@@ -1893,8 +1632,6 @@
         }
 
     }
-
-
 
     function dispatchMission(item, crewDrones, now) {
 
@@ -1908,13 +1645,9 @@
 
         item.el.setAttribute('data-drone-state', 'flight');
 
-
-
         const anchors = computeAnchors(item);
 
         item.anchors = anchors;
-
-
 
         const flightDuration = Math.round(250 + Math.random() * 200); // 250-450ms accelerated flight (was 550-850ms)
         
@@ -1934,8 +1667,6 @@
             pullStartedAt: 0,
 
             pullDuration: item.minDuration,
-
-
 
             onDroneArrived(drone) {
 
@@ -1957,8 +1688,6 @@
 
             },
 
-
-
             startPull(pullNow) {
 
                 const flightTime = pullNow - this.dispatchedAt;
@@ -1973,23 +1702,17 @@
 
                 }
 
-
-
                 this.pullStartedAt = pullNow;
 
                 this.item.state = 'pulling';
 
                 this.item.el.setAttribute('data-drone-state', 'pulling');
 
-
-
                 // Arrival flourish: 80ms RGB-split & spark burst
 
                 this.item.el.classList.add('drone-arrival-flourish');
 
                 setTimeout(() => this.item.el.classList.remove('drone-arrival-flourish'), 160);
-
-
 
                 this.anchors.forEach(a => {
 
@@ -2002,8 +1725,6 @@
             }
 
         };
-
-
 
         // Assign procedural path to each crew drone & emit launch gravitational pulse ring
 
@@ -2019,15 +1740,11 @@
 
             drone.flightDuration = flightDuration + idx * 20; // tighter stagger
 
-
-
             const anchor = anchors[idx % anchors.length];
 
             drone.targetAnchor = anchor;
 
             drone.pathPoints = generateProceduralPath(drone.x, drone.y, anchor.x, anchor.y, drone.flightDuration);
-
-
 
             // Gravitational launch pulse ring
 
@@ -2035,13 +1752,9 @@
 
         });
 
-
-
         activeMissions.push(mission);
 
     }
-
-
 
     function updateActiveMissions(now, dt) {
 
@@ -2050,8 +1763,6 @@
             const m = activeMissions[i];
 
             const item = m.item;
-
-
 
             // Recompute anchors if element moves during scroll
 
@@ -2067,8 +1778,6 @@
 
             });
 
-
-
             if (item.state === 'pulling') {
 
                 const pullElapsed = now - m.pullStartedAt;
@@ -2076,8 +1785,6 @@
                 const progress = Math.min(1.0, pullElapsed / m.pullDuration);
 
                 const easeProg = easeOutQuart(progress);
-
-
 
                 // Compositor-friendly transform & opacity
 
@@ -2089,8 +1796,6 @@
 
                 item.el.style.filter = `blur(${Math.max(0, (1 - easeProg) * 2).toFixed(1)}px)`;
 
-
-
                 // Dynamic laser weld sparks along edge
 
                 if (Math.random() < 0.35) {
@@ -2100,8 +1805,6 @@
                     emitSparks(r.left + Math.random() * r.width, r.top + r.height * easeProg, 2);
 
                 }
-
-
 
                 // Code-IDE line-by-line reveal
 
@@ -2131,8 +1834,6 @@
 
                 }
 
-
-
                 // Pull completion
 
                 if (progress >= 1.0) {
@@ -2151,8 +1852,6 @@
 
     }
 
-
-
     function finishElement(item) {
 
         item.state = 'built';
@@ -2167,15 +1866,35 @@
 
         item.el.style.willChange = '';
 
-
-
         if (item.el.classList.contains('scroll-reveal')) {
 
             item.el.classList.add('active');
 
         }
 
+        if (item.el.parentElement && item.el.parentElement.classList.contains('about-visual')) {
 
+            item.el.parentElement.classList.add('active');
+
+        }
+
+        // Ensure all lines in code-IDE visual cards are immediately 100% revealed and unclipped
+
+        const codeLines = item.el.querySelectorAll('.drone-code-line, .code-line');
+
+        if (codeLines.length) {
+
+            codeLines.forEach(l => {
+
+                l.classList.add('revealed');
+
+                l.style.clipPath = 'inset(0 0 0 0)';
+
+                l.style.opacity = '1';
+
+            });
+
+        }
 
         // Snap sparks
 
@@ -2186,8 +1905,6 @@
         emitSparks(r.right - 12, r.top + 10, 6);
 
     }
-
-
 
     function finishElementInstantly(item) {
 
@@ -2211,6 +1928,30 @@
 
         }
 
+        if (item.el.parentElement && item.el.parentElement.classList.contains('about-visual')) {
+
+            item.el.parentElement.classList.add('active');
+
+        }
+
+        // Ensure all lines in code-IDE visual cards are immediately 100% revealed and unclipped
+
+        const codeLines = item.el.querySelectorAll('.drone-code-line, .code-line');
+
+        if (codeLines.length) {
+
+            codeLines.forEach(l => {
+
+                l.classList.add('revealed');
+
+                l.style.clipPath = 'inset(0 0 0 0)';
+
+                l.style.opacity = '1';
+
+            });
+
+        }
+
         if (item.crew && item.crew.length) {
 
             returnCrew(item.crew, performance.now());
@@ -2218,8 +1959,6 @@
         }
 
     }
-
-
 
     function returnCrew(crewDrones, now) {
 
@@ -2237,7 +1976,6 @@
 
             drone.flightDuration = Math.round(180 + Math.random() * 120); // 180-300ms accelerated return (was 400-650ms)
 
-
             // Random return orbit slot around cursor
 
             const returnAngle = Math.random() * Math.PI * 2;
@@ -2248,8 +1986,6 @@
 
             const targetY = cursorY + Math.sin(returnAngle) * returnRadius;
 
-
-
             drone.targetAnchor = { x: targetX, y: targetY };
 
             drone.pathPoints = generateProceduralPath(drone.x, drone.y, targetX, targetY, drone.flightDuration);
@@ -2258,23 +1994,17 @@
 
     }
 
-
-
     function easeOutQuart(x) {
 
         return 1 - Math.pow(1 - x, 4);
 
     }
 
-
-
     function drawTractorBeams(ctx) {
 
         activeMissions.forEach(m => {
 
             if (m.item.state !== 'pulling') return;
-
-
 
             const now = performance.now();
 
@@ -2284,15 +2014,11 @@
 
                 if (!anchor) return;
 
-
-
                 const dist = Math.hypot(anchor.x - drone.x, anchor.y - drone.y) || 1;
 
                 const normX = -(anchor.y - drone.y) / dist;
 
                 const normY = (anchor.x - drone.x) / dist;
-
-
 
                 // Multi-harmonic electrical crackle
 
@@ -2301,8 +2027,6 @@
                 const midX = (drone.x + anchor.x) * 0.5 + normX * crackle;
 
                 const midY = (drone.y + anchor.y) * 0.5 + normY * crackle;
-
-
 
                 ctx.save();
 
@@ -2320,8 +2044,6 @@
 
                 ctx.stroke();
 
-
-
                 // Middle gold beam
 
                 ctx.beginPath();
@@ -2335,8 +2057,6 @@
                 ctx.lineWidth = 1.3;
 
                 ctx.stroke();
-
-
 
                 // Inner diamond white core
 
@@ -2358,8 +2078,6 @@
 
                 ctx.restore();
 
-
-
                 // ─── QUANTUM WELDING CONTACT-POINT LENS BLOOM & CROSS-FLARE ─
 
                 ctx.save();
@@ -2380,8 +2098,6 @@
 
                 ctx.fill();
 
-
-
                 // 2. High-energy diamond white welding core
 
                 ctx.beginPath();
@@ -2395,8 +2111,6 @@
                 ctx.shadowBlur = 6;
 
                 ctx.fill();
-
-
 
                 // 3. Rotating 4-ray diffraction cross-flare lens spikes
 
@@ -2428,8 +2142,6 @@
 
                 ctx.restore();
 
-
-
                 // 4. Directional quantum welding plasma sparks
 
                 if (Math.random() < 0.45) {
@@ -2444,8 +2156,6 @@
 
     }
 
-
-
     // ─── 9. WATCHDOG & FAILSAFE ────────────────────────────────────────────
 
     function revealAllInstantly() {
@@ -2457,8 +2167,6 @@
         ctx.clearRect(0, 0, viewW, viewH);
 
     }
-
-
 
     // Watchdog: If drone system has not completed hero by 2.5s or throws an error, reveal everything
 
@@ -2474,8 +2182,6 @@
 
     }, 2500);
 
-
-
     // Watchdog: If an unhandled JS error occurs, reveal all instantly
 
     window.addEventListener('error', () => {
@@ -2484,23 +2190,17 @@
 
     });
 
-
-
     window.addEventListener('beforeprint', () => {
 
         revealAllInstantly();
 
     });
 
-
-
     // ─── 10. SINGLE REQUESTANIMATIONFRAME LOOP ──────────────────────────────
 
     let lastFrameTime = performance.now();
 
     let isLoopRunning = false;
-
-
 
     function mainLoop(now) {
 
@@ -2512,25 +2212,17 @@
 
         }
 
-
-
         const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
 
         lastFrameTime = now;
 
-
-
         ctx.clearRect(0, 0, viewW, viewH);
-
-
 
         // Update cursor center to exact real pointer position
 
         cursorX = targetCursorX;
 
         cursorY = targetCursorY;
-
-
 
         // 1. Update Drones (FOLLOW, DISPATCH, PULL, RETURN)
 
@@ -2552,19 +2244,13 @@
 
         });
 
-
-
         // 2. Check Build Gate & Dispatch Missions
 
         checkBuildGate(now);
 
-
-
         // 3. Update active missions
 
         updateActiveMissions(now, dt);
-
-
 
         // 4. Draw tractor beams, welding sparks & pulse rings
 
@@ -2574,19 +2260,13 @@
 
         updateAndDrawPulseRings(ctx, now);
 
-
-
         // 5. Draw Drones
 
         drones.forEach(drone => drone.draw(ctx));
 
-
-
         requestAnimationFrame(mainLoop);
 
     }
-
-
 
     function startLoop() {
 
@@ -2602,8 +2282,6 @@
 
     }
 
-
-
     document.addEventListener('visibilitychange', () => {
 
         if (document.hidden) {
@@ -2618,8 +2296,6 @@
 
     });
 
-
-
     // ─── 11. INITIALIZATION VIA REQUESTIDLECALLBACK ────────────────────────
 
     function init() {
@@ -2629,8 +2305,6 @@
         resizeCanvas();
 
         startLoop();
-
-
 
         // Hero initial mission within 600ms of first paint
 
@@ -2648,8 +2322,6 @@
 
     }
 
-
-
     if (document.readyState === 'loading') {
 
         document.addEventListener('DOMContentLoaded', init);
@@ -2659,8 +2331,6 @@
         init();
 
     }
-
-
 
     // Expose public test API for Playwright verification
 
@@ -2688,8 +2358,6 @@
 
     };
 
-
-
     // Swarm compatibility bridge
 
     window.swarm = {
@@ -2701,8 +2369,6 @@
         release: () => {}
 
     };
-
-
 
     window.__dronesActive = true;
 
