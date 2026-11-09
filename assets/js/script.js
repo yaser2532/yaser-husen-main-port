@@ -735,24 +735,57 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, { passive: true });
 
-    /* --- 3. Mobile Burger Menu Toggle --- */
+    /* --- 3. Mobile Burger Menu Toggle & Reactive Listeners --- */
     const burger = document.querySelector('.burger');
     const navContainer = document.querySelector('.nav-container'); 
     
+    function closeNavDrawer() {
+        if (navContainer && navContainer.classList.contains('nav-active')) {
+            navContainer.classList.remove('nav-active');
+            if (burger) {
+                burger.classList.remove('toggle');
+                burger.setAttribute('aria-expanded', 'false');
+            }
+        }
+    }
+
     if (burger) {
-        burger.addEventListener('click', () => {
-            navContainer.classList.toggle('nav-active');
+        burger.setAttribute('aria-expanded', 'false');
+        burger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = navContainer.classList.toggle('nav-active');
             burger.classList.toggle('toggle');
+            burger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
         });
     }
 
-    // Close menu when clicking navigation links
+    // Close menu on link click
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
-            navContainer.classList.remove('nav-active');
-            if (burger) burger.classList.remove('toggle');
+            closeNavDrawer();
         });
     });
+
+    // Close menu on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('#navbar')) {
+            closeNavDrawer();
+        }
+    });
+
+    // Close menu on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeNavDrawer();
+        }
+    });
+
+    // Auto-close menu if resized above mobile breakpoint
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 960) {
+            closeNavDrawer();
+        }
+    }, { passive: true });
 
     /* --- 5. Project Grid Category Filtering --- */
     const filterButtons = document.querySelectorAll('.filter-btn');
