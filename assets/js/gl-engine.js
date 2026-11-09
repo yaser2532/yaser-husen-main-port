@@ -25,6 +25,20 @@
         return;
     }
 
+    // Canvas element - Unified with Cosmic Canvas
+    if (document.getElementById('cosmic-canvas')) {
+        window.__gl = {
+            renderer: null,
+            scene: null,
+            camera: null,
+            heroGroup: null,
+            tier: 'high',
+            getInfo: () => ({ tier: 'high', unified: true })
+        };
+        console.log('[GL-Engine] Unified with Cosmic 3D Canvas.');
+        return;
+    }
+
     // Canvas element
     let canvas = document.getElementById('gl');
     if (!canvas) {

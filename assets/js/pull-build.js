@@ -447,8 +447,8 @@
         item.currentSeqIndex = 0;
         item.activePullingNode = null;
         item.activePullStart = 0;
-        item.activePullDuration = fastMode ? 320 : 600;
-        item.scoutDuration = fastMode ? 150 : 350;
+        item.activePullDuration = fastMode ? 220 : 380; // Snappy Gen Z cinematic pace
+        item.scoutDuration = fastMode ? 120 : 260;
         item.nextPullEligibleAt = performance.now() + item.scoutDuration;
         
         item.el.setAttribute('data-nb', 'pulling');
@@ -940,44 +940,54 @@
                         ctx.stroke();
                         ctx.restore();
 
-                        // Tractor beams from drones to active element
+                        // Dynamic sparks continuously emitted along active laser weld sweep line
+                        if (Math.random() < 0.35) {
+                            emitSparks(sweepX, activeBox.y + Math.random() * activeBox.h, 2);
+                        }
+
+                        // High-Energy Chaotic Electric Plasma Tractor Tethers
                         if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.getDotsData === 'function') {
                             const dotsData = window.swarm.getDotsData();
-                            const vibration = Math.sin(now * 0.035) * 1.5;
 
                             for (let i = 0; i < Math.min(dotsData.length, dynamicTargets.length); i++) {
                                 const dotX = dotsData[i].currentX;
                                 const dotY = dotsData[i].currentY;
                                 const anchor = dynamicTargets[i];
 
-                                const midX = (dotX + anchor.x) * 0.5 + vibration;
-                                const midY = (dotY + anchor.y) * 0.5;
+                                const dist = Math.hypot(anchor.x - dotX, anchor.y - dotY) || 1;
+                                const normX = -(anchor.y - dotY) / dist;
+                                const normY = (anchor.x - dotX) / dist;
+
+                                // Gen Z Chaotic Entropy: multi-harmonic electrical plasma crackle
+                                const crackle = Math.sin(now * 0.08 + i * 2.1) * 7.5 + Math.cos(now * 0.14 + i * 3.7) * 4.5;
+                                const midX = (dotX + anchor.x) * 0.5 + normX * crackle;
+                                const midY = (dotY + anchor.y) * 0.5 + normY * crackle;
 
                                 ctx.save();
-                                // Outer 3.5px Cyber Cyan plasma aura
+                                // Outer 3.8px Cyber Cyan plasma aura
                                 ctx.beginPath();
                                 ctx.moveTo(dotX, dotY);
                                 ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                                ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
-                                ctx.lineWidth = 3.5;
+                                ctx.strokeStyle = 'rgba(0, 240, 255, 0.40)';
+                                ctx.lineWidth = 3.8;
                                 ctx.stroke();
 
-                                // Middle 2px Electric Zesty Lemon beam
+                                // Middle 2.2px Electric Zesty Lemon beam
                                 ctx.beginPath();
                                 ctx.moveTo(dotX, dotY);
                                 ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                                ctx.strokeStyle = 'rgba(255, 230, 0, 0.85)';
-                                ctx.lineWidth = 2;
+                                ctx.strokeStyle = 'rgba(255, 230, 0, 0.90)';
+                                ctx.lineWidth = 2.2;
                                 ctx.stroke();
 
-                                // Inner brilliant laser diamond white core
+                                // Inner brilliant laser diamond white core with electric glow
                                 ctx.beginPath();
                                 ctx.moveTo(dotX, dotY);
                                 ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
                                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
-                                ctx.lineWidth = 1.2;
+                                ctx.lineWidth = 1.3;
                                 ctx.shadowColor = '#ffe600';
-                                ctx.shadowBlur = 8;
+                                ctx.shadowBlur = 9;
                                 ctx.stroke();
                                 ctx.restore();
                             }
@@ -992,7 +1002,7 @@
 
                             item.activePullingNode = null;
                             item.currentSeqIndex++;
-                            item.nextPullEligibleAt = now + 120; // 120ms gap before next element
+                            item.nextPullEligibleAt = now + 80; // 80ms snappy gap before next element
 
                             // Release swarm drones so they return to cursor tracking until next element is in contact
                             if (window.swarm && typeof window.swarm.release === 'function') {
@@ -1053,12 +1063,23 @@
     }
 
     // ─── 11. Initial Hero Assembly ─────────────────────────────────────────
-    window.addEventListener('DOMContentLoaded', () => {
+    function initHeroNow() {
         const heroItem = sectionMap['home'];
         if (heroItem) {
             finishPull(heroItem, true);
         }
-    });
+        const hc = document.querySelector('.header-content');
+        if (hc) {
+            hc.classList.add('active');
+            hc.style.opacity = '1';
+            hc.style.transform = 'none';
+        }
+    }
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', initHeroNow);
+    } else {
+        initHeroNow();
+    }
 
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {

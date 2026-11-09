@@ -383,9 +383,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         data.vy += ux * swirlDir * swirlSpeed;
                     }
 
-                    // Organic micro-flutter
-                    data.vx += Math.sin(time * 3.2 + data.phaseX) * 0.35;
-                    data.vy += Math.cos(time * 2.8 + data.phaseY) * 0.35;
+                    // Organic micro-flutter & Gen Z Chaotic Entropy Jitter
+                    const entropyFreq = 14 + (i % 4) * 4;
+                    const entropyMag = 1.4 + (i % 3) * 0.8;
+                    data.vx += Math.sin(time * entropyFreq + data.phaseX) * (entropyMag * 0.22);
+                    data.vy += Math.cos(time * (entropyFreq * 0.88) + data.phaseY) * (entropyMag * 0.22);
+
+                    // Periodic zippy entropy dash
+                    const burstPhase = (time * 0.35 + i * 0.75) % 5.0;
+                    if (burstPhase < 0.22) {
+                        const burstAngle = data.baseAngle + time * 2.2;
+                        data.vx += Math.cos(burstAngle) * 3.2;
+                        data.vy += Math.sin(burstAngle) * 3.2;
+                    }
                 }
 
                 data.currentOpacity += (targetDotOpacity - data.currentOpacity) * 0.14;
@@ -441,7 +451,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const depthZ = Math.sin(time * 2.6 + i * 1.3);
                 const scale3d = (0.85 + 0.30 * (depthZ * 0.5 + 0.5)).toFixed(3);
                 
-                dot.style.transform = `translate3d(${data.currentX.toFixed(1)}px, ${data.currentY.toFixed(1)}px, 0) translate(-50%, -50%) scale(${scale3d})`;
+                const heading = Math.atan2(data.vy, data.vx) * (180 / Math.PI);
+                const tiltX = Math.sin(time * 2.8 + i) * 18;
+                const tiltY = Math.cos(time * 3.2 + i) * 18;
+                dot.style.transform = `translate3d(${data.currentX.toFixed(1)}px, ${data.currentY.toFixed(1)}px, 0) translate(-50%, -50%) rotateZ(${heading.toFixed(1)}deg) rotateX(${tiltX.toFixed(1)}deg) rotateY(${tiltY.toFixed(1)}deg) scale(${scale3d})`;
                 const finalOpacity = isReadingText ? 0.20 : Math.max(0.65, data.currentOpacity);
                 dot.style.opacity = finalOpacity.toFixed(3);
             }
@@ -1958,17 +1971,26 @@ function initCosmicBackground() {
     return new THREE.Points(geo, mat);
   }
 
-  // A. Deep Universe Starfield (2,200 wide panoramic stars, size 0.20)
-  const deepStars = createStarfield(2200, 0.20, 560, 420, 480, 0.92);
+  // A. Deep Universe Starfield (2,600 wide panoramic stars, size 1.2)
+  const deepStars = createStarfield(2600, 1.2, 700, 520, 600, 0.92);
   scene.add(deepStars);
 
-  // B. Mid-range Constellation Points (520 stars, size 0.38)
-  const midStars = createStarfield(520, 0.38, 380, 300, 320, 0.95);
+  // B. Mid-range Constellation Points (850 stars, size 2.4)
+  const midStars = createStarfield(850, 2.4, 480, 360, 400, 0.96);
   scene.add(midStars);
 
-  // C. Foreground Twinkling Stellar Points (180 stars, size 0.58)
-  const foregroundStars = createStarfield(180, 0.58, 260, 200, 200, 0.98);
+  // C. Foreground Twinkling Stellar Points (350 stars, size 3.8)
+  const foregroundStars = createStarfield(350, 3.8, 320, 240, 260, 0.98);
   scene.add(foregroundStars);
+
+  // Expose window.__gl for diagnostics and test suites
+  window.__gl = {
+    renderer: renderer,
+    scene: scene,
+    camera: camera,
+    tier: 'high',
+    getInfo: () => ({ tier: 'high', stars: 3800, active: true })
+  };
 
   // Adaptive Panoramic Screen Navigation Tracker (Scrolls around zoomed-in celestial viewport)
   let camX = 0, camY = 0;
@@ -2006,9 +2028,19 @@ function initCosmicBackground() {
     midStars.rotation.y = -time * 0.0006;
     foregroundStars.rotation.y = time * 0.0008;
 
+    // 3D Depth Travel: Foreground stars travel through Z space towards camera
+    const fgPos = foregroundStars.geometry.attributes.position.array;
+    for (let i = 2; i < fgPos.length; i += 3) {
+      fgPos[i] += 0.28;
+      if (fgPos[i] > 75) {
+        fgPos[i] = -220;
+      }
+    }
+    foregroundStars.geometry.attributes.position.needsUpdate = true;
+
     // Atmospheric stellar twinkling
-    deepStars.material.opacity = 0.82 + Math.sin(time * 1.8) * 0.12;
-    foregroundStars.material.opacity = 0.86 + Math.cos(time * 2.4) * 0.14;
+    deepStars.material.opacity = 0.84 + Math.sin(time * 1.8) * 0.12;
+    foregroundStars.material.opacity = 0.88 + Math.cos(time * 2.4) * 0.12;
 
     // Smooth inertial pan across the zoomed-in celestial star screen
     camX += (targetCamX - camX) * 0.045;

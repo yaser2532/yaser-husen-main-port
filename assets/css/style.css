@@ -274,6 +274,10 @@ body.cursor-reading .mouse-glow {
     padding: 0 1.5rem;
 }
 
+section, .section-padding {
+    scroll-margin-top: 5.5rem;
+}
+
 .section-padding {
     padding: var(--spacing-section) 0;
     position: relative;
@@ -490,7 +494,7 @@ body.cursor-reading .mouse-glow {
 header {
     min-height: 100vh;
     height: auto;
-    position: sticky;
+    position: relative;
     top: 0;
     display: flex;
     justify-content: flex-start;
@@ -511,7 +515,7 @@ header::before {
     background-size: cover;
     background-position: center left;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-attachment: scroll;
     filter: brightness(0.62) contrast(1.18) saturate(1.1) hue-rotate(20deg);
     -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 60%, rgba(0, 0, 0, 0) 100%);
     mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 60%, rgba(0, 0, 0, 0) 100%);
@@ -772,18 +776,12 @@ header::before {
 #tp-name {
     font-family: 'Space Grotesk', var(--font-headings);
     font-style: italic;
-    font-weight: 800;
+    font-weight: 900;
     letter-spacing: 0.04em;
-    background: linear-gradient(135deg, #ffffff 10%, #ffd873 45%, #19e3d0 80%, #b388ff 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 0 18px rgba(242, 193, 78, 0.45)) drop-shadow(0 0 30px rgba(25, 227, 208, 0.35));
     display: inline-block;
-    padding-right: 0.25em; /* Prevents italic slant clipping */
+    padding-right: 0.15em;
     overflow: visible;
     position: relative;
-    animation: artistic-glitch 5.5s infinite ease-in-out;
 }
 
 @keyframes artistic-glitch {
@@ -2210,6 +2208,11 @@ footer.cyber-dock-footer, footer {
     .dock-brand-col {
         flex-direction: column;
         gap: 0.5rem;
+    }
+    .dock-actions-col {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.6rem;
     }
 }
 
@@ -3837,7 +3840,7 @@ footer.cyber-dock-footer, footer {
     opacity: 1 !important;
     background-color: #020108;
     background-image: 
-        linear-gradient(180deg, rgba(3, 1, 10, 0.45) 0%, rgba(3, 1, 10, 0.65) 50%, rgba(2, 0, 8, 0.85) 100%),
+        linear-gradient(180deg, rgba(3, 1, 10, 0.22) 0%, rgba(3, 1, 10, 0.32) 50%, rgba(2, 0, 8, 0.38) 100%),
         url('../images/galaxy_bg.jpg') !important;
     background-size: cover !important;
     background-position: center center !important;
