@@ -65,11 +65,11 @@ function getDefaultNote(name) {
 }
 
 // ─── DOM Elements & Initialization ────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+function initializePortfolio() {
     
     /* --- 1. Mouse Glow Swarm & Cursor Tracker --- */
     const mouseGlow = document.getElementById('mouse-glow');
-    if (mouseGlow) {
+    if (mouseGlow && !window.DroneCanvasEnabled) {
         let targetX = window.innerWidth * 0.5;
         let targetY = window.innerHeight * 0.45;
         let currentX = targetX;
@@ -127,21 +127,30 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // Hover tracking using event delegation - make dots transparent over text for clear reading
-        const readableSelector = [
-            'a', 'button', 'input', 'textarea', 'select', 'label',
-            'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'span',
-            'code', 'pre', 'blockquote', 'strong', 'em', 'b', 'i',
-            '.logo', '.badge', '.trait-tag', '.section-tag', '.section-desc',
-            '.project-type', '.status-txt', '.stat-label', '.stat-number',
-            '.highlight-text', '.bday-tag', '.bday-title', '.bday-desc',
-            '.about-text', '.expertise-card', '.project-card', '.cert-card'
-        ].join(', ');
+        // Hover tracking: fade the cursor swarm only while the pointer is directly over real text
+        // so the text stays readable without losing the pointer-follow motion.
+        const getEventElement = (target) => {
+            if (target instanceof Element) return target;
+            return target && target.parentElement ? target.parentElement : null;
+        };
 
-        const getEventElement = (target) => target instanceof Element ? target : null;
         const isReadableTarget = (target) => {
             const element = getEventElement(target);
-            return Boolean(element && element.closest(readableSelector));
+            if (!element) return false;
+
+            if (element.closest('script, style, canvas, svg, img, video, iframe, .mouse-tracker-dot')) {
+                return false;
+            }
+
+            const textContent = (element.textContent || '').replace(/\s+/g, ' ').trim();
+            if (!textContent) return false;
+
+            const styles = window.getComputedStyle(element);
+            if (styles.display === 'none' || styles.visibility === 'hidden') {
+                return false;
+            }
+
+            return true;
         };
 
         document.addEventListener('mousemove', (e) => {
@@ -153,9 +162,9 @@ document.addEventListener('DOMContentLoaded', () => {
             lastPointerTime = performance.now();
             ensureGlowLoop();
 
-            // Instant hover check directly under pointer for instant responsiveness
+            // Keep the swarm clipped to the cursor during normal motion. Only dim when idle and hovering text.
             const elUnder = document.elementFromPoint(e.clientX, e.clientY);
-            const isText = isReadableTarget(elUnder);
+            const isText = isReadableTarget(elUnder) && currentPhase === 'idle' && !assignedTargets;
             document.body.classList.toggle('cursor-reading', isText);
             targetDotOpacity = isText ? 0.20 : 0.95;
 
@@ -180,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('mouseover', (e) => {
             const target = e.target;
-            const isText = isReadableTarget(target);
+            const isText = isReadableTarget(target) && currentPhase === 'idle' && !assignedTargets;
             document.body.classList.toggle('cursor-reading', isText);
             targetDotOpacity = isText ? 0.20 : 0.95;
 
@@ -192,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.addEventListener('mouseout', (e) => {
             const nextTarget = e.relatedTarget;
-            const isText = isReadableTarget(nextTarget);
+            const isText = isReadableTarget(nextTarget) && currentPhase === 'idle' && !assignedTargets;
             document.body.classList.toggle('cursor-reading', isText);
             targetDotOpacity = isText ? 0.20 : 0.95;
 
@@ -433,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // 3. Render final positions and 3D depth scale to DOM
-            const isReadingText = document.body.classList.contains('cursor-reading');
+            const isReadingText = document.body.classList.contains('cursor-reading') && currentPhase === 'idle' && !assignedTargets;
             for (let i = 0; i < NUM_DOTS; i++) {
                 const dot = dots[i];
                 const data = dotsData[i];
@@ -488,6 +497,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let chainFlex = 0;
         let swingPhase = 0;
         let isDragging = false;
+        let swingLoopId = 0;
+        let swingVisible = false;
+        let dragHinge = null;
 
         let dragStartX = 0;
         let dragStartY = 0;
@@ -506,6 +518,7 @@ document.addEventListener('DOMContentLoaded', () => {
             hasMoved = false;
             dragStartX = clientX;
             dragStartY = clientY;
+            dragHinge = getHingePoint();
         };
 
         const handleMove = (clientX, clientY) => {
@@ -514,9 +527,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dist > 6) {
                 hasMoved = true;
             }
-            const hinge = getHingePoint();
-            const dx = clientX - hinge.x;
-            const dy = clientY - hinge.y;
+            const dx = clientX - dragHinge.x;
+            const dy = clientY - dragHinge.y;
             let dragAngle = Math.atan2(dx, Math.max(dy, 30)) * (180 / Math.PI);
             dragAngle = Math.max(-25, Math.min(25, dragAngle));
             angle = dragAngle;
@@ -529,6 +541,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 lampSwitch.dispatchEvent(new Event('change'));
             }
             isDragging = false;
+            dragHinge = null;
         };
 
         const lampStructure = lampArm.querySelector('.lamp-structure');
@@ -581,6 +594,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         function swingLoop() {
+            swingLoopId = 0;
+            if (!swingVisible || document.hidden) return;
             if (!isDragging) {
                 if (isLampLit) {
                     // Gentle, graceful pendulum toggle right and left (~4.2s period, max +/- 6.8 deg)
@@ -597,10 +612,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chainFlex += (-angle * 0.18 - chainFlex) * 0.12;
             }
 
-            lampArm.style.transform = `rotate(${angle.toFixed(2)}deg) skewX(${chainFlex.toFixed(2)}deg)`;
-
             const shiftX = -Math.sin(angle * Math.PI / 180) * 140;
-            lampRefl.style.transform = `translateX(calc(-50% + ${shiftX.toFixed(1)}px))`;
 
             // Spotlight intersection: smooth cosine blending on characters
             if (isLampLit && secretTextEl) {
@@ -610,9 +622,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const beamCenterX = hinge.x + H * Math.tan(angle * Math.PI / 180);
                 const beamRadius = 145; // Soft diffused spotlight radius
 
-                const spans = secretTextEl.querySelectorAll('.lamp-char');
-                spans.forEach(span => {
-                    const r = span.getBoundingClientRect();
+                const spans = Array.from(secretTextEl.querySelectorAll('.lamp-char'));
+                const rects = spans.map(span => span.getBoundingClientRect());
+                const btnRect = secretMsgBtn ? secretMsgBtn.getBoundingClientRect() : null;
+                lampArm.style.transform = `rotate(${angle.toFixed(2)}deg) skewX(${chainFlex.toFixed(2)}deg)`;
+                lampRefl.style.transform = `translateX(calc(-50% + ${shiftX.toFixed(1)}px))`;
+                spans.forEach((span, index) => {
+                    const r = rects[index];
                     const charX = r.left + r.width / 2;
                     const dist = Math.abs(charX - beamCenterX);
 
@@ -631,8 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                if (secretMsgBtn) {
-                    const btnRect = secretMsgBtn.getBoundingClientRect();
+                if (secretMsgBtn && btnRect) {
                     const btnX = btnRect.left + btnRect.width / 2;
                     const btnDist = Math.abs(btnX - beamCenterX);
                     const btnThreshold = beamRadius + btnRect.width * 0.4;
@@ -648,12 +663,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         secretMsgBtn.style.borderColor = 'rgba(255, 255, 255, 0.2)';
                     }
                 }
+            } else {
+                lampArm.style.transform = `rotate(${angle.toFixed(2)}deg) skewX(${chainFlex.toFixed(2)}deg)`;
+                lampRefl.style.transform = `translateX(calc(-50% + ${shiftX.toFixed(1)}px))`;
             }
 
-            requestAnimationFrame(swingLoop);
+            if (!window.DroneFrame) swingLoopId = requestAnimationFrame(swingLoop);
         }
 
-        requestAnimationFrame(swingLoop);
+        const swingObserver = new IntersectionObserver(entries => {
+            swingVisible = entries.some(entry => entry.isIntersecting);
+            if (!swingVisible) {
+                if (window.DroneFrame) window.DroneFrame.remove(swingLoop);
+                if (swingLoopId) cancelAnimationFrame(swingLoopId);
+                swingLoopId = 0;
+            } else if (!document.hidden) {
+                if (window.DroneFrame) window.DroneFrame.add(swingLoop);
+                else if (!swingLoopId) swingLoopId = requestAnimationFrame(swingLoop);
+            }
+        });
+        swingObserver.observe(secretDeskSection);
+        document.addEventListener('visibilitychange', () => {
+            if (window.DroneFrame) return;
+            if (document.hidden && swingLoopId) {
+                cancelAnimationFrame(swingLoopId);
+                swingLoopId = 0;
+            } else if (!document.hidden && swingVisible && !swingLoopId) {
+                swingLoopId = requestAnimationFrame(swingLoop);
+            }
+        });
     }
 
     /* --- 2. Navbar Scroll and Active tracking --- */
@@ -661,6 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const backToTop = document.querySelector('.back-to-top');
     const sections = document.querySelectorAll('section, footer');
     const navLinks = document.querySelectorAll('.nav-link');
+    const headerContent = document.querySelector('.header-content');
 
     const handleNavbarScroll = () => {
         if (window.scrollY > 50) {
@@ -673,137 +712,47 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize navbar class on page load
     handleNavbarScroll();
 
-    /* --- Modern Butter-Smooth Native & Anchor Glide Engine --- */
-    (function initSmoothMomentumScroll() {
-        let currentScrollY = window.scrollY || window.pageYOffset || 0;
-        let targetScrollY = currentScrollY;
-        let isScrolling = false;
-        let maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-
-        function updateMaxScroll() {
-            maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-        }
-        window.addEventListener('resize', updateMaxScroll, { passive: true });
-
-        window.addEventListener('scroll', () => {
-            if (!isScrolling) {
-                currentScrollY = window.scrollY || window.pageYOffset || 0;
-                targetScrollY = currentScrollY;
+    let scrollFrame = 0;
+    window.addEventListener('scroll', () => {
+        if (scrollFrame) return;
+        const updateScrollEffects = () => {
+            scrollFrame = 0;
+            handleNavbarScroll();
+            const scrolled = window.scrollY;
+            const heroHeight = window.innerHeight;
+            if (headerContent && scrolled <= heroHeight) {
+                const percent = scrolled / heroHeight;
+                headerContent.style.opacity = (1 - percent * 0.92).toFixed(3);
+                headerContent.style.transform = `translate3d(0, ${(percent * 45).toFixed(1)}px, 0)`;
             }
-        }, { passive: true });
-
-        function scrollLoop() {
-            const diff = targetScrollY - currentScrollY;
-            if (Math.abs(diff) > 0.4) {
-                currentScrollY += diff * 0.12;
-                window.scrollTo(0, currentScrollY);
-                requestAnimationFrame(scrollLoop);
-            } else {
-                currentScrollY = targetScrollY;
-                window.scrollTo(0, targetScrollY);
-                isScrolling = false;
-            }
-        }
-
-        // Native hardware-accelerated scrolling handles mouse wheel with zero jitter.
-        // Smooth anchor links and programmatic navigation:
-
-        // Keyboard navigation
-        window.addEventListener('keydown', (e) => {
-            if (['input', 'textarea'].includes(document.activeElement.tagName.toLowerCase())) return;
-
-            updateMaxScroll();
-            let keyDelta = 0;
-            if (e.key === 'ArrowDown') keyDelta = 110;
-            else if (e.key === 'ArrowUp') keyDelta = -110;
-            else if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) keyDelta = window.innerHeight * 0.78;
-            else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) keyDelta = -window.innerHeight * 0.78;
-            else if (e.key === 'Home') keyDelta = -currentScrollY;
-            else if (e.key === 'End') keyDelta = maxScroll - currentScrollY;
-
-            if (keyDelta !== 0) {
-                e.preventDefault();
-                targetScrollY = Math.max(0, Math.min(maxScroll, targetScrollY + keyDelta));
-                if (!isScrolling) {
-                    isScrolling = true;
-                    requestAnimationFrame(scrollLoop);
-                }
-            }
-        });
-
-        // Anchor links smooth glide
-        document.addEventListener('click', (e) => {
-            const anchor = e.target.closest('a[href^="#"]');
-            if (!anchor) return;
-            const hash = anchor.getAttribute('href');
-            if (!hash || hash === '#') return;
-            const targetEl = document.querySelector(hash);
-            if (targetEl) {
-                e.preventDefault();
-                updateMaxScroll();
-                const navHeight = 70;
-                const rect = targetEl.getBoundingClientRect();
-                const scrollOffset = rect.top + (window.scrollY || window.pageYOffset) - navHeight;
-                targetScrollY = Math.max(0, Math.min(maxScroll, scrollOffset));
-                if (!isScrolling) {
-                    isScrolling = true;
-                    requestAnimationFrame(scrollLoop);
-                }
-                history.pushState(null, '', hash);
-            }
-        });
-
-        window.glideScrollTo = function(y) {
-            updateMaxScroll();
-            targetScrollY = Math.max(0, Math.min(maxScroll, y));
-            if (!isScrolling) {
-                isScrolling = true;
-                requestAnimationFrame(scrollLoop);
+            if (backToTop) {
+                const visible = scrolled > 800;
+                backToTop.style.opacity = visible ? '1' : '0';
+                backToTop.style.pointerEvents = visible ? 'auto' : 'none';
             }
         };
-    })();
-
-    window.addEventListener('scroll', () => {
-        handleNavbarScroll();
-
-        // Smooth parallax fade for hero content on scroll (zero GPU composite strain)
-        const scrolled = window.scrollY;
-        const heroHeight = window.innerHeight;
-        const headerContent = document.querySelector('.header-content');
-        if (headerContent && scrolled <= heroHeight) {
-            const percent = scrolled / heroHeight;
-            headerContent.style.opacity = (1 - percent * 0.92).toFixed(3);
-            headerContent.style.transform = `translate3d(0, ${(percent * 45).toFixed(1)}px, 0)`;
+        if (window.DroneFrame) {
+            scrollFrame = 1;
+            const callback = () => {
+                window.DroneFrame.remove(callback);
+                updateScrollEffects();
+            };
+            window.DroneFrame.add(callback);
+        } else {
+            scrollFrame = requestAnimationFrame(updateScrollEffects);
         }
+    }, { passive: true });
 
-        // Back to top visibility
-        if (backToTop) {
-            if (window.scrollY > 800) {
-                backToTop.style.opacity = '1';
-                backToTop.style.pointerEvents = 'auto';
-            } else {
-                backToTop.style.opacity = '0';
-                backToTop.style.pointerEvents = 'none';
-            }
-        }
-
-        // Active link tracking
-        let current = '';
-        sections.forEach(sec => {
-            const top = sec.offsetTop;
-            const height = sec.clientHeight;
-            if (window.scrollY >= top - 200) {
-                current = sec.getAttribute('id');
-            }
-        });
-
+    const activeSectionObserver = new IntersectionObserver(entries => {
+        const visibleSections = entries.filter(entry => entry.isIntersecting);
+        if (!visibleSections.length) return;
+        visibleSections.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        const current = visibleSections[0].target.id;
         navLinks.forEach(link => {
-            link.classList.remove('active');
-            if (link.getAttribute('href') === `#${current}`) {
-                link.classList.add('active');
-            }
+            link.classList.toggle('active', link.getAttribute('href') === `#${current}`);
         });
-    });
+    }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+    sections.forEach(section => activeSectionObserver.observe(section));
 
     /* --- 3. Mobile Burger Menu Toggle --- */
     const burger = document.querySelector('.burger');
@@ -888,51 +837,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.animateCounters = animateCounters;
 
-    const revealElements = document.querySelectorAll('.scroll-reveal');
-    let revealQueue = [];
-    let revealTimeout = null;
-
-    function processRevealQueue() {
-        if (revealQueue.length === 0) return;
-        
-        // Sort elements by their vertical offset top to ensure top-to-bottom sequence
-        revealQueue.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top);
-
-        revealQueue.forEach((el, index) => {
-            setTimeout(() => {
-                el.classList.add('active');
-                if (el.classList.contains('section-padding') && el.id === 'about-me') {
-                    animateCounters();
-                }
-            }, index * 80); // Stagger by 80ms for a crisp, fast entry
-        });
-        revealQueue = [];
-    }
-
-    const revealObserver = new IntersectionObserver((entries) => {
-        // [C-04] When Pull-to-Build is active, reveals are gated to section snap
-        if (document.documentElement.classList.contains('nb-ready') && !document.documentElement.classList.contains('nb-done')) {
-            return;
-        }
-        let added = false;
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const el = entry.target;
-                if (!el.classList.contains('active') && !revealQueue.includes(el)) {
-                    revealQueue.push(el);
-                    revealObserver.unobserve(el);
-                    added = true;
-                }
-            }
-        });
-        if (added) {
-            if (revealTimeout) clearTimeout(revealTimeout);
-            revealTimeout = setTimeout(processRevealQueue, 30); // 30ms debounce window
-        }
-    }, { threshold: 0.12 });
-
-    revealElements.forEach(el => revealObserver.observe(el));
-
     /* --- 7. Human-Cadence Cyberpunk Typewriter Sequence --- */
     function typeHuman(element, text, baseSpeed = 70) {
         return new Promise((resolve) => {
@@ -972,7 +876,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupHero3dNamePhysics(nameEl) {
-        if (!nameEl) return;
+        if (!nameEl || window.matchMedia('(hover: none), (prefers-reduced-motion: reduce)').matches) return;
         const text = "YASER HUSEN";
         const words = text.split(' ');
         nameEl.innerHTML = words.map(word => {
@@ -983,13 +887,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const charSpans = nameEl.querySelectorAll('.hero-3d-char');
         if (!charSpans.length) return;
 
-        window.addEventListener('mousemove', (e) => {
-            const mx = e.clientX;
-            const my = e.clientY;
-            const repelRadius = 85;
-
-            charSpans.forEach(span => {
-                const rect = span.getBoundingClientRect();
+        let pointer = null;
+        let frame = 0;
+        window.addEventListener('pointermove', (event) => {
+            pointer = { x: event.clientX, y: event.clientY };
+            if (frame) return;
+            frame = requestAnimationFrame(() => {
+                frame = 0;
+                if (!pointer) return;
+                const mx = pointer.x;
+                const my = pointer.y;
+                const repelRadius = 85;
+                const rects = Array.from(charSpans, span => span.getBoundingClientRect());
+                charSpans.forEach((span, index) => {
+                const rect = rects[index];
                 const cx = rect.left + rect.width * 0.5;
                 const cy = rect.top + rect.height * 0.5;
                 const dx = cx - mx;
@@ -1011,6 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     span.style.transform = '';
                     span.classList.remove('is-repelled');
                 }
+                });
             });
         }, { passive: true });
     }
@@ -1029,7 +941,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Step 1: Type Yaser Husen with authentic human keystrokes
         if (nameCursor) nameCursor.classList.remove('hidden');
-        await typeHuman(nameEl, "YASER HUSEN", 85);
+        if (nameEl.textContent.trim() !== "YASER HUSEN") {
+            await typeHuman(nameEl, "YASER HUSEN", 85);
+        }
         if (nameCursor) nameCursor.classList.add('hidden');
 
         // Transform into 3D interactive character blocks with mouse physics
@@ -1042,8 +956,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Step 3: Type description
         if (aboutEl && aboutCursor) {
-            aboutCursor.classList.remove('hidden');
-            await typeHuman(aboutEl, "I bridge technical data science, scalable artificial intelligence, and high-velocity web platforms to build unified intelligent systems.", 35);
+            const aboutCopy = "I bridge technical data science, scalable artificial intelligence, and high-velocity web platforms to build unified intelligent systems.";
+            if (aboutEl.textContent.trim() !== aboutCopy) {
+                aboutCursor.classList.remove('hidden');
+                await typeHuman(aboutEl, aboutCopy, 35);
+            }
             aboutCursor.classList.add('hidden');
         }
 
@@ -1063,7 +980,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             while (true) {
                 const titleToType = SKILL_TITLES[titleIndex % SKILL_TITLES.length];
-                await typeHuman(subtitleEl, titleToType, 50);
+                if (subtitleEl.textContent !== titleToType) {
+                    await typeHuman(subtitleEl, titleToType, 50);
+                }
                 // Pause to let visitor read comfortably
                 await new Promise(r => setTimeout(r, 2600));
                 // Smooth backspacing
@@ -1250,7 +1169,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     initProjectCardTilt();
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePortfolio, { once: true });
+} else {
+    window.setTimeout(initializePortfolio, 0);
+}
 
 
 // ════════════════════════════════════════════════════════════
@@ -1398,14 +1323,29 @@ function populatePage() {
 function renderWishes() {
   const grid = document.getElementById('wishesGrid');
   if (!grid) return;
-  
-  grid.innerHTML = wishesData.map((w, i) => `
-    <div class="wish-card" style="transition-delay:${i * 50}ms">
-      <span class="wish-icon">${w.icon}</span>
-      <div class="wish-title">${w.title}</div>
-      <p class="wish-text">${w.text.replace(/you/g, personName || 'you')}</p>
-    </div>
-  `).join('');
+
+  const cards = document.createDocumentFragment();
+  wishesData.forEach((wish, index) => {
+    const card = document.createElement('div');
+    card.className = 'wish-card';
+    card.style.transitionDelay = `${index * 50}ms`;
+
+    const icon = document.createElement('span');
+    icon.className = 'wish-icon';
+    icon.textContent = wish.icon;
+
+    const title = document.createElement('div');
+    title.className = 'wish-title';
+    title.textContent = wish.title;
+
+    const text = document.createElement('p');
+    text.className = 'wish-text';
+    text.textContent = wish.text.replace(/you/g, personName || 'you');
+
+    card.append(icon, title, text);
+    cards.appendChild(card);
+  });
+  grid.replaceChildren(cards);
 }
 
 function saveNote() {
@@ -1514,10 +1454,19 @@ function spawnEmojiBurst() {
 }
 
 function handlePhotoUploads(input) {
-  const files = Array.from(input.files).slice(0, 4);
+  const files = Array.from(input.files || []);
   if (files.length === 0) return;
+  const allowedTypes = new Set([
+    'image/avif', 'image/bmp', 'image/gif', 'image/jpeg', 'image/png', 'image/webp'
+  ]);
+  if (files.length > 4 || files.some(file => !allowedTypes.has(file.type.toLowerCase()) ||
+      file.size === 0 || file.size > 5 * 1024 * 1024)) {
+    showToast('Choose up to 4 JPG, PNG, GIF, WebP, AVIF or BMP photos under 5 MB each.');
+    input.value = '';
+    return;
+  }
 
-  galleryPhotos = [];
+  galleryPhotos = new Array(files.length).fill(null);
   const previews = document.querySelectorAll('.upload-preview-img');
   previews.forEach(p => { p.src = ''; p.style.display = 'none'; });
 
@@ -1534,12 +1483,17 @@ function handlePhotoUploads(input) {
       const label = document.getElementById('uploadLabel');
       if (label) label.textContent = `${loaded} photo${loaded > 1 ? 's' : ''} selected ✅`;
     };
+    reader.onerror = function () {
+      galleryPhotos[i] = null;
+      showToast('A photo could not be read. Please choose it again.');
+    };
     reader.readAsDataURL(file);
   });
 }
 
 function openGalleryShow() {
-  if (galleryPhotos.length === 0) {
+  const photos = galleryPhotos.filter(Boolean);
+  if (photos.length === 0) {
     showToast('Please upload some memory photos first 📸');
     return;
   }
@@ -1554,7 +1508,7 @@ function openGalleryShow() {
   requestAnimationFrame(() => { overlay.classList.add('active'); });
 
   function showPhoto(i) {
-    if (i >= galleryPhotos.length) {
+    if (i >= photos.length) {
       overlay.classList.remove('active');
       setTimeout(() => {
         overlay.style.display = 'none';
@@ -1565,10 +1519,10 @@ function openGalleryShow() {
       return;
     }
 
-    counter.textContent = `${i + 1} / ${galleryPhotos.length}`;
+    counter.textContent = `${i + 1} / ${photos.length}`;
     img.classList.remove('photo-popup');
     img.style.opacity = '0';
-    img.src = galleryPhotos[i];
+    img.src = photos[i];
 
     img.onload = function () {
       requestAnimationFrame(() => {
@@ -1879,10 +1833,13 @@ function showToast(msg) {
 // ════════════════════════════════════════════════════════════
 //  DYNAMIC COSMIC SPACE BACKGROUND (MINUSCULE STARS OVER HD GALAXY)
 // ════════════════════════════════════════════════════════════
+let cosmicBackgroundStarted = false;
 function initCosmicBackground() {
   const container = document.getElementById('cosmic-bg-container');
   const canvas = document.getElementById('cosmic-canvas');
-  if (!container || !canvas || typeof THREE === 'undefined') return;
+  if (!container || !canvas || typeof THREE === 'undefined' || cosmicBackgroundStarted ||
+      window.matchMedia('(hover: none), (prefers-reduced-motion: reduce)').matches) return;
+  cosmicBackgroundStarted = true;
 
   const scene = new THREE.Scene();
   scene.background = null; // Transparent to blend seamlessly over the HD galaxy background
@@ -1998,7 +1955,6 @@ function initCosmicBackground() {
   // Dynamic animation render loop
   let time = 0;
   function animateScene() {
-    requestAnimationFrame(animateScene);
     time += 0.012;
 
     // Slow celestial rotation of minuscule stars
@@ -2021,12 +1977,78 @@ function initCosmicBackground() {
 
     renderer.render(scene, camera);
   }
-  animateScene();
+  if (window.DroneFrame) {
+    window.DroneFrame.add(animateScene);
+  } else {
+    const fallbackFrame = () => {
+      animateScene();
+      requestAnimationFrame(fallbackFrame);
+    };
+    requestAnimationFrame(fallbackFrame);
+  }
 
   // Window Resize Listener
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-  });
+  }, { passive: true });
+
 }
+
+(function deferVisualEngines() {
+  const isTouch = window.matchMedia('(hover: none)').matches;
+  let started = false;
+
+  function loadScripts(files, index) {
+    if (index >= files.length) return;
+    const script = document.createElement('script');
+    script.src = files[index];
+    script.async = false;
+    script.onload = () => loadScripts(files, index + 1);
+    script.onerror = () => {
+      console.error('[Portfolio] Could not load visual module:', files[index]);
+    };
+    document.head.appendChild(script);
+  }
+
+  function startVisuals() {
+    if (started) return;
+    started = true;
+    const files = isTouch
+      ? ['assets/vendor/three/three.min.js', 'assets/js/threescenes.js']
+      : ['assets/vendor/three/three.min.js', 'assets/js/gl-engine.js', 'assets/js/threescenes.js'];
+    loadScripts(files, 0);
+  }
+
+  if (isTouch) {
+    const birthdayOverlay = document.getElementById('birthday-overlay');
+    if (birthdayOverlay && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(entries => {
+        if (entries.some(entry => entry.isIntersecting)) {
+          observer.disconnect();
+          startVisuals();
+        }
+      });
+      observer.observe(birthdayOverlay);
+    }
+    return;
+  }
+
+  const hero = document.getElementById('home');
+  if (hero && 'IntersectionObserver' in window) {
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        observer.disconnect();
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(startVisuals, { timeout: 800 });
+        } else {
+          window.setTimeout(startVisuals, 0);
+        }
+      }
+    });
+    observer.observe(hero);
+  } else {
+    window.setTimeout(startVisuals, 0);
+  }
+})();

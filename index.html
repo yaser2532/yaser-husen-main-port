@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="description" content="Explore Yaser Husen's portfolio of data analysis, AI integration, advanced SQL, and high-performance web projects.">
     <meta name="author" content="Yaser Husen">
     <meta name="robots" content="index, follow">
@@ -14,12 +15,15 @@
     <meta property="og:title" content="Yaser Husen | Data Analyst & AI Integration Specialist">
     <meta property="og:description" content="Data analysis, AI integration, advanced SQL, and high-performance web projects by Yaser Husen.">
     <meta property="og:url" content="/">
-    <meta property="og:image" content="assets/images/g-img.png">
+    <meta property="og:image" content="assets/images/g-img.webp">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Yaser Husen | Data Analyst & AI Integration Specialist">
     <meta name="twitter:description" content="Data analysis, AI integration, advanced SQL, and high-performance web projects by Yaser Husen.">
-    <meta name="twitter:image" content="assets/images/g-img.png">
+    <meta name="twitter:image" content="assets/images/g-img.webp">
     <title>Yaser Husen | Data Analyst & AI Integration Specialist</title>
+    <link rel="preload" as="font" href="assets/fonts/outfit-latin.woff2" type="font/woff2" crossorigin>
+    <link rel="preload" as="font" href="assets/fonts/space-grotesk-latin.woff2" type="font/woff2" crossorigin>
+    <link rel="preload" as="image" href="assets/images/Purple_Ghost.jpeg">
 
     <script type="application/ld+json">
     {
@@ -28,23 +32,57 @@
         "name": "Yaser Husen",
         "url": "/",
         "jobTitle": "Data Analyst and AI Integration Specialist",
-        "image": "assets/images/g-img.png",
+        "image": "assets/images/g-img.webp",
         "sameAs": []
     }
     </script>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:ital,wght@0,600;0,700;1,700;1,800&family=Dancing+Script:wght@700&display=swap"
-        rel="stylesheet">
-
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/fontawesome.min.css">
 
     <!-- Custom Style Sheet -->
-    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        @font-face { font-family: Inter; font-style: normal; font-weight: 100 900; font-display: swap; src: url("assets/fonts/inter-latin.woff2") format("woff2"); }
+        @font-face { font-family: Outfit; font-style: normal; font-weight: 100 900; font-display: swap; src: url("assets/fonts/outfit-latin.woff2") format("woff2"); }
+        @font-face { font-family: "Space Grotesk"; font-style: normal; font-weight: 600 800; font-display: swap; src: url("assets/fonts/space-grotesk-latin.woff2") format("woff2"); }
+        @font-face { font-family: "Dancing Script"; font-style: normal; font-weight: 700; font-display: swap; src: url("assets/fonts/dancing-script-latin.woff2") format("woff2"); }
+        *, *::before, *::after { box-sizing: border-box; }
+        html, body { min-height: 100%; background: #07060b; overflow-x: clip; }
+        body { margin: 0; color: #f3eeff; font: 16px/1.6 Inter, "Segoe UI", sans-serif; }
+        #navbar { position: fixed; top: 0; width: 100%; z-index: 1000; padding: 1.5rem 0; background: transparent; border-bottom: 1px solid transparent; }
+        .nav-container { display: flex; justify-content: space-between; align-items: center; max-width: 75rem; min-height: 4.5rem; margin: 0 auto; padding: 0 1.5rem; }
+        .logo { font-family: Outfit, Inter, sans-serif; font-size: 1.5rem; font-weight: 800; letter-spacing: -.5px; }
+        .nav-links { display: flex; gap: 2rem; margin: 0; padding: 0; list-style: none; }
+        #home { position: sticky; top: 0; display: flex; align-items: center; width: 100%; height: 100vh; min-height: 100vh; padding: 6rem 6vw 4rem; overflow: hidden; background: #07060b; }
+        #home::before { content: ''; position: absolute; inset: 0; background: url('assets/images/Purple_Ghost.jpeg') center left / cover no-repeat; z-index: 0; }
+        #home > .overlay { position: absolute; inset: 0; background: radial-gradient(circle at 25% 45%, rgba(20, 10, 36, .35), rgba(6, 3, 12, .65) 65%, rgba(4, 2, 8, .88)); z-index: 1; }
+        #home .header-content { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; width: 100%; max-width: 58rem; padding: 0; }
+        .hero-kinetic-row { display: flex; align-items: center; flex-wrap: wrap; gap: .85rem; margin-bottom: 1.25rem; }
+        .hero-sticker-badge { display: inline-flex; align-items: center; gap: .5rem; padding: .35rem .85rem; border: 1px solid #19e3d1; border-radius: 4px; background: rgba(25, 227, 208, .12); color: #19e3d1; font-size: .82rem; font-weight: 700; letter-spacing: .08em; }
+        .hero-title { position: relative; z-index: 5; min-height: 5rem; margin: 0 0 .8rem; color: #fff; font: 800 clamp(3.2rem, 7.5vw, 6.2rem)/1.2 "Space Grotesk", Outfit, sans-serif; letter-spacing: .03em; text-align: left; }
+        .hero-subtitle { min-height: 2.2rem; margin: 0 0 1.5rem; color: #19e3d1; font-size: 1.5rem; font-weight: 500; text-align: left; }
+        .hero-details-container { display: flex; flex-direction: column; align-items: flex-start; width: 100%; }
+        .hero-about-tile { width: 100%; max-width: 44rem; margin: 0 0 1.25rem; padding: 1.25rem 2rem; text-align: left; }
+        .hero-about-tile p { margin: 0; color: #fff; font-size: 1.05rem; line-height: 1.6; }
+        .hero-traits-list { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: .8rem; margin-bottom: 2rem; }
+        .trait-tag { padding: .5rem 1.2rem; border: 1px solid rgba(255,255,255,.08); border-radius: 2rem; background: rgba(255,255,255,.04); color: #fff; font-size: .85rem; font-weight: 600; }
+        .cta-button { display: inline-flex; align-items: center; justify-content: center; gap: .625rem; min-height: 3.5rem; padding: .85rem 2.2rem; border: 0; border-radius: 2rem; background: #8b3dff; color: #fff; font: 700 1.05rem Outfit, Inter, sans-serif; }
+        #cosmic-bg-container { position: fixed; top: -3vh; left: -3vw; width: 106vw; height: 106vh; z-index: -1; overflow: hidden; background: #020108; pointer-events: none; }
+        #cosmic-canvas { display: block; width: 100%; height: 100%; }
+        @media (max-width: 48rem) {
+            .nav-links { display: none; }
+            .burger { display: block; }
+            #navbar { padding: .5rem 0; }
+            .hero-title { min-height: auto; margin-bottom: .5rem; font-size: 2.75rem; line-height: 1.3; }
+            .hero-subtitle { min-height: auto; margin-bottom: 1.5rem; font-size: 1.25rem; }
+            .hero-about-tile { padding: 1.25rem; margin-bottom: 1.25rem; }
+            .hero-about-tile p { font-size: .95rem; line-height: 1.5; }
+            .hero-traits-list { gap: .6rem; margin-bottom: 2rem; }
+        }
+    </style>
+    <link rel="preload" as="style" href="assets/css/style.css"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="assets/css/style.css"></noscript>
+    <link rel="stylesheet" href="assets/css/drones.css">
 </head>
 
 <body>
@@ -53,13 +91,17 @@
     <div id="cosmic-bg-container">
         <canvas id="cosmic-canvas"></canvas>
     </div>
+    <div id="cosmic-comet-layer" aria-hidden="true">
+        <span class="cosmic-comet cosmic-comet-one"></span>
+        <span class="cosmic-comet cosmic-comet-two"></span>
+    </div>
 
     <!-- Interactive Background Glow Element -->
     <div class="mouse-glow" id="mouse-glow"></div>
     <canvas id="nb-canvas" aria-hidden="true"></canvas>
 
     <!-- Global Deep Space Gaming Ambient Audio -->
-    <audio id="bgMusic" src="assets/audio/space-ambient.wav" type="audio/wav" loop preload="auto"></audio>
+    <audio id="bgMusic" src="assets/audio/space-ambient.wav" type="audio/wav" loop preload="none"></audio>
 
     <!-- Navigation -->
     <nav id="navbar" aria-label="Primary navigation">
@@ -106,14 +148,14 @@
                 <div class="hero-spec-stamp">[AGENTIC_V4.2]</div>
             </div>
 
-            <h1 class="hero-title"><span id="tp-name"></span><span id="name-cursor" class="typing-cursor"></span></h1>
-            <h2 class="hero-subtitle"><span id="tp-subtitle"></span><span id="subtitle-cursor"
+            <h1 class="hero-title"><span id="tp-name">YASER HUSEN</span><span id="name-cursor" class="typing-cursor"></span></h1>
+            <h2 class="hero-subtitle"><span id="tp-subtitle">Prompt Engineering &amp; LLM Architecture</span><span id="subtitle-cursor"
                     class="typing-cursor hidden"></span></h2>
 
             <div id="hero-details" class="hero-details-container">
                 <!-- Small About Me Tile -->
                 <div class="hero-about-tile glass-card">
-                    <p><span id="tp-about"></span><span id="about-cursor" class="typing-cursor hidden"></span></p>
+                    <p><span id="tp-about">I bridge technical data science, scalable artificial intelligence, and high-velocity web platforms to build unified intelligent systems.</span><span id="about-cursor" class="typing-cursor hidden"></span></p>
                 </div>
 
                 <!-- Special Traits -->
@@ -126,7 +168,7 @@
             </div>
 
             <div class="hero-actions">
-                <a href="#profile-expertise" class="cta-button">Explore My Work <i
+                <a href="#profile-expertise" class="cta-button"><span>Explore My Work</span> <i
                         class="fa-solid fa-arrow-right"></i></a>
             </div>
         </div>
@@ -147,7 +189,7 @@
                 <!-- Profile Image Side -->
                 <div class="profile-showcase scroll-reveal fade-left">
                     <div class="profile-card-wrapper">
-                        <img src="assets/images/g-img.png" alt="Yaser Husen Profile" class="profile-details-img">
+                        <img src="assets/images/g-img.webp" alt="Yaser Husen Profile" class="profile-details-img" width="864" height="1184" loading="lazy" decoding="async">
                         <div class="profile-card-glow"></div>
                     </div>
                 </div>
@@ -263,10 +305,10 @@
 
             <!-- Category Filters -->
             <div class="project-filters">
-                <button class="filter-btn active" data-filter="all">All Projects</button>
-                <button class="filter-btn" data-filter="ai-data">AI & Data Science Projects</button>
-                <button class="filter-btn" data-filter="ui-saas">Web Apps</button>
-                <button class="filter-btn" data-filter="interactive">Creative Labs</button>
+                <button class="filter-btn active" data-filter="all"><span>All Projects</span></button>
+                <button class="filter-btn" data-filter="ai-data"><span>AI & Data Science Projects</span></button>
+                <button class="filter-btn" data-filter="ui-saas"><span>Web Apps</span></button>
+                <button class="filter-btn" data-filter="interactive"><span>Creative Labs</span></button>
             </div>
 
             <div class="projects-grid">
@@ -292,7 +334,7 @@
                         <p>Adaptive Entropy-Equilibrium Architecture platform. An autonomous self-organizing AI pipeline that negotiates, scores, and stabilizes information routing.</p>
                         <div class="project-footer">
                             <span class="project-type"><i class="fa-solid fa-diagram-project"></i> AI Architecture</span>
-                            <a href="https://aeea-web-eight.vercel.app/" class="project-link has-text" target="_blank"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
+                            <a href="https://aeea-web-eight.vercel.app/" class="project-link has-text" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
                         </div>
                     </div>
                 </article>
@@ -320,7 +362,7 @@
                         <p>Interactive process simulator visualizing entropy equilibrium, homeokinesis, hot/cold memory migrations, and real-time algorithmic telemetry.</p>
                         <div class="project-footer">
                             <span class="project-type"><i class="fa-solid fa-chart-line"></i> Process Telemetry</span>
-                            <a href="https://amlt-demo-simulator-ov6a.vercel.app/" class="project-link has-text" target="_blank"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
+                            <a href="https://amlt-demo-simulator-ov6a.vercel.app/" class="project-link has-text" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
                         </div>
                     </div>
                 </article>
@@ -347,7 +389,7 @@
                         <p>Adaptive Tit-for-Tat Framework dataset preprocessing platform. Optimizes dataset fingerprinting and selection to improve downstream AI training efficiency.</p>
                         <div class="project-footer">
                             <span class="project-type"><i class="fa-solid fa-broom"></i> Data Engineering</span>
-                            <a href="https://attf-data-cleaning-platform.vercel.app/" class="project-link has-text" target="_blank"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
+                            <a href="https://attf-data-cleaning-platform.vercel.app/" class="project-link has-text" target="_blank" rel="noopener noreferrer"><i class="fa-solid fa-play" style="font-size: 0.75rem;"></i> <span>Try It</span></a>
                         </div>
                     </div>
                 </article>
@@ -373,7 +415,7 @@
                             fitness experience and detailed plans for any future events.</p>
                         <div class="project-footer">
                             <span class="project-type"><i class="fa-solid fa-dumbbell"></i> Fitness Landing Page</span>
-                            <a href="https://gympro-for-bros.netlify.app/" class="project-link" target="_blank"><i
+                            <a href="https://gympro-for-bros.netlify.app/" class="project-link" target="_blank" rel="noopener noreferrer"><i
                                     class="fa-solid fa-arrow-up-right-from-square"></i></a>
                         </div>
                     </div>
@@ -589,7 +631,7 @@
                 <div class="cert-card glass-card scroll-reveal fade-up">
                     <div class="cert-img-wrapper">
                         <img src="assets/images/explore-generative-ai-with-the-vertex-ai-gemini-api.png"
-                            alt="Google Cloud Professional Certificate" class="cert-img" loading="lazy" decoding="async">
+                            alt="Google Cloud Professional Certificate" class="cert-img" width="368" height="368" loading="lazy" decoding="async">
                     </div>
                     <div class="cert-info">
                         <h3>Explore Generative AI with the Vertex AI Gemini API</h3>
@@ -601,7 +643,7 @@
                 <div class="cert-card glass-card scroll-reveal fade-up">
                     <div class="cert-img-wrapper">
                         <img src="assets/images/prompt-design-in-vertex-ai-skill-badge.png" alt="Prompt Design in Vertex AI"
-                            class="cert-img" loading="lazy" decoding="async">
+                            class="cert-img" width="367" height="367" loading="lazy" decoding="async">
                     </div>
                     <div class="cert-info">
                         <h3>Prompt Design in Vertex AI</h3>
@@ -612,7 +654,7 @@
                 <!-- Certificate 3 -->
                 <div class="cert-card glass-card scroll-reveal fade-up">
                     <div class="cert-img-wrapper">
-                        <img src="assets/images/gen-ai-applications.png" alt="Generative AI Applications" class="cert-img" loading="lazy" decoding="async">
+                        <img src="assets/images/gen-ai-applications.png" alt="Generative AI Applications" class="cert-img" width="1000" height="908" loading="lazy" decoding="async">
                     </div>
                     <div class="cert-info">
                         <h3>Generation AI Agent: Transforming your organisation</h3>
@@ -728,7 +770,7 @@
 
         <!-- Background Overlay / Video -->
         <div class="bg-overlay"></div>
-        <video class="bg-video" autoplay muted loop playsinline>
+        <video class="bg-video" muted loop playsinline preload="none">
             <source src="assets/video/bg.mp4" type="video/mp4">
         </video>
 
@@ -1021,9 +1063,9 @@
                             </div>
                         </div>
                         <div class="social-links">
-                            <a href="https://github.com/yaser2532" target="_blank" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
-                            <a href="https://www.linkedin.com/in/yaser-husen-154a80378/" target="_blank" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
-                            <a href="https://x.com/husen_yase85815" target="_blank" aria-label="Twitter/X"><i class="fa-brands fa-x-twitter"></i></a>
+                            <a href="https://github.com/yaser2532" target="_blank" rel="noopener noreferrer" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                            <a href="https://www.linkedin.com/in/yaser-husen-154a80378/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                            <a href="https://x.com/husen_yase85815" target="_blank" rel="noopener noreferrer" aria-label="Twitter/X"><i class="fa-brands fa-x-twitter"></i></a>
                         </div>
                     </div>
                 </div>
@@ -1032,28 +1074,28 @@
                     <form class="contact-form" id="contact-form">
                         <div class="form-group">
                             <div class="input-wrap">
-                                <input type="text" id="name" required placeholder=" ">
+                                <input type="text" id="name" required maxlength="100" autocomplete="name" placeholder=" ">
                                 <label for="name">Your Name</label>
                                 <span class="input-line"></span>
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="input-wrap">
-                                <input type="email" id="email" required placeholder=" ">
+                                <input type="email" id="email" required maxlength="254" autocomplete="email" placeholder=" ">
                                 <label for="email">Your Email</label>
                                 <span class="input-line"></span>
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="input-wrap">
-                                <input type="text" id="subject" required placeholder=" ">
+                                <input type="text" id="subject" required maxlength="150" placeholder=" ">
                                 <label for="subject">Subject</label>
                                 <span class="input-line"></span>
                             </div>
                         </div>
                         <div class="form-group">
                             <div class="input-wrap">
-                                <textarea id="message" required rows="4" placeholder=" "></textarea>
+                                <textarea id="message" required maxlength="5000" rows="4" placeholder=" "></textarea>
                                 <label for="message">Project Details / Message</label>
                                 <span class="input-line"></span>
                             </div>
@@ -1072,14 +1114,78 @@
     <div id="toast" class="toast"></div>
 
     <!-- Scripts -->
-    <script src="assets/vendor/three/three.min.js"></script>
-    <script src="assets/js/gl-engine.js"></script>
-    <script src="assets/js/threescenes.js"></script>
-    <script src="assets/js/sound.js"></script>
-    <script src="assets/js/script.js"></script>
-    <script src="assets/js/pull-build.js"></script>
-    <script src="assets/js/hover-system.js"></script>
-    <script src="assets/js/nano-chat.js"></script>
+    <script defer src="assets/js/sound.js"></script>
+    <script defer src="assets/js/drones.js"></script>
+    <script defer src="assets/js/mission-build.js"></script>
+    <script defer src="assets/js/hover-system.js"></script>
+    <script>
+        (function loadNonCriticalScript() {
+            const chatTrigger = document.getElementById('nano-chat-trigger-btn');
+            let chatRequested = false;
+            let openChatAfterLoad = false;
+
+            function loadPortfolioScript() {
+                const script = document.createElement('script');
+                script.src = 'assets/js/script.js';
+                script.async = true;
+                script.onerror = function () {
+                    console.error('[Portfolio] Could not load the main interaction script.');
+                };
+                document.head.appendChild(script);
+            }
+
+            function loadChatScript() {
+                if (chatRequested) return;
+                chatRequested = true;
+                const script = document.createElement('script');
+                script.src = 'assets/js/nano-chat.js';
+                script.async = true;
+                script.onload = function () {
+                    if (openChatAfterLoad && window.nanoChat) window.nanoChat.open();
+                };
+                script.onerror = function () {
+                    console.error('[Portfolio] Could not load the local chat module.');
+                };
+                document.head.appendChild(script);
+            }
+
+            function afterFirstPaint() {
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    if ('requestIdleCallback' in window) {
+                        requestIdleCallback(loadPortfolioScript, { timeout: 750 });
+                    } else {
+                        setTimeout(loadPortfolioScript, 0);
+                    }
+                }));
+            }
+
+            if (chatTrigger) {
+                chatTrigger.addEventListener('pointerenter', loadChatScript, { once: true });
+                chatTrigger.addEventListener('focus', loadChatScript, { once: true });
+                chatTrigger.addEventListener('click', function () {
+                    if (!window.nanoChat) {
+                        openChatAfterLoad = true;
+                        loadChatScript();
+                    }
+                }, true);
+                if ('IntersectionObserver' in window) {
+                    const chatObserver = new IntersectionObserver(function (entries) {
+                        if (entries.some(entry => entry.isIntersecting)) {
+                            chatObserver.disconnect();
+                            loadChatScript();
+                        }
+                    }, { rootMargin: '800px 0px' });
+                    chatObserver.observe(chatTrigger);
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', afterFirstPaint, { once: true });
+            } else {
+                afterFirstPaint();
+            }
+        })();
+    </script>
 </body>
 
 </html>

@@ -1,0 +1,264 @@
+#nb-canvas {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+html,
+body {
+    overflow-x: clip;
+}
+
+#cosmic-bg-container {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+#cosmic-bg-container::before {
+    content: "";
+    position: absolute;
+    inset: -35%;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.42;
+    background-image:
+        radial-gradient(circle, rgba(255,255,255,.82) 0 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(25,227,209,.68) 0 1px, transparent 1.6px),
+        radial-gradient(circle, rgba(245,197,66,.68) 0 .8px, transparent 1.5px);
+    background-size: 137px 121px, 211px 187px, 293px 239px;
+    background-position: 13px 31px, 79px 47px, 151px 83px;
+    animation: cosmic-star-drift 75s linear infinite, cosmic-star-twinkle 4.5s ease-in-out infinite alternate;
+}
+
+@keyframes cosmic-star-drift {
+    to { transform: translate3d(5%, -4%, 0); }
+}
+
+@keyframes cosmic-star-twinkle {
+    to { opacity: 0.72; }
+}
+
+#cosmic-comet-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.cosmic-comet {
+    position: absolute;
+    top: 16%;
+    left: -24rem;
+    width: clamp(7rem, 17vw, 15rem);
+    height: 1px;
+    opacity: 0;
+    transform: rotate(-28deg);
+    transform-origin: right center;
+    background: linear-gradient(90deg, transparent, rgba(25, 227, 209, 0.1) 58%, rgba(245, 197, 66, 0.95));
+    box-shadow: 0 0 7px rgba(25, 227, 209, 0.45);
+    animation: cosmic-comet-flight 13s linear infinite;
+}
+
+.cosmic-comet-one {
+    top: 21%;
+    animation-delay: 2s;
+}
+
+.cosmic-comet-two {
+    top: 62%;
+    animation-delay: 8s;
+    animation-duration: 17s;
+    background: linear-gradient(90deg, transparent, rgba(139, 61, 255, 0.12) 58%, rgba(25, 227, 209, 0.95));
+}
+
+@keyframes cosmic-comet-flight {
+    0%, 2% { opacity: 0; transform: translate3d(0, 0, 0) rotate(-28deg); }
+    4% { opacity: 0.85; }
+    18% { opacity: 0; transform: translate3d(calc(100vw + 30rem), 42vh, 0) rotate(-28deg); }
+    100% { opacity: 0; transform: translate3d(calc(100vw + 30rem), 42vh, 0) rotate(-28deg); }
+}
+
+img {
+    max-width: 100%;
+}
+
+.drone-managed.code-line {
+    display: block;
+}
+
+html.drone-ready .drone-managed {
+    transition: opacity var(--drone-duration, 600ms) cubic-bezier(0.16, 1, 0.3, 1),
+        transform var(--drone-duration, 600ms) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.drone-ready .drone-pending {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+    pointer-events: none;
+    filter: none;
+}
+
+.drone-managed.scroll-reveal,
+.drone-managed.scroll-reveal.fade-left,
+.drone-managed.scroll-reveal.fade-right,
+.drone-managed.scroll-reveal.fade-up {
+    will-change: auto;
+    transform: none;
+}
+
+.drone-managed.drone-active {
+    will-change: transform, opacity;
+}
+
+.drone-managed.drone-placed {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+
+.drone-failed-open .drone-managed {
+    transition: none !important;
+}
+
+@media (max-width: 48rem) {
+    .dock-actions-col {
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .dock-btn {
+        min-height: 44px;
+    }
+
+    .nav-link,
+    .filter-btn,
+    .project-link,
+    .social-links a {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .code-block-visual {
+        max-width: 100%;
+        padding: clamp(1rem, 6vw, 2.5rem);
+        overflow-wrap: anywhere;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #cosmic-bg-container::before,
+    .cosmic-comet {
+        animation: none !important;
+    }
+
+    html.drone-ready .drone-managed {
+        transition-duration: 220ms;
+        transform: none !important;
+    }
+}
+
+@media print {
+    #nb-canvas {
+        display: none !important;
+    }
+
+    .drone-managed {
+        opacity: 1 !important;
+        transform: none !important;
+        filter: none !important;
+    }
+}
+
+:is(h1, h2, h3, .section-title, .onboard-title):hover,
+:is(h1, h2, h3, .section-title, .onboard-title):focus-visible {
+    animation: drone-heading-glitch 180ms steps(2, end);
+    text-shadow: -2px 0 rgba(25, 227, 208, 0.9), 2px 0 rgba(245, 197, 66, 0.85);
+}
+
+:is(a, button, .filter-btn, .cta-button):hover,
+:is(a, button, .filter-btn, .cta-button):focus-visible {
+    text-shadow: -1px 0 rgba(25, 227, 208, 0.9), 1px 0 rgba(157, 77, 255, 0.9);
+}
+
+:is(h1, h2, h3, .section-title, .onboard-title):hover,
+:is(h1, h2, h3, .section-title, .onboard-title):focus-visible,
+#tp-name:hover,
+#tp-name:focus-visible,
+a:not(.cta-button):hover,
+a:not(.cta-button):focus-visible,
+button:hover span,
+button:focus-visible span,
+.cta-button:hover span,
+.cta-button:focus-visible span {
+    background-image: linear-gradient(100deg, #19e3d1 0%, #f5c542 42%, #8b3dff 70%, #19e3d1 100%);
+    background-size: 220% 100%;
+    background-position: 100% 50%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: drone-gradient-shift 900ms linear infinite, drone-heading-glitch 180ms steps(2, end) 2;
+}
+
+.hero-title:hover #tp-name,
+.hero-title:focus-within #tp-name {
+    animation: artistic-glitch 5.5s infinite ease-in-out, drone-gradient-shift 900ms linear infinite;
+}
+
+.hero-title:hover #tp-name span,
+.hero-title:focus-within #tp-name span {
+    background-image: linear-gradient(100deg, #19e3d1 0%, #f5c542 42%, #8b3dff 70%, #19e3d1 100%);
+    background-size: 220% 100%;
+    background-position: 100% 50%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: drone-gradient-shift 900ms linear infinite;
+}
+
+:is(button, .cta-button):hover,
+:is(button, .cta-button):focus-visible {
+    animation: drone-button-glitch 180ms steps(2, end) 2;
+}
+
+@keyframes drone-gradient-shift {
+    to { background-position: 0 50%; }
+}
+
+@keyframes drone-heading-glitch {
+    0%, 100% { transform: translateX(0); }
+    35% { transform: translateX(1px); }
+    70% { transform: translateX(-1px); }
+}
+
+@keyframes drone-button-glitch {
+    0%, 100% { text-shadow: -1px 0 rgba(25, 227, 208, 0.9), 1px 0 rgba(157, 77, 255, 0.9); }
+    50% { text-shadow: 1px 0 rgba(245, 197, 66, 0.95), -1px 0 rgba(25, 227, 208, 0.9); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :is(h1, h2, h3, .section-title, .onboard-title):hover,
+    :is(h1, h2, h3, .section-title, .onboard-title):focus-visible,
+    a:not(.cta-button):hover,
+    a:not(.cta-button):focus-visible,
+    button:hover span,
+    button:focus-visible span,
+    .cta-button:hover span,
+    .cta-button:focus-visible span,
+    :is(button, .cta-button):hover,
+    :is(button, .cta-button):focus-visible,
+    .hero-title:hover #tp-name span,
+    .hero-title:focus-within #tp-name span,
+    .hero-title:hover #tp-name,
+    .hero-title:focus-within #tp-name {
+        animation: none !important;
+    }
+}

@@ -226,7 +226,6 @@
     // ─── Animate ──────────────────────────────────────────
     let t = 0;
     function animate() {
-      requestAnimationFrame(animate);
       t += 0.016;
 
       // Gentle auto-rotate
@@ -242,7 +241,15 @@
 
       renderer.render(scene, camera);
     }
-    animate();
+    if (window.DroneFrame) {
+      window.DroneFrame.add(animate);
+    } else {
+      const standaloneFrame = () => {
+        animate();
+        requestAnimationFrame(standaloneFrame);
+      };
+      requestAnimationFrame(standaloneFrame);
+    }
 
     // Handle resize
     window.addEventListener('resize', () => {
@@ -263,7 +270,7 @@
 //  REALISTIC 3D GIFT BOX WITH THREE.JS + SHAKE ANIMATION
 // ════════════════════════════════════════════════════════════
 (function () {
-  let giftRenderer, giftScene, giftCamera, giftAnimId;
+  let giftRenderer, giftScene, giftCamera;
   let giftLidMesh, giftBodyMesh, giftRibbons = [];
   let giftIsOpen = false;
   let shakeTime = 0;
@@ -384,7 +391,6 @@
     // ─── Animate ──────────────────────────────────────────
     let t = 0;
     function animate() {
-      giftAnimId = requestAnimationFrame(animate);
       t += 0.016;
 
       // Slow gentle rotation
@@ -425,7 +431,15 @@
 
       giftRenderer.render(giftScene, giftCamera);
     }
-    animate();
+    if (window.DroneFrame) {
+      window.DroneFrame.add(animate);
+    } else {
+      const standaloneFrame = () => {
+        animate();
+        requestAnimationFrame(standaloneFrame);
+      };
+      requestAnimationFrame(standaloneFrame);
+    }
 
     // Handle resize
     window.addEventListener('resize', () => {

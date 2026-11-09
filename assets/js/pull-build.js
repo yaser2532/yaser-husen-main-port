@@ -44,6 +44,7 @@
             el.style.opacity = '';
             el.style.transform = '';
             el.style.willChange = '';
+            el.style.pointerEvents = '';
             if (el.classList.contains('scroll-reveal')) el.classList.add('active');
             el.querySelectorAll('.scroll-reveal').forEach(child => child.classList.add('active'));
         });
@@ -161,7 +162,7 @@
     const ctx = canvas.getContext('2d');
     let viewW = window.innerWidth;
     let viewH = window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     function resizeCanvas() {
         viewW = window.innerWidth;
@@ -229,7 +230,9 @@
                 nextPullEligibleAt: 0,
                 scoutDuration: 350,
                 duration: 3200,
-                animProgress: 0
+                animProgress: 0,
+                visibleSince: null,
+                dwellTimer: null
             };
 
             // Register inner text blocks and cards into the coordinator
@@ -282,9 +285,10 @@
                 const isText = ['h1', 'h2', 'h3', 'h4', 'p', 'span', 'a', 'button'].includes(tag);
                 SectionCoordinator.register(id, childEl, isText, order);
                 if (!isReducedMotion && !isHero) {
-                    childEl.style.transform = 'translate3d(0, 20px, 0)';
+                    childEl.style.transform = 'translate3d(0, 32px, 0)';
                     childEl.style.opacity = '0';
                     childEl.style.willChange = 'transform, opacity';
+                    childEl.style.pointerEvents = 'none';
                 }
             });
 
@@ -447,9 +451,22 @@
         item.currentSeqIndex = 0;
         item.activePullingNode = null;
         item.activePullStart = 0;
-        item.activePullDuration = fastMode ? 320 : 600;
-        item.scoutDuration = fastMode ? 150 : 350;
-        item.nextPullEligibleAt = performance.now() + item.scoutDuration;
+        item.scoutDuration = fastMode ? 100 : 300;
+        const nodes = SectionCoordinator.getNodesForSection(item.id);
+        const baseDuration = nodes.reduce((total, node) => {
+            const el = node.el;
+            if (el.matches('h1,h2,h3,.section-title,.section-tag')) return total + 900;
+            if (el.matches('p,h4,h5,h6,.section-desc,.section-intro')) return total + 700;
+            if (el.matches('.project-card,.cert-card,.expertise-card,.stat-card,.glass-card')) return total + 450;
+            if (el.matches('a,button,.cta-button,.message-btn')) return total + 350;
+            return total + 450;
+        }, 0);
+        const baseGaps = Math.max(0, nodes.length - 1) * 120;
+        const budget = Math.max(100, 3400 - item.scoutDuration - 40);
+        item.durationScale = fastMode ? 1 : Math.min(1, budget / Math.max(1, baseDuration + baseGaps));
+        item.gapDuration = fastMode ? 50 : 120 * item.durationScale;
+        item.activePullDuration = fastMode ? 200 : 450;
+        item.nextPullEligibleAt = performance.now() + item.scoutDuration + item.gapDuration;
         
         item.el.setAttribute('data-nb', 'pulling');
         item.el.style.willChange = 'transform, opacity';
@@ -460,7 +477,7 @@
             if (item.state !== 'built') {
                 finishPull(item, true);
             }
-        }, 30000);
+        }, 3400);
 
         // Notify swarm to initiate Phase 1: Reconnaissance
         if (window.swarm && typeof window.swarm.setPhase === 'function') {
@@ -470,12 +487,17 @@
         ensureLoop();
     }
 
-    function finishPull(item, instant = false) {
+    function finishPull(item, instant = false, continueQueue = true) {
         if (!item || item.state === 'built') return;
+        const wasCurrent = currentPullingItem === item;
 
         if (item.failsafeTimer) {
             clearTimeout(item.failsafeTimer);
             item.failsafeTimer = null;
+        }
+        if (item.dwellTimer) {
+            clearTimeout(item.dwellTimer);
+            item.dwellTimer = null;
         }
 
         item.state = 'built';
@@ -483,6 +505,7 @@
         item.el.style.opacity = '';
         item.el.style.transform = '';
         item.el.style.willChange = '';
+        item.el.style.pointerEvents = '';
 
         // Mark all inner elements as assembled in coordinator and clear inline styles
         const nodes = SectionCoordinator.getNodesForSection(item.id);
@@ -491,6 +514,7 @@
             n.el.style.transform = '';
             n.el.style.opacity = '';
             n.el.style.filter = '';
+            n.el.style.pointerEvents = '';
         });
         SectionCoordinator.assembleAll(item.id);
 
@@ -526,7 +550,7 @@
         }
 
         // Release dots
-        if (window.swarm && typeof window.swarm.release === 'function') {
+        if ((wasCurrent || !currentPullingItem) && window.swarm && typeof window.swarm.release === 'function') {
             window.swarm.release();
         }
 
@@ -535,30 +559,32 @@
         }
 
         checkCompletion();
-        processNextInQueue();
+        if (continueQueue) processNextInQueue();
     }
 
     function processNextInQueue() {
         const scrollY = window.scrollY || window.pageYOffset;
+        const isAtBottom = window.innerHeight + scrollY >= document.documentElement.scrollHeight - 80;
 
-        // Fast-scroll and offscreen auto-recovery: if currentPullingItem has scrolled out of view, finish instantly
+        sections.forEach((section) => {
+            const hasPassed = section.pageTop - scrollY + section.height < -80;
+            if (section.state === 'pending' &&
+                ((isAtBottom && section.id !== 'contact') || hasPassed)) {
+                finishPull(section, true, false);
+            }
+        });
+
         if (currentPullingItem) {
-            const screenTop = currentPullingItem.pageTop - scrollY;
-            const screenBottom = screenTop + currentPullingItem.height;
-            const isOutOfFocus = (screenBottom < 0) || (screenTop > viewH + 120);
-            if (isOutOfFocus) {
-                const prev = currentPullingItem;
-                currentPullingItem = null;
-                finishPull(prev, true);
-                return;
+            const activeBottom = currentPullingItem.pageTop - scrollY + currentPullingItem.height;
+            if (activeBottom < -viewH) {
+                finishPull(currentPullingItem, true, false);
             } else {
-                return; // Currently pulling a visible item
+                return;
             }
         }
 
         // Check which pending section is in view to begin cinematic assembly
         let targetSection = null;
-        const isAtBottom = (window.innerHeight + scrollY >= document.documentElement.scrollHeight - 80);
 
         for (let i = 0; i < sections.length; i++) {
             const s = sections[i];
@@ -566,16 +592,33 @@
                 const screenTop = s.pageTop - scrollY;
                 const screenBottom = screenTop + s.height;
 
-                // Fast-scroll fail-safe: if already scrolled past without building, resolve immediately
-                if (screenBottom < 0 || screenTop < -80) {
-                    finishPull(s, true);
+                if (screenBottom < 0) {
+                    finishPull(s, true, false);
                     continue;
                 }
 
-                // Cinematic trigger: begins when top enters upper 75% of viewport so user sees the full pull
-                const inCinematicView = (screenTop <= viewH * 0.75 && screenBottom >= viewH * 0.15) ||
-                                        (isAtBottom && s.id === 'contact');
-                if (inCinematicView) {
+                const visibleHeight = Math.max(0, Math.min(viewH, screenBottom) - Math.max(0, screenTop));
+                const visibleEnough = visibleHeight >= Math.min(s.height, viewH) * 0.6;
+                if (visibleEnough) {
+                    if (s.visibleSince === null) {
+                        s.visibleSince = performance.now();
+                        s.dwellTimer = setTimeout(() => {
+                            s.dwellTimer = null;
+                            processNextInQueue();
+                        }, 260);
+                    }
+                    if (performance.now() - s.visibleSince >= 250) {
+                        targetSection = s;
+                        break;
+                    }
+                } else {
+                    s.visibleSince = null;
+                    if (s.dwellTimer) {
+                        clearTimeout(s.dwellTimer);
+                        s.dwellTimer = null;
+                    }
+                }
+                if (isAtBottom && s.id === 'contact' && visibleEnough && performance.now() - (s.visibleSince || 0) >= 250) {
                     targetSection = s;
                     break;
                 }
@@ -607,8 +650,7 @@
             }
         });
     }, {
-        threshold: 0.35,
-        rootMargin: '0px 0px -40% 0px'
+        threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
     });
 
     sections.forEach(item => {
@@ -620,6 +662,7 @@
     // 60FPS Smooth Throttled Scroll Listener (zero layout thrashing using cached geometry)
     let scrollScheduled = false;
     window.addEventListener('scroll', () => {
+        processNextInQueue();
         if (!scrollScheduled) {
             requestAnimationFrame(() => {
                 const scrollY = window.scrollY || window.pageYOffset;
@@ -629,7 +672,7 @@
                     const screenBottom = screenTop + s.height;
 
                     // Fast-scroll fail-safe: if scrolled past while not built, resolve instantly so nothing is blank
-                    if (s.state !== 'built' && (screenTop < -60 || screenBottom < viewH * 0.10)) {
+                    if (s.state === 'pending' && screenBottom < -80) {
                         finishPull(s, true);
                     }
                 });
@@ -682,7 +725,7 @@
             const item = currentPullingItem;
             const elapsed = now - item.startTime;
             const scoutDur = item.scoutDuration || 300;
-            const gapMs = item.gapDuration || 500; // Strict 0.5s sequence gap per user directive
+            const gapMs = item.gapDuration || 1000; // +0.5s extra delay before each element resolves and reveals
             const elemDur = item.elemDuration || 450;
             const maxOffset = Math.min(50, viewH * 0.06);
 
@@ -843,12 +886,17 @@
                         const duration = item.activePullDuration || 600;
                         const p = Math.min(1.0, pullElapsed / duration);
                         const childEase = 1 - Math.pow(1 - p, 3);
-                        const childY = (1 - childEase) * 20;
+                        const childY = (1 - childEase) * 32;
                         const childScale = 0.985 + 0.015 * childEase;
                         const childOp = 0.15 + childEase * 0.85;
 
+                        const baseDuration = targetNode.el.matches('h1,h2,h3,.section-title,.section-tag') ? 900 :
+                            targetNode.el.matches('p,h4,h5,h6,.section-desc,.section-intro') ? 700 :
+                            targetNode.el.matches('a,button,.cta-button,.message-btn') ? 350 : 450;
+                        item.activePullDuration = Math.max(70, baseDuration * (item.durationScale || 1));
                         targetNode.el.style.transform = `translate3d(0, ${childY.toFixed(1)}px, 0) scale(${childScale.toFixed(3)})`;
                         targetNode.el.style.opacity = childOp.toFixed(3);
+                        targetNode.el.style.pointerEvents = 'auto';
 
                         const r = targetNode.el.getBoundingClientRect();
                         const activeBox = {
@@ -941,7 +989,7 @@
                         ctx.restore();
 
                         // Tractor beams from drones to active element
-                        if (dynamicTargets.length > 0 && window.swarm && typeof window.swarm.getDotsData === 'function') {
+                        if (!window.DroneCanvasEnabled && dynamicTargets.length > 0 && window.swarm && typeof window.swarm.getDotsData === 'function') {
                             const dotsData = window.swarm.getDotsData();
                             const vibration = Math.sin(now * 0.035) * 1.5;
 
@@ -992,7 +1040,7 @@
 
                             item.activePullingNode = null;
                             item.currentSeqIndex++;
-                            item.nextPullEligibleAt = now + 120; // 120ms gap before next element
+                            item.nextPullEligibleAt = now + (item.gapDuration || 120);
 
                             // Release swarm drones so they return to cursor tracking until next element is in contact
                             if (window.swarm && typeof window.swarm.release === 'function') {
@@ -1038,6 +1086,11 @@
             }
         }
 
+        if (window.DroneCanvas) {
+            window.DroneCanvas.render(ctx, now);
+            hasActiveDrawing = !document.hidden;
+        }
+
         if (hasActiveDrawing) {
             requestAnimationFrame(renderFrame);
         } else {
@@ -1051,6 +1104,8 @@
             requestAnimationFrame(renderFrame);
         }
     }
+    window.__pullBuildWake = ensureLoop;
+    if (window.DroneCanvas) window.DroneCanvas.setWake(ensureLoop);
 
     // ─── 11. Initial Hero Assembly ─────────────────────────────────────────
     window.addEventListener('DOMContentLoaded', () => {

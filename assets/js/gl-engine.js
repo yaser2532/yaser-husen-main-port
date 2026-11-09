@@ -290,7 +290,6 @@
 
     function animate(now) {
         if (!isLoopRunning) return;
-        requestAnimationFrame(animate);
 
         const delta = Math.min((now - lastTime) * 0.001, 0.1);
         lastTime = now;
@@ -341,21 +340,15 @@
         renderer.render(scene, camera);
     }
 
-    // Start render loop
-    requestAnimationFrame(animate);
-
-    // Sleep when tab hidden
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            isLoopRunning = false;
-        } else {
-            if (!isLoopRunning) {
-                isLoopRunning = true;
-                lastTime = performance.now();
-                requestAnimationFrame(animate);
-            }
-        }
-    });
+    if (window.DroneFrame) {
+        window.DroneFrame.add(animate);
+    } else {
+        const standaloneFrame = now => {
+            animate(now);
+            requestAnimationFrame(standaloneFrame);
+        };
+        requestAnimationFrame(standaloneFrame);
+    }
 
     // Expose window.__gl for verification & diagnostics
     window.__gl = {

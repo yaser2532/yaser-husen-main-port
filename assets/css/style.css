@@ -83,7 +83,7 @@
 }
 
 html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
 }
 
 body {
@@ -158,17 +158,23 @@ button, input, textarea {
     will-change: transform, opacity;
     opacity: 0.98;
     transition: opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-    border: 1px solid #ffffff !important; /* Bright white border */
-    box-shadow: 0 0 3px #ffffff, 0 0 7px rgba(255, 255, 255, 0.9) !important; /* Bright white box shadow */
+    border: 1px solid rgba(255, 255, 255, 0.92) !important;
+    background: radial-gradient(circle at 32% 32%, rgba(255,255,255,0.95) 0%, rgba(255,210,110,0.7) 18%, rgba(15, 23, 42, 0.85) 62%, rgba(0,0,0,1) 100%) !important;
+    box-shadow:
+        0 0 2px rgba(255, 255, 255, 0.9),
+        0 0 8px rgba(120, 214, 255, 0.56),
+        0 0 14px rgba(154, 92, 255, 0.38),
+        0 0 22px rgba(255, 177, 66, 0.28) !important;
+    filter: saturate(1.25) contrast(1.08);
 }
 .mouse-tracker-dot::after {
     display: none !important;
 }
 
-/* Reduced Precision Micro-Drone Sizing: 5px to 6px diameter (2.5px to 3px radius) */
+/* Keep the firefly drones compact and slightly smaller than before for a cleaner read */
 .mouse-tracker-dot {
-    width: 5px !important;
-    height: 5px !important;
+    width: 4.5px !important;
+    height: 4.5px !important;
 }
 .mouse-tracker-dot[style*="--dot-idx:0"],
 .mouse-tracker-dot[style*="--dot-idx: 0"],
@@ -178,9 +184,9 @@ button, input, textarea {
 .mouse-tracker-dot[style*="--dot-idx: 4"],
 .mouse-tracker-dot[style*="--dot-idx:6"],
 .mouse-tracker-dot[style*="--dot-idx: 6"] {
-    width: 5px !important;
-    height: 5px !important;
-    background: radial-gradient(circle at 35% 35%, #27272a 0%, #09090b 70%, #000000 100%) !important; /* Obsidian Black */
+    width: 4.5px !important;
+    height: 4.5px !important;
+    background: radial-gradient(circle at 35% 35%, rgba(255, 235, 163, 0.9) 0%, rgba(255, 140, 66, 0.65) 22%, rgba(17, 24, 39, 0.9) 62%, #000000 100%) !important;
 }
 .mouse-tracker-dot[style*="--dot-idx:1"],
 .mouse-tracker-dot[style*="--dot-idx: 1"],
@@ -190,9 +196,9 @@ button, input, textarea {
 .mouse-tracker-dot[style*="--dot-idx: 5"],
 .mouse-tracker-dot[style*="--dot-idx:7"],
 .mouse-tracker-dot[style*="--dot-idx: 7"] {
-    width: 6px !important;
-    height: 6px !important;
-    background: radial-gradient(circle at 35% 35%, #ffffff 0%, #cbd5e1 55%, #64748b 90%, #334155 100%) !important; /* Polished Silver */
+    width: 5.2px !important;
+    height: 5.2px !important;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.96) 0%, rgba(191, 219, 254, 0.8) 22%, rgba(92, 159, 255, 0.7) 48%, rgba(23, 31, 52, 0.9) 68%, #050a13 100%) !important;
 }
 
 /* Text Hover Semi-Transparency: Drones become subtle ghost-drones so visitor can read clearly */
@@ -217,13 +223,15 @@ body.cursor-reading .mouse-glow {
 .mouse-tracker-dot::before {
     content: '';
     position: absolute;
-    inset: -3px;
+    inset: -4px;
     border-radius: 50%;
     pointer-events: none;
     z-index: -1;
-    filter: blur(1.5px);
+    filter: blur(2px) saturate(1.4);
     mix-blend-mode: screen;
+    background: radial-gradient(circle, rgba(255,255,255,0.9) 0%, var(--aura-color, rgba(72, 223, 255, 0.55)) 25%, rgba(17, 24, 39, 0.1) 70%, transparent 100%);
     animation: micro-thruster-pulse 1.2s infinite alternate ease-in-out;
+    opacity: 0.9;
 }
 
 /* Colorful Aura Assignments for the 8 Micro-Drones */
@@ -362,10 +370,9 @@ body.cursor-reading .mouse-glow {
    Scroll Reveal Animation classes
    ========================================================================== */
 .scroll-reveal {
-    opacity: 0;
-    transform: translateY(0.9375rem) scale(0.98);
-    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: opacity, transform;
+    opacity: 1;
+    transform: none;
+    transition: none;
 }
 
 .scroll-reveal.active {
@@ -692,8 +699,8 @@ header::before {
 }
 
 .hero-details-container {
-    opacity: 0;
-    transform: translateY(1.25rem);
+    opacity: 1;
+    transform: none;
     transition: opacity 0.8s ease, transform 0.8s ease;
     display: flex;
     flex-direction: column;
@@ -1211,20 +1218,20 @@ header::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle 320px at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(25, 227, 208, 0.22), rgba(242, 193, 78, 0.14) 45%, transparent 75%);
+    background: radial-gradient(circle 320px at var(--card-mouse-x, 50%) var(--card-mouse-y, 50%), rgba(25, 227, 208, 0.10), rgba(242, 193, 78, 0.08) 45%, transparent 75%);
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.25s ease;
+    transition: opacity 0.18s ease;
     z-index: 5;
 }
 
 .project-card:hover::before {
-    opacity: 1;
+    opacity: 0.22;
 }
 
 .project-card:hover {
-    border-color: var(--cp-turquoise) !important;
-    box-shadow: 0 1rem 3rem rgba(25, 227, 208, 0.32), 0 0 25px rgba(242, 193, 78, 0.25), 0 0 45px rgba(157, 77, 255, 0.25) !important;
+    border-color: rgba(25, 227, 208, 0.35) !important;
+    box-shadow: 0 0.75rem 2rem rgba(15, 23, 42, 0.36), 0 0 18px rgba(25, 227, 208, 0.12) !important;
 }
 
 .project-img-container {
@@ -3836,15 +3843,23 @@ footer.cyber-dock-footer, footer {
     pointer-events: none;
     opacity: 1 !important;
     background-color: #020108;
-    background-image: 
+    background-image:
         linear-gradient(180deg, rgba(3, 1, 10, 0.45) 0%, rgba(3, 1, 10, 0.65) 50%, rgba(2, 0, 8, 0.85) 100%),
-        url('../images/galaxy_bg.jpg') !important;
+        url('../images/galaxy_bg.webp') !important;
     background-size: cover !important;
     background-position: center center !important;
     background-repeat: no-repeat !important;
     transform: translate3d(var(--bg-pan-x, 0px), var(--bg-pan-y, 0px), 0);
     will-change: transform;
     transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (max-width: 40rem) {
+    #cosmic-bg-container {
+        background-image:
+            linear-gradient(180deg, rgba(3, 1, 10, 0.45) 0%, rgba(3, 1, 10, 0.65) 50%, rgba(2, 0, 8, 0.85) 100%),
+            url('../images/galaxy_bg_mobile.webp') !important;
+    }
 }
 
 #cosmic-canvas {
