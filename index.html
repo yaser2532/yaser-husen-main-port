@@ -43,8 +43,19 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Custom Style Sheet -->
+    <!-- Custom Style Sheets -->
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/drones.css">
+    <style>
+        /* Critical Hero Instant Paint at 0ms */
+        body { margin: 0; background-color: #07060B; color: #ffffff; font-family: 'Space Grotesk', -apple-system, sans-serif; overflow-x: hidden; }
+        #cosmic-bg-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; background-color: #020108; }
+        header#home { min-height: 100vh; position: relative; display: flex; align-items: center; padding: 6rem 6vw 4rem; z-index: 1; }
+        .header-content { opacity: 1; transform: none; }
+        .hero-title { font-size: clamp(3.2rem, 7.5vw, 6.2rem); font-weight: 800; color: #fff; margin-bottom: 0.8rem; }
+        .hero-subtitle { font-size: 1.5rem; color: #19E3D1; min-height: 2.2rem; }
+        .hero-details-container { opacity: 1; }
+    </style>
 </head>
 
 <body>
@@ -106,14 +117,14 @@
                 <div class="hero-spec-stamp">[AGENTIC_V4.2]</div>
             </div>
 
-            <h1 class="hero-title"><span id="tp-name"></span><span id="name-cursor" class="typing-cursor"></span></h1>
-            <h2 class="hero-subtitle"><span id="tp-subtitle"></span><span id="subtitle-cursor"
+            <h1 class="hero-title"><span id="tp-name"><span class="hero-3d-word"><span class="hero-3d-char" data-char="Y">Y</span><span class="hero-3d-char" data-char="A">A</span><span class="hero-3d-char" data-char="S">S</span><span class="hero-3d-char" data-char="E">E</span><span class="hero-3d-char" data-char="R">R</span></span> <span class="hero-3d-word"><span class="hero-3d-char" data-char="H">H</span><span class="hero-3d-char" data-char="U">U</span><span class="hero-3d-char" data-char="S">S</span><span class="hero-3d-char" data-char="E">E</span><span class="hero-3d-char" data-char="N">N</span></span></span><span id="name-cursor" class="typing-cursor hidden"></span></h1>
+            <h2 class="hero-subtitle"><span id="tp-subtitle">AI Systems &amp; API Pipeline Integration</span><span id="subtitle-cursor"
                     class="typing-cursor hidden"></span></h2>
 
-            <div id="hero-details" class="hero-details-container">
+            <div id="hero-details" class="hero-details-container reveal">
                 <!-- Small About Me Tile -->
                 <div class="hero-about-tile glass-card">
-                    <p><span id="tp-about"></span><span id="about-cursor" class="typing-cursor hidden"></span></p>
+                    <p><span id="tp-about">I bridge technical data science, scalable artificial intelligence, and high-velocity web platforms to build unified intelligent systems.</span><span id="about-cursor" class="typing-cursor hidden"></span></p>
                 </div>
 
                 <!-- Special Traits -->
@@ -129,6 +140,15 @@
                 <a href="#profile-expertise" class="cta-button">Explore My Work <i
                         class="fa-solid fa-arrow-right"></i></a>
             </div>
+        </div>
+
+        <!-- Smooth Hero to Content Transition Horizon Seam -->
+        <div class="hero-transition-seam" aria-hidden="true">
+            <div class="hero-horizon-beam"></div>
+            <a href="#profile-expertise" class="hero-scroll-pill" aria-label="Scroll to Explore">
+                <span class="scroll-mouse-icon"><span class="scroll-wheel"></span></span>
+                <span class="scroll-label">Scroll to Explore</span>
+            </a>
         </div>
     </header>
 
@@ -147,7 +167,7 @@
                 <!-- Profile Image Side -->
                 <div class="profile-showcase scroll-reveal fade-left">
                     <div class="profile-card-wrapper">
-                        <img src="assets/images/g-img.png" alt="Yaser Husen Profile" class="profile-details-img">
+                        <img src="assets/images/g-img.png" alt="Yaser Husen Profile" class="profile-details-img" loading="lazy" width="220" height="220" decoding="async">
                         <div class="profile-card-glow"></div>
                     </div>
                 </div>
@@ -235,16 +255,16 @@
                     <!-- Decorative Graphic Placeholder -->
                     <div class="code-block-visual">
                         <code>
-                            <span class="keyword">const</span> <span class="var">skills</span> = [<br>
-                            &nbsp;&nbsp;<span class="keyword">'Bilingual/Native-level English'</span>,<br>
-                            &nbsp;&nbsp;<span class="keyword">'Python & JavaScript'</span>,<br>
-                            &nbsp;&nbsp;<span class="keyword">'Data Analysis'</span>,<br>
-                            &nbsp;&nbsp;<span class="keyword">'Full-stack Development'</span>,<br>
-                            &nbsp;&nbsp;<span class="keyword">'Team working'</span>,<br>
-                            &nbsp;&nbsp;<span class="keyword">'Vertex AI'</span>,<br>
-                            &nbsp;&nbsp;<span class="keyword">'LLM Fine-tuning'</span>,<br>
-                            &nbsp;&nbsp;<span class="keyword">'Cloud Architecture'</span><br>
-                            ];
+                            <span class="drone-code-line"><span class="keyword">const</span> <span class="var">skills</span> = [</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'Bilingual/Native-level English'</span>,</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'Python &amp; JavaScript'</span>,</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'Data Analysis'</span>,</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'Full-stack Development'</span>,</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'Team working'</span>,</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'Vertex AI'</span>,</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'LLM Fine-tuning'</span>,</span>
+                            <span class="drone-code-line">&nbsp;&nbsp;<span class="keyword">'Cloud Architecture'</span></span>
+                            <span class="drone-code-line">];</span>
                         </code>
                     </div>
                 </div>
@@ -1071,15 +1091,15 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast"></div>
 
-    <!-- Scripts -->
-    <script src="assets/vendor/three/three.min.js"></script>
-    <script src="assets/js/gl-engine.js"></script>
-    <script src="assets/js/threescenes.js"></script>
-    <script src="assets/js/sound.js"></script>
-    <script src="assets/js/script.js"></script>
-    <script src="assets/js/pull-build.js"></script>
-    <script src="assets/js/hover-system.js"></script>
-    <script src="assets/js/nano-chat.js"></script>
+    <!-- Scripts (Deferred for instant HTML/CSS paint) -->
+    <script defer src="assets/vendor/three/three.min.js"></script>
+    <script defer src="assets/js/gl-engine.js"></script>
+    <script defer src="assets/js/threescenes.js"></script>
+    <script defer src="assets/js/sound.js"></script>
+    <script defer src="assets/js/script.js"></script>
+    <script defer src="assets/js/drones.js"></script>
+    <script defer src="assets/js/hover-system.js"></script>
+    <script defer src="assets/js/nano-chat.js"></script>
 </body>
 
 </html>
