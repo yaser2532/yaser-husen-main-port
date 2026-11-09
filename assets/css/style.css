@@ -9734,51 +9734,7 @@ a.nav-link:hover::after,
 
 
 
-/* Monospace Cyber Telemetry Metadata on Project Cards */
 
-.prj-cyber-index {
-
-    position: absolute;
-
-    top: 0.65rem;
-
-    left: 0.85rem;
-
-    z-index: 6;
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 0.5rem;
-
-    font-family: 'Space Grotesk', monospace;
-
-    font-size: 0.70rem;
-
-    font-weight: 700;
-
-    color: var(--cp-gold);
-
-    letter-spacing: 0.06em;
-
-    pointer-events: none;
-
-    text-shadow: 0 0 6px rgba(245, 197, 66, 0.4);
-
-}
-
-
-
-.prj-sys-spec {
-
-    color: #94a3b8;
-
-    font-size: 0.64rem;
-
-    text-transform: uppercase;
-
-}
 
 
 

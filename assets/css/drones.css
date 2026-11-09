@@ -92,15 +92,19 @@ html.drones-active [data-drone-state="built"] {
     bottom: -2px;
     left: 0;
     width: 100%;
-    height: 12rem;
+    height: 14rem;
     pointer-events: none;
     z-index: 5;
     background: linear-gradient(to bottom, 
         transparent 0%, 
-        rgba(4, 2, 7, 0.25) 30%, 
-        rgba(4, 2, 7, 0.65) 65%, 
-        rgba(4, 2, 7, 0.95) 90%, 
+        rgba(4, 2, 7, 0.20) 25%, 
+        rgba(4, 2, 7, 0.60) 60%, 
+        rgba(4, 2, 7, 0.92) 88%, 
         #040207 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.4) 30%, black 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.4) 30%, black 100%);
     display: block;
 }
 
@@ -132,7 +136,26 @@ html.drones-active [data-drone-state="built"] {
 
 /* 7. Print and Reduced Motion Failsafes */
 @media print {
-    #nb-canvas, .hero-transition-seam { display: none !important; }
+    #nb-canvas, .hero-transition-seam {
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 14rem;
+    pointer-events: none;
+    z-index: 5;
+    background: linear-gradient(to bottom, 
+        transparent 0%, 
+        rgba(4, 2, 7, 0.20) 25%, 
+        rgba(4, 2, 7, 0.60) 60%, 
+        rgba(4, 2, 7, 0.92) 88%, 
+        #040207 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.4) 30%, black 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.4) 30%, black 100%);
+    display: block;
+}
     html.drones-active [data-drone-state] {
         opacity: 1 !important;
         transform: none !important;

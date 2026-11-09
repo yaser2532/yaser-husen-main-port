@@ -348,11 +348,21 @@
     }
 
     // ─── 5. PROCEDURAL RANDOM PATHS GENERATOR (PHASE 5) ─────────────────────
-    const PATH_TYPES = ['spiral-in', 'loop-the-loop', 'figure-8', 'noisy-arc', 'orbit-dive', 'zigzag-swoop'];
+    const PATH_TYPES = [
+        'spiral-in',
+        'loop-the-loop',
+        'figure-8',
+        'noisy-arc',
+        'orbit-dive',
+        'zigzag-swoop',
+        'hyperbolic-slingshot',
+        'quantum-drift',
+        'helix-corkscrew'
+    ];
+
     let lastPathTypeIndex = -1;
 
     function generateProceduralPath(startX, startY, endX, endY, flightDuration) {
-        // Guarantee no same type twice in a row
         let typeIndex = Math.floor(Math.random() * PATH_TYPES.length);
         if (typeIndex === lastPathTypeIndex) {
             typeIndex = (typeIndex + 1) % PATH_TYPES.length;
@@ -369,64 +379,95 @@
         const normY = dx / dist;
 
         const waypoints = [{ x: startX, y: startY }];
-        const curvatureScale = Math.min(180, Math.max(60, dist * 0.35));
+        const curvatureScale = Math.min(180, Math.max(50, dist * (0.28 + Math.random() * 0.22)));
 
         switch (type) {
             case 'spiral-in': {
                 const s1 = (Math.random() > 0.5 ? 1 : -1) * curvatureScale;
-                waypoints.push({ x: startX + dx * 0.25 + normX * s1, y: startY + dy * 0.25 + normY * s1 });
-                waypoints.push({ x: startX + dx * 0.65 - normX * (s1 * 0.6), y: startY + dy * 0.65 - normY * (s1 * 0.6) });
-                waypoints.push({ x: startX + dx * 0.90 + normX * (s1 * 0.25), y: startY + dy * 0.90 + normY * (s1 * 0.25) });
+                const rFactor = 0.8 + Math.random() * 0.4;
+                waypoints.push({ x: startX + dx * 0.22 + normX * (s1 * rFactor), y: startY + dy * 0.22 + normY * (s1 * rFactor) });
+                waypoints.push({ x: startX + dx * 0.60 - normX * (s1 * 0.65 * rFactor), y: startY + dy * 0.60 - normY * (s1 * 0.65 * rFactor) });
+                waypoints.push({ x: startX + dx * 0.88 + normX * (s1 * 0.25), y: startY + dy * 0.88 + normY * (s1 * 0.25) });
                 break;
             }
             case 'loop-the-loop': {
-                const loopRadius = curvatureScale * 0.85;
+                const loopRadius = curvatureScale * (0.75 + Math.random() * 0.35);
                 const sign = (Math.random() > 0.5 ? 1 : -1);
                 waypoints.push({ x: midX + normX * (loopRadius * sign), y: midY + normY * (loopRadius * sign) });
-                waypoints.push({ x: midX - dx * 0.10 + normX * (loopRadius * 1.4 * sign), y: midY - dy * 0.10 + normY * (loopRadius * 1.4 * sign) });
-                waypoints.push({ x: midX + dx * 0.15 + normX * (loopRadius * 0.4 * sign), y: midY + dy * 0.15 + normY * (loopRadius * 0.4 * sign) });
+                waypoints.push({ x: midX - dx * 0.12 + normX * (loopRadius * 1.35 * sign), y: midY - dy * 0.12 + normY * (loopRadius * 1.35 * sign) });
+                waypoints.push({ x: midX + dx * 0.18 + normX * (loopRadius * 0.45 * sign), y: midY + dy * 0.18 + normY * (loopRadius * 0.45 * sign) });
                 break;
             }
             case 'figure-8': {
-                const fScale = curvatureScale * 0.75;
-                waypoints.push({ x: startX + dx * 0.30 + normX * fScale, y: startY + dy * 0.30 + normY * fScale });
-                waypoints.push({ x: midX, y: midY });
-                waypoints.push({ x: startX + dx * 0.70 - normX * fScale, y: startY + dy * 0.70 - normY * fScale });
+                const fScale = curvatureScale * (0.70 + Math.random() * 0.30);
+                const sign = (Math.random() > 0.5 ? 1 : -1);
+                waypoints.push({ x: startX + dx * 0.28 + normX * (fScale * sign), y: startY + dy * 0.28 + normY * (fScale * sign) });
+                waypoints.push({ x: midX + (Math.random() - 0.5) * 15, y: midY + (Math.random() - 0.5) * 15 });
+                waypoints.push({ x: startX + dx * 0.72 - normX * (fScale * sign), y: startY + dy * 0.72 - normY * (fScale * sign) });
                 break;
             }
             case 'orbit-dive': {
                 const oSign = (Math.random() > 0.5 ? 1 : -1);
-                waypoints.push({ x: startX + normX * (curvatureScale * oSign), y: startY + normY * (curvatureScale * oSign) });
-                waypoints.push({ x: midX + normX * (curvatureScale * 1.2 * oSign), y: midY + normY * (curvatureScale * 1.2 * oSign) });
-                waypoints.push({ x: endX - dx * 0.12 - normX * (curvatureScale * 0.3 * oSign), y: endY - dy * 0.12 - normY * (curvatureScale * 0.3 * oSign) });
+                const oAmp = curvatureScale * (0.9 + Math.random() * 0.4);
+                waypoints.push({ x: startX + normX * (oAmp * oSign), y: startY + normY * (oAmp * oSign) });
+                waypoints.push({ x: midX + normX * (oAmp * 1.25 * oSign), y: midY + normY * (oAmp * 1.25 * oSign) });
+                waypoints.push({ x: endX - dx * 0.14 - normX * (oAmp * 0.35 * oSign), y: endY - dy * 0.14 - normY * (oAmp * 0.35 * oSign) });
                 break;
             }
             case 'zigzag-swoop': {
                 const zSign = (Math.random() > 0.5 ? 1 : -1);
-                waypoints.push({ x: startX + dx * 0.25 + normX * (curvatureScale * zSign), y: startY + dy * 0.25 + normY * (curvatureScale * zSign) });
-                waypoints.push({ x: startX + dx * 0.60 - normX * (curvatureScale * 0.85 * zSign), y: startY + dy * 0.60 - normY * (curvatureScale * 0.85 * zSign) });
-                waypoints.push({ x: startX + dx * 0.85 + normX * (curvatureScale * 0.4 * zSign), y: startY + dy * 0.85 + normY * (curvatureScale * 0.4 * zSign) });
+                const zAmp = curvatureScale * (0.8 + Math.random() * 0.35);
+                waypoints.push({ x: startX + dx * 0.22 + normX * (zAmp * zSign), y: startY + dy * 0.22 + normY * (zAmp * zSign) });
+                waypoints.push({ x: startX + dx * 0.55 - normX * (zAmp * 0.9 * zSign), y: startY + dy * 0.55 - normY * (zAmp * 0.9 * zSign) });
+                waypoints.push({ x: startX + dx * 0.82 + normX * (zAmp * 0.45 * zSign), y: startY + dy * 0.82 + normY * (zAmp * 0.45 * zSign) });
+                break;
+            }
+            case 'hyperbolic-slingshot': {
+                const hSign = (Math.random() > 0.5 ? 1 : -1);
+                const hScale = curvatureScale * (1.1 + Math.random() * 0.3);
+                waypoints.push({ x: startX + dx * 0.15 - normX * (hScale * 0.4 * hSign), y: startY + dy * 0.15 - normY * (hScale * 0.4 * hSign) });
+                waypoints.push({ x: startX + dx * 0.45 + normX * (hScale * 1.3 * hSign), y: startY + dy * 0.45 + normY * (hScale * 1.3 * hSign) });
+                waypoints.push({ x: startX + dx * 0.85 + normX * (hScale * 0.25 * hSign), y: startY + dy * 0.85 + normY * (hScale * 0.25 * hSign) });
+                break;
+            }
+            case 'quantum-drift': {
+                const qSign = (Math.random() > 0.5 ? 1 : -1);
+                const j1 = (Math.random() - 0.5) * 28;
+                const j2 = (Math.random() - 0.5) * 28;
+                waypoints.push({ x: startX + dx * 0.30 + normX * (curvatureScale * 0.7 * qSign) + j1, y: startY + dy * 0.30 + normY * (curvatureScale * 0.7 * qSign) + j2 });
+                waypoints.push({ x: midX - normX * (curvatureScale * 0.5 * qSign) - j2, y: midY - normY * (curvatureScale * 0.5 * qSign) + j1 });
+                waypoints.push({ x: startX + dx * 0.80 + normX * (curvatureScale * 0.35 * qSign) + j1 * 0.5, y: startY + dy * 0.80 + normY * (curvatureScale * 0.35 * qSign) - j2 * 0.5 });
+                break;
+            }
+            case 'helix-corkscrew': {
+                const corkSign = (Math.random() > 0.5 ? 1 : -1);
+                const rHelix = curvatureScale * (0.65 + Math.random() * 0.25);
+                waypoints.push({ x: startX + dx * 0.20 + normX * (rHelix * corkSign), y: startY + dy * 0.20 + normY * (rHelix * corkSign) });
+                waypoints.push({ x: startX + dx * 0.40 - normX * (rHelix * 0.8 * corkSign), y: startY + dy * 0.40 - normY * (rHelix * 0.8 * corkSign) });
+                waypoints.push({ x: startX + dx * 0.65 + normX * (rHelix * 0.9 * corkSign), y: startY + dy * 0.65 + normY * (rHelix * 0.9 * corkSign) });
+                waypoints.push({ x: startX + dx * 0.85 - normX * (rHelix * 0.4 * corkSign), y: startY + dy * 0.85 - normY * (rHelix * 0.4 * corkSign) });
                 break;
             }
             default: // noisy-arc
             {
                 const arcSign = (Math.random() > 0.5 ? 1 : -1);
-                const jitter = (Math.random() - 0.5) * 30;
-                waypoints.push({ x: startX + dx * 0.33 + normX * (curvatureScale * arcSign) + jitter, y: startY + dy * 0.33 + normY * (curvatureScale * arcSign) + jitter });
-                waypoints.push({ x: startX + dx * 0.66 + normX * (curvatureScale * 0.9 * arcSign) - jitter, y: startY + dy * 0.66 + normY * (curvatureScale * 0.9 * arcSign) - jitter });
+                const jitter = (Math.random() - 0.5) * 35;
+                const arcAmp = curvatureScale * (0.85 + Math.random() * 0.3);
+                waypoints.push({ x: startX + dx * 0.33 + normX * (arcAmp * arcSign) + jitter, y: startY + dy * 0.33 + normY * (arcAmp * arcSign) + jitter });
+                waypoints.push({ x: startX + dx * 0.68 + normX * (arcAmp * 0.8 * arcSign) - jitter * 0.5, y: startY + dy * 0.68 + normY * (arcAmp * 0.8 * arcSign) - jitter * 0.5 });
                 break;
             }
         }
 
         waypoints.push({ x: endX, y: endY });
 
-        // Clamp waypoints inside viewport boundaries
-        waypoints.forEach(wp => {
-            wp.x = Math.max(12, Math.min(viewW - 12, wp.x));
-            wp.y = Math.max(12, Math.min(viewH - 12, wp.y));
-        });
+        if (waypoints.length < 4) {
+            waypoints.splice(1, 0, {
+                x: (startX + waypoints[1].x) * 0.5,
+                y: (startY + waypoints[1].y) * 0.5
+            });
+        }
 
-        // Add dummy start/end control points for Catmull-Rom
         const pathPoints = [
             { x: startX - (waypoints[1].x - startX) * 0.5, y: startY - (waypoints[1].y - startY) * 0.5 },
             ...waypoints,
@@ -571,20 +612,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let minDuration = 650; // normal duration for cards
+                let minDuration = 350; // accelerated duration for cards (was 650ms)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    minDuration = 1100; // normal duration for section titles
+                    minDuration = 600; // accelerated duration for section titles (was 1100ms)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    minDuration = 900; // normal duration for paragraphs
+                    minDuration = 450; // accelerated duration for paragraphs (was 900ms)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn')) {
                     type = 'button';
-                    minDuration = 450; // normal duration for buttons
+                    minDuration = 250; // accelerated duration for buttons (was 450ms)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    minDuration = 1400; // normal duration for code card
+                    minDuration = 850; // accelerated duration for code card (was 1400ms)
                 }
 
                 const item = {
@@ -657,9 +698,6 @@
         }
 
         const scrollY = window.scrollY || window.pageYOffset;
-        const bandTopY = viewH * BAND_TOP;
-        const bandBottomY = viewH * BAND_BOTTOM;
-        const bandHeight = bandBottomY - bandTopY;
 
         // Footer reached: guarantee all elements are built
         const isAtBottom = (window.innerHeight + scrollY >= document.documentElement.scrollHeight - 100);
@@ -672,9 +710,6 @@
             return;
         }
 
-        // Check scroll settled condition: scroll speed < 800 px/s for 200ms
-        const scrollSettled = (now - lastFastScrollTime >= SCROLL_SETTLE_MS);
-
         // Automatic Section-Triggered Sequence: When section covers most of the screen
         SECTION_ORDER.forEach(secId => {
             const sec = sectionMap[secId];
@@ -685,9 +720,6 @@
             const visBottom = Math.min(viewH, r.bottom);
             const visHeight = Math.max(0, visBottom - visTop);
 
-            // A section covers most of the screen when:
-            // 1) It occupies at least 42% of the viewport height, OR
-            // 2) It spans across the center of the viewport (top <= 45% and bottom >= 50%)
             const coversMostOfScreen = (visHeight >= viewH * 0.42) || 
                                        (r.top <= viewH * 0.45 && r.bottom >= viewH * 0.50);
 
@@ -695,46 +727,6 @@
                 sec.dwellMet = true;
             }
         });
-
-        // Evaluate pending elements in strict sequence order
-        for (let i = 0; i < elementList.length; i++) {
-            const item = elementList[i];
-            if (item.state !== 'pending') continue;
-
-            const sec = item.secInfo;
-            if (!sec.dwellMet && !sec.isHero) continue;
-            if (!scrollSettled) continue;
-
-            // Strict sequence cadence: wait for predecessor in section
-            if (i > 0) {
-                const pred = elementList[i - 1];
-                if (pred.secId === item.secId) {
-                    // Predecessor must be pulling or built before next element starts
-                    if (pred.state === 'pending' || pred.state === 'dispatched') {
-                        continue;
-                    }
-                    // Stagger cadence: at least 220ms after predecessor started pull
-                    if (pred.pullStartTime && (now - pred.pullStartTime < 220)) {
-                        continue;
-                    }
-                }
-            }
-
-            // Element must be within reachable view (top within 115% of viewport height)
-            const r = item.el.getBoundingClientRect();
-            if (r.width === 0 || r.height === 0) continue;
-            if (r.top > viewH * 1.15) continue; // Will be pulled when scrolled closer
-
-            // Capacity check: Max 3 active crews
-            if (activeMissions.length >= MAX_ACTIVE_CREWS) continue;
-
-            // Available drones pool check: need at least CREW_SIZE available drones
-            const availableDrones = drones.filter(d => d.state === 'FOLLOW');
-            if (availableDrones.length < CREW_SIZE) continue;
-
-            // Gate opens! Automatically dispatch mission for element E in sequence
-            dispatchMission(item, availableDrones.slice(0, CREW_SIZE), now);
-        }
 
         // Failsafe Watchdog: elements never stay hidden > 3.5s after gate open
         elementList.forEach(item => {
@@ -744,6 +736,42 @@
                 }
             }
         });
+
+        const scrollSettled = (now - lastFastScrollTime >= SCROLL_SETTLE_MS);
+        if (!scrollSettled) return;
+
+        // Strictly ONE element pulled at a time across the viewport
+        if (activeMissions.length >= 1) return;
+
+        const availableDrones = drones.filter(d => d.state === 'FOLLOW');
+        if (availableDrones.length < CREW_SIZE) return;
+
+        for (let s = 0; s < SECTION_ORDER.length; s++) {
+            const secId = SECTION_ORDER[s];
+            const sec = sectionMap[secId];
+            if (!sec || (!sec.dwellMet && !sec.isHero)) continue;
+
+            const secRect = sec.el.getBoundingClientRect();
+            if (secRect.bottom < 0 || secRect.top > viewH * 1.15) continue;
+
+            const isSectionBusy = sec.elements.some(e => e.state === 'dispatched' || e.state === 'pulling');
+            if (isSectionBusy) continue;
+
+            const reachablePending = sec.elements.filter(item => {
+                if (item.state !== 'pending') return false;
+                const r = item.el.getBoundingClientRect();
+                return r.width > 0 && r.height > 0 && r.top <= viewH * 1.15 && r.bottom >= -50;
+            });
+
+            if (reachablePending.length === 0) continue;
+
+            // Pick a RANDOM pending element in this section (random order, one at a time!)
+            const randomIndex = Math.floor(Math.random() * reachablePending.length);
+            const chosenItem = reachablePending[randomIndex];
+
+            dispatchMission(chosenItem, availableDrones.slice(0, CREW_SIZE), now);
+            break; // Strictly one element at a time!
+        }
     }
 
     function dispatchMission(item, crewDrones, now) {
@@ -756,7 +784,7 @@
         const anchors = computeAnchors(item);
         item.anchors = anchors;
 
-        const flightDuration = Math.round(550 + Math.random() * 300); // 550-850ms normal cinematic flight
+        const flightDuration = Math.round(250 + Math.random() * 200); // 250-450ms accelerated flight (was 550-850ms)
         
         const mission = {
             item,
@@ -777,8 +805,8 @@
             startPull(pullNow) {
                 const flightTime = pullNow - this.dispatchedAt;
                 // Spectacle guarantee: reveal may start only after crew has flown >= 500ms
-                if (flightTime < 500) {
-                    setTimeout(() => this.startPull(performance.now()), 500 - flightTime);
+                if (flightTime < 250) {
+                    setTimeout(() => this.startPull(performance.now()), 250 - flightTime);
                     return;
                 }
 
@@ -903,7 +931,7 @@
         crewDrones.forEach((drone, idx) => {
             drone.state = 'RETURN';
             drone.flightStart = now;
-            drone.flightDuration = Math.round(400 + Math.random() * 250); // 400-650ms normal return
+            drone.flightDuration = Math.round(180 + Math.random() * 120); // 180-300ms accelerated return (was 400-650ms)
 
             // Random return orbit slot around cursor
             const returnAngle = Math.random() * Math.PI * 2;
