@@ -48,10 +48,9 @@ html.drones-active [data-drone-state="pulling"] {
 
 html.drones-active [data-drone-state="built"] {
     opacity: 1 !important;
-    transform: translate3d(0, 0, 0) !important;
     filter: none !important;
     pointer-events: auto !important;
-    will-change: auto !important;
+    will-change: auto;
 }
 
 /* 3. Impact Flash: 60ms RGB-split flash & glow pulse */

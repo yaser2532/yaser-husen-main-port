@@ -2249,7 +2249,7 @@ header::before {
 
     box-shadow: 0 0 28px rgba(25, 227, 208, 0.38), 0 0 50px rgba(157, 77, 255, 0.22), inset 0 0 18px rgba(25, 227, 208, 0.12);
 
-    transform: translateY(-4px) scale(1.02);
+    /* 3D tilt handled by React 3D physics */
 
 }
 
@@ -2666,9 +2666,8 @@ header::before {
 
     transform-style: preserve-3d;
 
-    transform: perspective(1000px) rotateX(calc(var(--tilt-y, 0) * -8deg)) rotateY(calc(var(--tilt-x, 0) * 8deg)) translateY(-3px);
 
-    transition: transform 0.15s ease-out, box-shadow 0.25s ease, border-color 0.25s ease;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
 
     position: relative;
 
@@ -8820,7 +8819,7 @@ a.nav-link:hover::after,
 
     position: relative;
 
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease !important;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease !important;
 
 }
 
@@ -10033,7 +10032,7 @@ a.nav-link:hover::after,
 .contact-card:hover,
 .profile-card-wrapper:hover,
 .cp-3d-card:hover {
-    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.75), 0 6px 14px rgba(0, 0, 0, 0.50) !important;
+    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.75), 0 6px 14px rgba(0, 0, 0, 0.50);
     border-color: rgba(255, 255, 255, 0.16) !important;
     filter: none !important;
 }
@@ -10177,6 +10176,16 @@ a.cta-button:hover * {
    WHOLE CARD ELEMENTS BOX BENDING & TORSIONAL DEFORMATION
    The entire card container bends and twists as a solid unit under cursor
    ========================================================================= */
+/* Card 3D Base & Perspective Containers */
+.projects-grid,
+.expertise-cards-grid,
+.certifications-grid,
+.about-grid,
+.hero-stats-grid {
+    perspective: 1200px !important;
+    transform-style: preserve-3d !important;
+}
+
 .react-3d-card,
 .project-card,
 .cert-card,
@@ -10190,25 +10199,71 @@ a.cta-button:hover * {
 .contact-card,
 .profile-card-wrapper {
     transform-style: preserve-3d !important;
-    perspective: 950px !important;
     will-change: transform !important;
-    transition: box-shadow 0.3s ease, border-color 0.3s ease !important;
 }
 
-/* Keep card text and inner elements firmly locked to card face — NO text deforming */
-.react-3d-card p,
+.card-3d-active {
+    transition: none !important;
+}
+
+/* 3D Specular Glare Reflection Sheen */
+.react-3d-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle 380px at var(--card-glare-x, 50%) var(--card-glare-y, 50%), rgba(25, 227, 209, 0.14), rgba(255, 255, 255, 0.05) 30%, transparent 70%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.3s ease;
+}
+
+.react-3d-card.card-3d-active::before {
+    opacity: 1;
+}
+
+/* Authentic Multi-Layer 3D Parallax Depth — Floating without text deformation */
+.react-3d-card .project-img-container,
+.react-3d-card .expertise-icon,
+.react-3d-card .cert-img-wrapper,
+.react-3d-card .terminal-header {
+    transform: translateZ(34px) !important;
+    transform-style: preserve-3d !important;
+    transition: transform 0.2s ease;
+}
+
+.react-3d-card .project-details h3,
+.react-3d-card .project-title,
 .react-3d-card h3,
 .react-3d-card h4,
-.react-3d-card span,
-.react-3d-card a,
-.react-3d-card .badge,
-.react-3d-card .project-title,
-.react-3d-card .project-desc,
-.project-card p,
-.project-card h3,
-.project-card span {
-    transform: none !important;
+.react-3d-card .hero-about-tile p {
+    transform: translateZ(26px) !important;
+    transform-style: preserve-3d !important;
+    transition: transform 0.2s ease;
 }
+
+.react-3d-card .project-details p,
+.react-3d-card p,
+.react-3d-card .stat-label {
+    transform: translateZ(18px) !important;
+    transform-style: preserve-3d !important;
+    transition: transform 0.2s ease;
+}
+
+.react-3d-card .badge,
+.react-3d-card .holo-sticker,
+.react-3d-card .torn-paper-sticker,
+.react-3d-card .project-link,
+.react-3d-card .view-cert-btn,
+.react-3d-card a.cert-link,
+.react-3d-card a.btn,
+.react-3d-card .project-footer {
+    transform: translateZ(40px) !important;
+    transform-style: preserve-3d !important;
+    transition: transform 0.2s ease;
+}
+
 
 
 /* =========================================================================
@@ -10346,7 +10401,7 @@ section, header, footer, main, .cyber-dock-footer {
 .contact-card,
 .profile-card-wrapper {
     transform-style: preserve-3d !important;
-    perspective: 900px !important;
+    /* perspective on parent grid container */
     transform-origin: center center !important;
     will-change: transform !important;
     transition: box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.28s ease !important;

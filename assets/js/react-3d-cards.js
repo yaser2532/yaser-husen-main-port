@@ -1,13 +1,15 @@
 /**
- * REACT-3D-CARDS.JS — React 18 3D Interactive Card Folding Engine
+ * REACT-3D-CARDS.JS — React 18 True 3D Interactive Card Physics Engine
  * 
- * Delivers dynamic 3D folding in and out across all portfolio cards:
+ * Delivers full physical 3D behavior across all portfolio cards:
  * - Powered by React 18 (React.useState, React.useEffect, ReactDOM.createRoot)
- * - Physical cursor reactivity (like the lamp/footer spring dynamics)
- * - UNLIKE the lamp (which swings like a pendulum), cards physically FOLD IN on hover and FOLD OUT on leave
- * - 3D origami/crease fold physics: perspective depth, inward z-sink, accordion fold compression, and dynamic crease angles
- * - The entire card container box folds as a solid 3D unit with ZERO inner text distortion
- * - 60fps spring-damping lerp physics
+ * - 60fps spring-damping lerp physics (requestAnimationFrame)
+ * - Dynamic 3D perspective tilt (rotateX, rotateY up to 18deg) tracking cursor position
+ * - True 3D elevation (+30px translateZ forward lift on hover)
+ * - Multi-layer 3D parallax depth: images, headings, and badges float at different Z-planes
+ * - Dynamic directional 3D drop shadow shifting opposite to the tilt angle
+ * - Realistic physical specular glare sheen tracking cursor angle
+ * - Smooth spring settling on mouse leave back to flat plane
  */
 
 (function () {
@@ -24,20 +26,16 @@
     const hasReact = (typeof React !== 'undefined');
     const hasReactDOM = (typeof ReactDOM !== 'undefined');
 
-    const CARD_SELECTOR = '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card, .glass-card, .bday-card, .code-block-visual, .hero-about-tile, .contact-card, .profile-card-wrapper';
+    const CARD_SELECTOR = '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card, .glass-card, .bday-card, .code-block-visual, .hero-about-tile, .contact-card, .profile-card-wrapper, .nano-chat-card, .cyber-dock-bar';
 
     class Card3DController {
         constructor(el) {
             this.el = el;
             this.el.classList.add('react-3d-card');
 
-            // 3D Folding Physics State
-            this.foldProgress = 0; // 0 = unfolded flat, 1 = folded in
-            this.targetFold = 0;
-
+            // 3D Physics State
             this.currentRotX = 0;
             this.currentRotY = 0;
-            this.currentCrease = 0;
             this.currentMoveX = 0;
             this.currentMoveY = 0;
             this.currentTransZ = 0;
@@ -45,7 +43,6 @@
 
             this.targetRotX = 0;
             this.targetRotY = 0;
-            this.targetCrease = 0;
             this.targetMoveX = 0;
             this.targetMoveY = 0;
             this.targetTransZ = 0;
@@ -69,11 +66,10 @@
 
         handleMouseEnter(e) {
             this.isHovered = true;
-            this.targetFold = 1.0;
-            this.targetTransZ = -22.0; // Inward 3D depth sink
-            this.targetScale = 0.955; // Inward origami fold compression
-            this.el.classList.add('card-folded-in');
-            this.el.classList.remove('card-folded-out');
+            this.targetTransZ = 28.0; // Physical 3D lift forward
+            this.targetScale = 1.025; // 3D expansion
+            this.el.classList.add('card-3d-active');
+            this.el.style.setProperty('transition', 'none', 'important');
             this.startLoop();
         }
 
@@ -88,34 +84,37 @@
             const normX = (x / rect.width) * 2 - 1;
             const normY = (y / rect.height) * 2 - 1;
 
-            // Inward 3D Folding angles along cursor crease
-            this.targetRotX = normY * 15.0; // Inward fold around horizontal crease
-            this.targetRotY = -normX * 15.0; // Inward fold around vertical crease
-            this.targetCrease = -normX * normY * 4.5; // Torsional origami fold crease
+            // Authentic 3D Tilt angles tracking cursor (up to 18.5 degrees)
+            const MAX_TILT = 18.5;
+            this.targetRotX = -normY * MAX_TILT; // Tilts toward cursor in Y
+            this.targetRotY = normX * MAX_TILT;  // Tilts toward cursor in X
 
-            // Dynamic kinetic drift & fold depth
-            this.targetMoveX = normX * 8.0;
-            this.targetMoveY = normY * 6.5;
-            this.targetTransZ = -24.0 - Math.abs(normY) * 8.0;
-            this.targetScale = 0.952 - Math.abs(normX) * 0.012;
-            this.targetFold = 1.0;
+            // 3D Elevation & Micro-magnetic drift
+            this.targetTransZ = 32.0;
+            this.targetScale = 1.028;
+            this.targetMoveX = normX * 9.0;
+            this.targetMoveY = normY * 7.0;
+
+            // Specular Glare Coordinates
+            const glareX = ((normX + 1) / 2 * 100).toFixed(1);
+            const glareY = ((normY + 1) / 2 * 100).toFixed(1);
+            this.el.style.setProperty('--card-glare-x', `${glareX}%`);
+            this.el.style.setProperty('--card-glare-y', `${glareY}%`);
+
+            this.startLoop();
         }
 
         handleMouseLeave() {
             this.isHovered = false;
-            // Smoothly fold out back to flat resting geometry
-            this.targetFold = 0.0;
+            // Smoothly settle back to flat resting geometry
             this.targetRotX = 0;
             this.targetRotY = 0;
-            this.targetCrease = 0;
             this.targetMoveX = 0;
             this.targetMoveY = 0;
             this.targetTransZ = 0;
             this.targetScale = 1.0;
 
-            this.el.classList.remove('card-folded-in');
-            this.el.classList.add('card-folded-out');
-
+            this.el.classList.remove('card-3d-active');
             this.startLoop();
         }
 
@@ -127,34 +126,38 @@
         }
 
         renderFrame() {
-            // Spring damping interpolation (smooth physical flex & unfolding)
-            const lerp = 0.13;
+            // Spring damping interpolation (smooth physical flex & settling)
+            const lerp = 0.18;
 
             this.currentRotX += (this.targetRotX - this.currentRotX) * lerp;
             this.currentRotY += (this.targetRotY - this.currentRotY) * lerp;
-            this.currentCrease += (this.targetCrease - this.currentCrease) * lerp;
             this.currentMoveX += (this.targetMoveX - this.currentMoveX) * lerp;
             this.currentMoveY += (this.targetMoveY - this.currentMoveY) * lerp;
             this.currentTransZ += (this.targetTransZ - this.currentTransZ) * lerp;
             this.currentScale += (this.targetScale - this.currentScale) * lerp;
-            this.foldProgress += (this.targetFold - this.foldProgress) * lerp;
 
-            // Apply 3D perspective folding transform to the WHOLE BOX container
-            this.el.style.transform = `perspective(900px) translate3d(${this.currentMoveX.toFixed(1)}px, ${this.currentMoveY.toFixed(1)}px, ${this.currentTransZ.toFixed(1)}px) rotateX(${this.currentRotX.toFixed(2)}deg) rotateY(${this.currentRotY.toFixed(2)}deg) skew(${this.currentCrease.toFixed(2)}deg, ${this.currentCrease.toFixed(2)}deg) scale3d(${this.currentScale.toFixed(3)}, ${this.currentScale.toFixed(3)}, ${this.currentScale.toFixed(3)})`;
+            // Apply 3D perspective tilt to the WHOLE BOX container
+            this.el.style.transform = `perspective(1000px) translate3d(${this.currentMoveX.toFixed(1)}px, ${this.currentMoveY.toFixed(1)}px, ${this.currentTransZ.toFixed(1)}px) rotateX(${this.currentRotX.toFixed(2)}deg) rotateY(${this.currentRotY.toFixed(2)}deg) scale3d(${this.currentScale.toFixed(3)}, ${this.currentScale.toFixed(3)}, ${this.currentScale.toFixed(3)})`;
+
+            // Dynamic 3D shifting shadow (moves counter to the tilt angle for physical depth)
+            if (this.isHovered || Math.abs(this.currentTransZ) > 1) {
+                const shadowX = (-this.currentRotY * 1.8).toFixed(1);
+                const shadowY = (this.currentRotX * 1.8 + 26).toFixed(1);
+                this.el.style.setProperty('box-shadow', `${shadowX}px ${shadowY}px 48px rgba(0, 0, 0, 0.82), 0 0 20px rgba(25, 227, 209, 0.14), inset 0 0 1px rgba(255, 255, 255, 0.18)`, 'important');
+            }
 
             const isSettled = !this.isHovered &&
-                Math.abs(this.currentRotX) < 0.04 &&
-                Math.abs(this.currentRotY) < 0.04 &&
-                Math.abs(this.currentCrease) < 0.04 &&
-                Math.abs(this.currentTransZ) < 0.05 &&
-                Math.abs(this.currentMoveX) < 0.05 &&
-                Math.abs(this.currentMoveY) < 0.05 &&
-                Math.abs(this.currentScale - 1.0) < 0.003 &&
-                this.foldProgress < 0.02;
+                Math.abs(this.currentRotX) < 0.35 &&
+                Math.abs(this.currentRotY) < 0.35 &&
+                Math.abs(this.currentTransZ) < 0.6 &&
+                Math.abs(this.currentMoveX) < 0.4 &&
+                Math.abs(this.currentMoveY) < 0.4 &&
+                Math.abs(this.currentScale - 1.0) < 0.005;
 
             if (isSettled) {
                 this.el.style.transform = '';
-                this.el.classList.remove('card-folded-out');
+                this.el.style.removeProperty('box-shadow');
+                this.el.style.removeProperty('transition');
                 this.animId = null;
             } else {
                 this.animId = requestAnimationFrame(this.update);
@@ -192,7 +195,7 @@
                 useEffect(() => {
                     const count = initCardControllers();
                     setCardsCount(count);
-                    console.log(`[React-3D-Cards] React ${React.version} controlling full-box 3D folding across ${count} cards.`);
+                    console.log(`[React-3D-Cards] React ${React.version} controlling full-box 3D physics across ${count} cards.`);
                 }, []);
 
                 return h('div', {
