@@ -44,13 +44,19 @@
 
         cyan: '#19E3D1',
 
+        bloodRed: '#8B0000',
+
+        bloodCrimson: '#C4122D',
+
+        bloodNeon: '#FF1E42',
+
         black: '#07060B',
 
         white: '#FFFFFF'
 
     };
 
-    const PALETTE = [THEME.gold, THEME.purple, THEME.turquoise];
+    const PALETTE = [THEME.gold, THEME.purple, THEME.turquoise, '#FF1E42', '#C4122D'];
 
     const R_MIN = 18;
 
@@ -980,7 +986,7 @@
 
         if (sparks.length >= 100) sparks.splice(0, count);
 
-        const plasmaPalette = [THEME.cyan, THEME.gold, THEME.white];
+        const plasmaPalette = [THEME.cyan, THEME.gold, '#FF1E42', '#8B0000', THEME.white];
 
         for (let i = 0; i < count; i++) {
 
