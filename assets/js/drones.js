@@ -574,15 +574,17 @@
 
         updatePull(now, dt) {
 
-            // Latch onto target anchor with slight high-frequency micro-jitter
+            // Hover in airspace towing position with vertical tension and micro-jitter
 
-            const jitterX = Math.sin(now * 0.05 + this.id * 1.5) * 1.8;
+            const hover = this.hoverPos || (this.targetAnchor ? { x: this.targetAnchor.x, y: this.targetAnchor.y - 65 } : { x: this.x, y: this.y });
 
-            const jitterY = Math.cos(now * 0.06 + this.id * 1.2) * 1.8;
+            const jitterX = Math.sin(now * 0.045 + this.id * 1.7) * 2.5;
 
-            this.x = this.targetAnchor.x + jitterX;
+            const jitterY = Math.cos(now * 0.055 + this.id * 1.3) * 2.2 - 2.5; // upward towing tension
 
-            this.y = this.targetAnchor.y + jitterY;
+            this.x = hover.x + jitterX;
+
+            this.y = hover.y + jitterY;
 
             this.opacity = 1.0;
 
@@ -1291,31 +1293,31 @@
 
                 let type = 'card';
 
-                let minDuration = 350; // accelerated duration for cards (was 650ms)
+                let minDuration = 800; // cinematic duration for cards
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
 
                     type = 'title';
 
-                    minDuration = 600; // accelerated duration for section titles (was 1100ms)
+                    minDuration = 750; // cinematic duration for section titles
 
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
 
                     type = 'paragraph';
 
-                    minDuration = 450; // accelerated duration for paragraphs (was 900ms)
+                    minDuration = 650; // cinematic duration for paragraphs
 
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn')) {
 
                     type = 'button';
 
-                    minDuration = 250; // accelerated duration for buttons (was 450ms)
+                    minDuration = 500; // cinematic duration for buttons
 
                 } else if (el.classList.contains('code-block-visual')) {
 
                     type = 'code-card';
 
-                    minDuration = 850; // accelerated duration for code card (was 1400ms)
+                    minDuration = 1150; // cinematic duration for code terminal IDE card
 
                 }
 
@@ -1401,25 +1403,49 @@
 
     }
 
-    function computeAnchors(item) {
+    function computeTractorGeometry(item) {
 
         const r = item.el.getBoundingClientRect();
 
-        const anchors = [];
+        const w = Math.max(40, r.width);
 
-        const w = r.width;
+        const h = Math.max(30, r.height);
 
-        const h = r.height;
+        // Contact points ON the element where the tractor beams lock
 
-        anchors.push({ x: r.left + 16, y: r.top + h * 0.5 });
+        const anchors = [
 
-        anchors.push({ x: r.right - 16, y: r.top + h * 0.5 });
+            { x: r.left + Math.min(28, w * 0.20), y: r.top + 8 },
 
-        anchors.push({ x: r.left + w * 0.35, y: r.top + 8 });
+            { x: r.right - Math.min(28, w * 0.20), y: r.top + 8 },
 
-        anchors.push({ x: r.left + w * 0.65, y: r.bottom - 8 });
+            { x: r.left + w * 0.38, y: r.top + 6 },
 
-        return anchors;
+            { x: r.left + w * 0.62, y: r.top + 6 }
+
+        ];
+
+        // Airspace positions 55px to 80px ABOVE/BESIDE the element where drones hover in towing formation
+
+        const hoverPositions = [
+
+            { x: r.left - 25, y: r.top - 60 },
+
+            { x: r.right + 25, y: r.top - 60 },
+
+            { x: r.left + w * 0.38 - 12, y: r.top - 75 },
+
+            { x: r.left + w * 0.62 + 12, y: r.top - 75 }
+
+        ];
+
+        return { anchors, hoverPositions };
+
+    }
+
+    function computeAnchors(item) {
+
+        return computeTractorGeometry(item).anchors;
 
     }
 
@@ -1511,9 +1537,9 @@
 
         }
 
-        // Failsafe 3: Active Viewport Emergency Watchdog
+        // Failsafe 3: Deep In-View Graceful Watchdog (Guarantees drones have ample time to pull each element)
 
-        // If an element is within the active viewport for > 1200ms and hasn't started pulling, reveal it instantly
+        // Only after an element has remained un-pulled in view for > 18.0s (e.g. user parked on a section) does it fallback
 
         elementList.forEach(item => {
 
@@ -1529,7 +1555,7 @@
 
                         item.firstVisibleTime = now;
 
-                    } else if (now - item.firstVisibleTime > 1200) {
+                    } else if (now - item.firstVisibleTime > 18000) {
 
                         finishElementInstantly(item);
 
@@ -1651,12 +1677,13 @@
 
         item.el.setAttribute('data-drone-state', 'flight');
 
-        const anchors = computeAnchors(item);
+        const geom = computeTractorGeometry(item);
 
-        item.anchors = anchors;
+        item.anchors = geom.anchors;
 
-        const flightDuration = Math.round(250 + Math.random() * 200); // 250-450ms accelerated flight (was 550-850ms)
-        
+        item.hoverPositions = geom.hoverPositions;
+
+        const flightDuration = Math.round(450 + Math.random() * 150); // 450-600ms cinematic flight
 
         const mission = {
 
@@ -1680,7 +1707,7 @@
 
                 if (drone.targetAnchor) {
 
-                    emitPulseRing(drone.targetAnchor.x, drone.targetAnchor.y, THEME.cyan, 22, 220);
+                    emitPulseRing(drone.targetAnchor.x, drone.targetAnchor.y, THEME.cyan, 26, 240);
 
                     emitPlasmaSparks(drone.targetAnchor.x, drone.targetAnchor.y, 4);
 
@@ -1696,25 +1723,13 @@
 
             startPull(pullNow) {
 
-                const flightTime = pullNow - this.dispatchedAt;
-
-                // Spectacle guarantee: reveal may start only after crew has flown >= 500ms
-
-                if (flightTime < 250) {
-
-                    setTimeout(() => this.startPull(performance.now()), 250 - flightTime);
-
-                    return;
-
-                }
-
                 this.pullStartedAt = pullNow;
 
                 this.item.state = 'pulling';
 
                 this.item.el.setAttribute('data-drone-state', 'pulling');
 
-                // Arrival flourish: 80ms RGB-split & spark burst
+                // Arrival flourish: 120ms RGB-split & spark burst
 
                 this.item.el.classList.add('drone-arrival-flourish');
 
@@ -1722,9 +1737,9 @@
 
                 this.anchors.forEach(a => {
 
-                    emitPulseRing(a.x, a.y, THEME.gold, 26, 260);
+                    emitPulseRing(a.x, a.y, THEME.gold, 30, 280);
 
-                    emitPlasmaSparks(a.x, a.y, 8);
+                    emitPlasmaSparks(a.x, a.y, 6);
 
                 });
 
@@ -1732,7 +1747,7 @@
 
         };
 
-        // Assign procedural path to each crew drone & emit launch gravitational pulse ring
+        // Assign procedural curved paths to airspace hover positions ABOVE the element
 
         crewDrones.forEach((drone, idx) => {
 
@@ -1744,13 +1759,19 @@
 
             drone.flightStart = now;
 
-            drone.flightDuration = flightDuration + idx * 20; // tighter stagger
+            drone.flightDuration = flightDuration + idx * 30;
 
-            const anchor = anchors[idx % anchors.length];
+            const anchor = geom.anchors[idx % geom.anchors.length];
+
+            const hover = geom.hoverPositions[idx % geom.hoverPositions.length];
 
             drone.targetAnchor = anchor;
 
-            drone.pathPoints = generateProceduralPath(drone.x, drone.y, anchor.x, anchor.y, drone.flightDuration);
+            drone.hoverPos = hover;
+
+            // Drones fly to the towing airspace position, NOT into the element surface!
+
+            drone.pathPoints = generateProceduralPath(drone.x, drone.y, hover.x, hover.y, drone.flightDuration);
 
             // Gravitational launch pulse ring
 
@@ -1770,17 +1791,19 @@
 
             const item = m.item;
 
-            // Recompute anchors if element moves during scroll
+            // Recompute anchors and hover positions if element moves during scroll
 
-            m.anchors = computeAnchors(item);
+            const geom = computeTractorGeometry(item);
+
+            m.anchors = geom.anchors;
+
+            m.hoverPositions = geom.hoverPositions;
 
             m.crew.forEach((d, idx) => {
 
-                if (m.anchors[idx % m.anchors.length]) {
+                d.targetAnchor = geom.anchors[idx % geom.anchors.length];
 
-                    d.targetAnchor = m.anchors[idx % m.anchors.length];
-
-                }
+                d.hoverPos = geom.hoverPositions[idx % geom.hoverPositions.length];
 
             });
 
@@ -1792,23 +1815,29 @@
 
                 const easeProg = easeOutQuart(progress);
 
-                // Compositor-friendly transform & opacity
+                // Physically pull the element out of depth: from 55px down & 0.94 scale to 0px & 1.0 scale!
 
-                const offsetY = Math.round(32 * (1 - easeProg));
+                const offsetY = Math.round(55 * (1 - easeProg));
 
-                item.el.style.transform = `translate3d(0, ${offsetY}px, 0)`;
+                const scale = (0.94 + 0.06 * easeProg).toFixed(3);
 
-                item.el.style.opacity = Math.min(1.0, 0.25 + easeProg * 0.75).toFixed(3);
+                const opacity = Math.min(1.0, 0.15 + easeProg * 0.85).toFixed(3);
 
-                item.el.style.filter = `blur(${Math.max(0, (1 - easeProg) * 2).toFixed(1)}px)`;
+                const blur = Math.max(0, (1 - easeProg) * 4).toFixed(1);
 
-                // Dynamic laser weld sparks along edge
+                item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${scale})`;
 
-                if (Math.random() < 0.35) {
+                item.el.style.opacity = opacity;
 
-                    const r = item.el.getBoundingClientRect();
+                item.el.style.filter = `blur(${blur}px)`;
 
-                    emitSparks(r.left + Math.random() * r.width, r.top + r.height * easeProg, 2);
+                // Dynamic quantum welding sparks along tractor contact anchors
+
+                if (Math.random() < 0.45) {
+
+                    const cAnchor = m.anchors[Math.floor(Math.random() * m.anchors.length)];
+
+                    if (cAnchor) emitPlasmaSparks(cAnchor.x, cAnchor.y, 2);
 
                 }
 
@@ -1980,7 +2009,7 @@
 
             drone.flightStart = now;
 
-            drone.flightDuration = Math.round(180 + Math.random() * 120); // 180-300ms accelerated return (was 400-650ms)
+            drone.flightDuration = Math.round(380 + Math.random() * 150); // 380-530ms graceful curved return
 
             // Random return orbit slot around cursor
 

@@ -74,13 +74,7 @@ html.drones-active [data-drone-state="flight"] {
 
 }
 
-html.drones-active .code-block-visual[data-drone-state="pending"],
-html.drones-active .code-block-visual[data-drone-state="flight"] {
-    opacity: 0.80 !important;
-    transform: translate3d(0, 14px, 0) !important;
-    filter: blur(0.5px) !important;
-    pointer-events: auto !important;
-}
+
 
 html.drones-active [data-drone-state="pulling"] {
 

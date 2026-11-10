@@ -2405,13 +2405,13 @@ header::before {
 }
 
 .dot-minimize {
-    background: #8B0000;
-    box-shadow: 0 0 4px rgba(139, 0, 0, 0.5);
+    background: #FFBD2E;
+    box-shadow: 0 0 6px rgba(255, 189, 46, 0.50);
 }
 
 .dot-expand {
-    background: #4A000A;
-    border: 1px solid rgba(180, 20, 40, 0.4);
+    background: #27C93F;
+    box-shadow: 0 0 6px rgba(39, 201, 63, 0.50);
 }
 
 .terminal-title {
@@ -2490,45 +2490,47 @@ header::before {
 .code-line-num {
     display: inline-block;
     width: 2rem;
-    color: #661824;
+    color: rgba(148, 163, 184, 0.40);
     user-select: none;
     font-size: 0.78rem;
     font-weight: 600;
 }
 
-.code-kw {
+/* Keywords: Dark Blood Red / Signature Crimson Accent */
+.code-kw, .keyword {
     color: #F43F5E;
     font-weight: 600;
-    text-shadow: 0 0 8px rgba(244, 63, 94, 0.35);
+    text-shadow: 0 0 8px rgba(244, 63, 94, 0.40);
 }
 
-.code-var {
-    color: #F8FAFC;
+/* Variable Name: Cyberpunk Gold */
+.code-var, .var {
+    color: #F5C542;
     font-weight: 600;
 }
 
+/* Types: Electric Purple */
 .code-type {
-    color: #C4122D;
+    color: #8B3DFF;
     font-weight: 600;
 }
 
+/* Operators: Warm Gold */
 .code-op {
-    color: #F43F5E;
+    color: #F5C542;
 }
 
+/* Strings / Competencies: Iconic Neon Turquoise */
 .code-str {
-    color: #F43F5E;
-    text-shadow: 0 0 6px rgba(244, 63, 94, 0.35);
+    color: #19E3D1;
+    text-shadow: 0 0 8px rgba(25, 227, 209, 0.35);
     font-weight: 500;
 }
 
+/* Punctuation: Clean Silver */
 .code-punct {
-    color: #CBD5E1;
+    color: #E2E8F0;
 }
-
-.keyword { color: #f43f5e; }
-
-.var { color: #f8fafc; }
 
 /* ==========================================================================
 
