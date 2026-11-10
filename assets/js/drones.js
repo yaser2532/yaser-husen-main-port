@@ -774,20 +774,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let pullDuration = 680; // Card pull: 680ms (380 + 300ms)
+                let pullDuration = 380; // Card pull: 380ms (increased rendering speed by 0.3s)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    pullDuration = 1000; // Title scanline sweep: 1000ms (700 + 300ms)
+                    pullDuration = 700; // Title scanline sweep: 700ms (increased rendering speed by 0.3s)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    pullDuration = 850; // Paragraph line sweep: 850ms (550 + 300ms)
+                    pullDuration = 550; // Paragraph line sweep: 550ms (increased rendering speed by 0.3s)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-                    pullDuration = 580; // Button/link snap-in: 580ms (280 + 300ms)
+                    pullDuration = 280; // Button/link snap-in: 280ms (increased rendering speed by 0.3s)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    pullDuration = 800; // Frame 800ms (500 + 300ms), then lines paced
+                    pullDuration = 500; // Frame 500ms, then lines 70ms each (increased rendering speed by 0.3s)
                 }
 
                 const item = {
@@ -981,7 +981,7 @@
 
         // Strictly one element rendered at a time in sequence
         if (activeMissions.length >= MAX_ACTIVE_CREWS) return;
-        if (now - lastMissionFinishTime < 90) return; // 90ms clear beat between sequential elements
+        if (now - lastMissionFinishTime < 60) return; // Snappy 60ms beat between sequential elements
 
         // Sequence Order & Band Evaluation: >= 80% inside viewport band [8%, 88%]
         for (let s = 0; s < SECTION_ORDER.length; s++) {
