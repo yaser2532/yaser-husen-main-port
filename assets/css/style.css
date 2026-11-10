@@ -3962,6 +3962,8 @@ header::before {
 
 .light-floor-reflection {
 
+    pointer-events: none !important;
+
     position: absolute;
 
     bottom: 5%;
@@ -8558,7 +8560,7 @@ button.contact-btn,
 
 button.contact-btn:hover,
 
-.back-to-top:hover,
+.back-to-top:hover {
 
     background: linear-gradient(115deg, #19E3D1 0%, #F5C542 26%, #FF2A85 52%, #8B3DFF 76%, #19E3D1 100%) !important;
 
@@ -10025,42 +10027,243 @@ a.nav-link:hover::after,
    maintain the EXACT same background, border, text color, and format in stationary position
    and when a cursor hovers over them.
    ========================================================================= */
+/* Filter Buttons: Stationary 100% Uniform Cyberpunk Glass */
 .project-filters .filter-btn,
 .project-filters .filter-btn.active,
-.project-filters .filter-btn:hover,
-.project-filters .filter-btn.active:hover,
 .project-filters .filter-btn:focus,
 .filter-btn,
-.filter-btn.active,
-.filter-btn:hover,
-.filter-btn.active:hover {
+.filter-btn.active {
     background: rgba(22, 14, 38, 0.85) !important;
     border: 1px solid rgba(168, 85, 247, 0.45) !important;
     color: #f1f5f9 !important;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
     text-shadow: none !important;
-    animation: none !important;
     filter: none !important;
     cursor: pointer !important;
-    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease !important;
 }
 
+
+
+
+/* =========================================================================
+   HERO "EXPLORE MY WORK" BUTTON — SQUARE-LIKE WITH ROUNDED CORNERS (8px) & TRANSPARENT BG
+   ========================================================================= */
+.hero-actions .cta-button,
+.hero-actions a.cta-button {
+    background: transparent !important;
+    border: 1.5px solid rgba(25, 227, 209, 0.75) !important;
+    border-radius: 8px !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 16px rgba(25, 227, 209, 0.25), inset 0 0 10px rgba(25, 227, 209, 0.08) !important;
+    padding: 0.85rem 2.2rem !important;
+    font-weight: 600 !important;
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease, background 0.25s ease !important;
+}
+
+/* =========================================================================
+   ALL BUTTONS ACROSS THE WEBSITE — GRADIENT GLITCHED-OUT HOVER EFFECT
+   Every single button across all sections glitches with animated gradient on hover
+   ========================================================================= */
+.cta-button:hover,
+.hero-actions .cta-button:hover,
+.hero-actions a.cta-button:hover,
+.btn:hover,
+.filter-btn:hover,
+.filter-btn.active:hover,
 .project-filters .filter-btn:hover,
 .project-filters .filter-btn.active:hover,
-.filter-btn:hover,
-.filter-btn.active:hover {
-    /* Exact same color format as stationary, clean physical elevation lift */
-    background: rgba(22, 14, 38, 0.85) !important;
-    border: 1px solid rgba(168, 85, 247, 0.45) !important;
-    color: #f1f5f9 !important;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
-    transform: translateY(-2px) !important;
+.nav-resume-btn:hover,
+.dock-btn:hover,
+.submit-btn:hover,
+.btn-submit:hover,
+.btn-ai-chat:hover,
+.message-btn:hover,
+.bday-start-btn:hover,
+.bday-trigger-btn:hover,
+.nav-sound-btn:hover,
+.action-btn:hover,
+button.contact-btn:hover,
+.back-to-top:hover,
+.project-link:hover,
+.view-cert-btn:hover,
+button:hover,
+.btn-action:hover,
+.hero-scroll-pill:hover,
+a.cta-button:hover {
+    background: linear-gradient(115deg, #19E3D1 0%, #F5C542 26%, #FF2A85 52%, #8B3DFF 76%, #19E3D1 100%) !important;
+    background-size: 260% 100% !important;
+    animation: btnGlitchGradSweep 1.8s linear infinite, btnMicroJitter 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1 !important;
+    border-color: #19E3D1 !important;
+    box-shadow: 
+        -3.5px 0 0 rgba(25, 227, 209, 0.9),
+        3.5px 0 0 rgba(255, 42, 133, 0.9),
+        0 0 28px rgba(25, 227, 209, 0.7),
+        0 0 50px rgba(245, 197, 66, 0.35) !important;
+    color: #07060B !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+    transform: translateY(-2px) scale(1.02) !important;
+}
+
+/* Ensure inner text and icons have punchy dark contrast on hover */
+.cta-button:hover *,
+.hero-actions .cta-button:hover *,
+.hero-actions a.cta-button:hover *,
+.btn:hover *,
+.filter-btn:hover *,
+.filter-btn.active:hover *,
+.project-filters .filter-btn:hover *,
+.project-filters .filter-btn.active:hover *,
+.nav-resume-btn:hover *,
+.dock-btn:hover *,
+.submit-btn:hover *,
+.btn-submit:hover *,
+.btn-ai-chat:hover *,
+.message-btn:hover *,
+.bday-start-btn:hover *,
+.bday-trigger-btn:hover *,
+.nav-sound-btn:hover *,
+.action-btn:hover *,
+button.contact-btn:hover *,
+.back-to-top:hover *,
+.project-link:hover *,
+.view-cert-btn:hover *,
+button:hover *,
+.btn-action:hover *,
+.hero-scroll-pill:hover *,
+a.cta-button:hover * {
+    color: #07060B !important;
+    text-shadow: none !important;
+}
+
+/* =========================================================================
+   WHOLE CARD ELEMENTS BOX BENDING & TORSIONAL DEFORMATION
+   The entire card container bends and twists as a solid unit under cursor
+   ========================================================================= */
+.react-3d-card,
+.project-card,
+.cert-card,
+.expertise-card,
+.onboard-card,
+.stat-card,
+.glass-card,
+.bday-card,
+.code-block-visual,
+.hero-about-tile,
+.contact-card,
+.profile-card-wrapper {
+    transform-style: preserve-3d !important;
+    perspective: 950px !important;
+    will-change: transform !important;
+    transition: box-shadow 0.3s ease, border-color 0.3s ease !important;
+}
+
+/* Keep card text and inner elements firmly locked to card face — NO text deforming */
+.react-3d-card p,
+.react-3d-card h3,
+.react-3d-card h4,
+.react-3d-card span,
+.react-3d-card a,
+.react-3d-card .badge,
+.react-3d-card .project-title,
+.react-3d-card .project-desc,
+.project-card p,
+.project-card h3,
+.project-card span {
+    transform: none !important;
+}
+
+
+#submit-btn:hover,
+.btn-submit:hover,
+button[type="submit"]:hover {
+    background: linear-gradient(115deg, #19E3D1 0%, #F5C542 26%, #FF2A85 52%, #8B3DFF 76%, #19E3D1 100%) !important;
+    background-size: 260% 100% !important;
+    animation: btnGlitchGradSweep 1.8s linear infinite, btnMicroJitter 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1 !important;
+    border-color: #19E3D1 !important;
+    color: #07060B !important;
+}
+
+
+/* =========================================================================
+   ALL BUTTONS GRADIENT GLITCH HOVER — ULTRA HIGH SPECIFICITY DOMINANCE
+   ========================================================================= */
+.project-filters .filter-btn:hover,
+.project-filters button.filter-btn:hover,
+.project-filters .filter-btn.active:hover,
+.project-filters button.filter-btn.active:hover,
+.contact-form button[type="submit"]:hover,
+.contact-form .btn-submit:hover,
+.contact-form #submit-btn:hover,
+#submit-btn:hover,
+.hero-actions .cta-button:hover,
+.hero-actions a.cta-button:hover,
+.cta-button:hover,
+.nav-resume-btn:hover,
+.dock-btn:hover,
+.submit-btn:hover,
+.btn-submit:hover,
+.btn:hover,
+.btn-ai-chat:hover,
+.message-btn:hover,
+.bday-start-btn:hover,
+.bday-trigger-btn:hover,
+.nav-sound-btn:hover,
+.action-btn:hover,
+button.contact-btn:hover,
+.back-to-top:hover,
+.project-link:hover,
+.view-cert-btn:hover,
+button:hover,
+.btn-action:hover,
+.hero-scroll-pill:hover,
+a.cta-button:hover {
+    background: linear-gradient(115deg, #19E3D1 0%, #F5C542 26%, #FF2A85 52%, #8B3DFF 76%, #19E3D1 100%) !important;
+    background-size: 260% 100% !important;
+    animation: btnGlitchGradSweep 1.8s linear infinite, btnMicroJitter 0.24s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1 !important;
+    border-color: #19E3D1 !important;
+    box-shadow: 
+        -3.5px 0 0 rgba(25, 227, 209, 0.9),
+        3.5px 0 0 rgba(255, 42, 133, 0.9),
+        0 0 28px rgba(25, 227, 209, 0.7),
+        0 0 50px rgba(245, 197, 66, 0.35) !important;
+    color: #07060B !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+    transform: translateY(-2px) scale(1.02) !important;
 }
 
 .project-filters .filter-btn:hover *,
+.project-filters button.filter-btn:hover *,
 .project-filters .filter-btn.active:hover *,
-.filter-btn:hover *,
-.filter-btn.active:hover * {
-    color: #f1f5f9 !important;
+.project-filters button.filter-btn.active:hover *,
+.contact-form button[type="submit"]:hover *,
+.contact-form .btn-submit:hover *,
+.contact-form #submit-btn:hover *,
+#submit-btn:hover *,
+.hero-actions .cta-button:hover *,
+.hero-actions a.cta-button:hover *,
+.cta-button:hover *,
+.nav-resume-btn:hover *,
+.dock-btn:hover *,
+.submit-btn:hover *,
+.btn-submit:hover *,
+.btn:hover *,
+.btn-ai-chat:hover *,
+.message-btn:hover *,
+.bday-start-btn:hover *,
+.bday-trigger-btn:hover *,
+.nav-sound-btn:hover *,
+.action-btn:hover *,
+button.contact-btn:hover *,
+.back-to-top:hover *,
+.project-link:hover *,
+.view-cert-btn:hover *,
+button:hover *,
+.btn-action:hover *,
+.hero-scroll-pill:hover *,
+a.cta-button:hover * {
+    color: #07060B !important;
     text-shadow: none !important;
 }

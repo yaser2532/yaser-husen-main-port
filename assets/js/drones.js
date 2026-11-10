@@ -44,7 +44,7 @@
     const SCROLL_VELOCITY_LIMIT = 800; // px/s
     const SCROLL_SETTLE_MS = 80;       // ms (responsive settle <= 80ms)
     const SECTION_DWELL_MS = 120;      // ms (dwell <= 120ms)
-    const MAX_ACTIVE_CREWS = 1;        // Strictly one element rendered at a time in sequence
+    const MAX_ACTIVE_CREWS = 2;        // Render two random properties simultaneously in sequence
 
     const isMobile = window.innerWidth < 768;
     const DRONE_COUNT = isMobile ? 8 : 14;
@@ -378,11 +378,13 @@
 
             if (this.pathPoints.length >= 4) {
                 const pos = getSplinePoint(this.pathPoints, easeT);
-                // Flocking curl-noise offset for ribbon followers
-                const curlFreq = now * 0.014 + this.crewIndex * 2.2;
-                const curlAmp = this.isLead ? 0 : (Math.sin(easeT * Math.PI) * (isQualityLow ? 4.0 : 8.0));
-                this.x = pos.x + Math.sin(curlFreq) * curlAmp;
-                this.y = pos.y + Math.cos(curlFreq) * curlAmp;
+                // Chaotic high-energy turbulence & darting micro-vectors for erratic swarm flight
+                const chaoticAngle = (now * 0.026) + (this.crewIndex * 3.4) + (this.id * 1.618);
+                const chaoticAmp = Math.sin(easeT * Math.PI) * (isQualityLow ? 7.0 : 16.0) * (0.6 + 0.8 * Math.sin(now * 0.04));
+                const flutterX = Math.sin(chaoticAngle * 1.35) * chaoticAmp + (Math.sin(now * 0.05 + this.id) * 3.5);
+                const flutterY = Math.cos(chaoticAngle * 0.95) * chaoticAmp + (Math.cos(now * 0.06 + this.id) * 3.5);
+                this.x = pos.x + flutterX;
+                this.y = pos.y + flutterY;
             } else {
                 const p0 = this.pathPoints[0] || { x: cursorX, y: cursorY };
                 const p1 = this.hoverPos || this.targetAnchor;
@@ -586,6 +588,13 @@
         }
 
         waypoints.push({ x: endX, y: endY });
+
+        // Inject chaotic perturbations into intermediate waypoints for wild flight trajectories
+        for (let w = 1; w < waypoints.length - 1; w++) {
+            const jitterScale = curvatureScale * (0.35 + Math.random() * 0.30);
+            waypoints[w].x += (Math.random() - 0.5) * jitterScale;
+            waypoints[w].y += (Math.random() - 0.5) * jitterScale;
+        }
 
         // Clamp waypoints to viewport boundaries
         waypoints.forEach(wp => {
@@ -979,9 +988,9 @@
         const scrollSettled = (now - lastFastScrollTime >= SCROLL_SETTLE_MS);
         if (!scrollSettled) return;
 
-        // Strictly one element rendered at a time in sequence
+        // Pull out two random properties simultaneously in sequence
         if (activeMissions.length >= MAX_ACTIVE_CREWS) return;
-        if (now - lastMissionFinishTime < 60) return; // Snappy 60ms beat between sequential elements
+        if (now - lastMissionFinishTime < 60 && activeMissions.length === 0) return;
 
         // Sequence Order & Band Evaluation: >= 80% inside viewport band [8%, 88%]
         for (let s = 0; s < SECTION_ORDER.length; s++) {
@@ -992,9 +1001,10 @@
             const pendingElements = sec.elements.filter(item => item.state === 'pending');
             if (pendingElements.length === 0) continue;
 
+            // Gather all pending elements in this section that satisfy the band
+            const bandSatisfiedElements = [];
             for (let i = 0; i < pendingElements.length; i++) {
                 const item = pendingElements[i];
-
                 const r = item.el.getBoundingClientRect();
                 if (!r || r.width === 0 || r.height === 0) continue;
 
@@ -1013,10 +1023,30 @@
                     satisfiesBand = (visibleHeight >= elHeight * 0.80);
                 }
 
-                if (!satisfiesBand) continue;
+                if (satisfiesBand) {
+                    bandSatisfiedElements.push(item);
+                }
+            }
+
+            if (bandSatisfiedElements.length === 0) continue;
+
+            // Slots available for simultaneous pull (up to 2)
+            const availableSlots = MAX_ACTIVE_CREWS - activeMissions.length;
+            if (availableSlots <= 0) return;
+
+            // Pick up to availableSlots random properties from the visible pool
+            const toDispatch = [];
+            const pool = [...bandSatisfiedElements];
+            while (toDispatch.length < availableSlots && pool.length > 0) {
+                const randIdx = Math.floor(Math.random() * pool.length);
+                toDispatch.push(pool.splice(randIdx, 1)[0]);
+            }
+
+            for (let d = 0; d < toDispatch.length; d++) {
+                const item = toDispatch[d];
 
                 // Allocate crew from available follow drones + burst pool
-                const availableFollowDrones = drones.filter(d => d.state === 'FOLLOW');
+                const availableFollowDrones = drones.filter(drone => drone.state === 'FOLLOW');
                 const crewDrones = [];
 
                 for (let k = 0; k < availableFollowDrones.length && crewDrones.length < CREW_SIZE; k++) {
@@ -1028,12 +1058,11 @@
                     crewDrones.push(burst);
                 }
 
-                if (crewDrones.length < CREW_SIZE) return;
-
-                // Gate opens! Dispatch mission
-                dispatchMission(item, crewDrones, now);
-                return;
+                if (crewDrones.length >= 2) {
+                    dispatchMission(item, crewDrones, now);
+                }
             }
+            return;
         }
     }
 

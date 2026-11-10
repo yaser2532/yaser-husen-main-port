@@ -1,12 +1,12 @@
 /**
- * REACT-3D-CARDS.JS — React 18 3D Card & Multi-Layer Parallax Depth Engine
+ * REACT-3D-CARDS.JS — React 18 Whole-Card 3D Bending & Deformation Engine
  * 
- * Implements genuine React-driven 3D physics across all portfolio cards:
- * - Powered by React 18 (React.useState, React.useEffect, React.useRef, ReactDOM.createRoot)
- * - Multi-layer 3D Z-depth parallax: images, titles, tags, and action buttons float out in 3D space
- * - Smooth 60fps spring damping interpolation (perspective: 1100px, backward depth displacement)
- * - ZERO artificial illumination bloom: no specular radial flares, no top glitch sweep bars
- * - Pure physical 3D drop shadow elevation
+ * Delivers full-box physical 3D deformation across all portfolio cards:
+ * - Powered by React 18 (React.useState, React.useEffect, ReactDOM.createRoot)
+ * - The entire card container box deforms, bends, twists, and tilts as a single unified solid unit
+ * - NO independent inner text warping or deforming
+ * - 60fps spring-damping lerp physics: dynamic 3D perspective, torsional skew, and backward depth push
+ * - ZERO artificial illumination bloom: pure physical 3D drop shadow elevation
  */
 
 (function () {
@@ -30,15 +30,19 @@
             this.el = el;
             this.el.classList.add('react-3d-card');
 
-            // 3D Physics State
+            // 3D Physics State (Whole card element box deformation)
             this.currentRotX = 0;
             this.currentRotY = 0;
+            this.currentSkewX = 0;
+            this.currentSkewY = 0;
             this.currentMoveX = 0;
             this.currentMoveY = 0;
             this.currentTransZ = 0;
 
             this.targetRotX = 0;
             this.targetRotY = 0;
+            this.targetSkewX = 0;
+            this.targetSkewY = 0;
             this.targetMoveX = 0;
             this.targetMoveY = 0;
             this.targetTransZ = 0;
@@ -46,46 +50,7 @@
             this.isHovered = false;
             this.animId = null;
 
-            // Setup multi-layer 3D parallax depth planes
-            this.setupLayers();
             this.bindEvents();
-        }
-
-        setupLayers() {
-            // Level 1: Body text & descriptions (Z: 24px)
-            const desc = this.el.querySelectorAll('p, .project-desc, .card-desc, .about-text');
-            desc.forEach(item => {
-                item.classList.add('card-3d-layer');
-                item.dataset.depth = '24';
-            });
-
-            // Level 2: Tags & metadata badges (Z: 30px)
-            const tags = this.el.querySelectorAll('.project-tags, .tags, .badge, .project-tag, .cert-badge, .stat-label, .tech-tag');
-            tags.forEach(item => {
-                item.classList.add('card-3d-layer');
-                item.dataset.depth = '30';
-            });
-
-            // Level 3: Visual media, graphics & avatars (Z: 38px)
-            const visualItems = this.el.querySelectorAll('.project-img, .project-image, .visual-container, .card-icon, .stat-number, .profile-avatar, .torn-paper-sticker, .project-graphic');
-            visualItems.forEach(item => {
-                item.classList.add('card-3d-layer');
-                item.dataset.depth = '38';
-            });
-
-            // Level 4: Card Headings & Titles (Z: 48px)
-            const headings = this.el.querySelectorAll('h3, h4, .project-title, .card-title, .section-title, .terminal-header');
-            headings.forEach(item => {
-                item.classList.add('card-3d-layer');
-                item.dataset.depth = '48';
-            });
-
-            // Level 5: Interactive CTAs & Action buttons (Z: 56px)
-            const ctas = this.el.querySelectorAll('.project-links, .project-link, .btn, .cta-button, .view-cert-btn');
-            ctas.forEach(item => {
-                item.classList.add('card-3d-layer');
-                item.dataset.depth = '56';
-            });
         }
 
         bindEvents() {
@@ -100,7 +65,7 @@
 
         handleMouseEnter() {
             this.isHovered = true;
-            this.targetTransZ = -14; // Backward 3D depth sink under cursor
+            this.targetTransZ = -16; // Backward 3D depth sink into z-space
             this.startLoop();
         }
 
@@ -111,39 +76,33 @@
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            // Normalized coordinates (-1 to 1)
+            // Normalized coordinates (-1 to 1) from card center
             const normX = (x / rect.width) * 2 - 1;
             const normY = (y / rect.height) * 2 - 1;
 
-            // 3D physical tilt: dips smoothly with authentic perspective
-            this.targetRotX = normY * 10.5;
-            this.targetRotY = -normX * 10.5;
-            this.targetMoveX = normX * 8.0;
-            this.targetMoveY = normY * 6.0;
-            this.targetTransZ = -16;
+            // Whole card element box 3D tilt
+            this.targetRotX = normY * 11.5;
+            this.targetRotY = -normX * 11.5;
 
-            // Parallax displacement on inner 3D layers
-            const layers = this.el.querySelectorAll('.card-3d-layer');
-            layers.forEach(l => {
-                const depth = parseFloat(l.dataset.depth || '24');
-                const lx = (normX * depth * 0.18).toFixed(1);
-                const ly = (normY * depth * 0.18).toFixed(1);
-                l.style.transform = `translate3d(${lx}px, ${ly}px, ${depth}px)`;
-            });
+            // Whole card element box physical bending & torsional deformation
+            this.targetSkewX = -normX * 2.8;
+            this.targetSkewY = -normY * 2.0;
+
+            // Kinetic motion drift
+            this.targetMoveX = normX * 9.5;
+            this.targetMoveY = normY * 7.5;
+            this.targetTransZ = -18;
         }
 
         handleMouseLeave() {
             this.isHovered = false;
             this.targetRotX = 0;
             this.targetRotY = 0;
+            this.targetSkewX = 0;
+            this.targetSkewY = 0;
             this.targetMoveX = 0;
             this.targetMoveY = 0;
             this.targetTransZ = 0;
-
-            const layers = this.el.querySelectorAll('.card-3d-layer');
-            layers.forEach(l => {
-                l.style.transform = '';
-            });
 
             this.startLoop();
         }
@@ -156,21 +115,25 @@
         }
 
         renderFrame() {
-            // Spring damping interpolation
-            const lerp = 0.12;
+            // Spring damping interpolation (smooth physical flex & settling)
+            const lerp = 0.14;
 
             this.currentRotX += (this.targetRotX - this.currentRotX) * lerp;
             this.currentRotY += (this.targetRotY - this.currentRotY) * lerp;
+            this.currentSkewX += (this.targetSkewX - this.currentSkewX) * lerp;
+            this.currentSkewY += (this.targetSkewY - this.currentSkewY) * lerp;
             this.currentMoveX += (this.targetMoveX - this.currentMoveX) * lerp;
             this.currentMoveY += (this.targetMoveY - this.currentMoveY) * lerp;
             this.currentTransZ += (this.targetTransZ - this.currentTransZ) * lerp;
 
-            // Apply 3D matrix transform with backward deformation
-            this.el.style.transform = `perspective(1100px) translate3d(${this.currentMoveX.toFixed(1)}px, ${this.currentMoveY.toFixed(1)}px, ${this.currentTransZ.toFixed(1)}px) rotateX(${this.currentRotX.toFixed(2)}deg) rotateY(${this.currentRotY.toFixed(2)}deg) scale3d(0.985, 0.985, 0.985)`;
+            // Apply 3D perspective bending, skew torsional deformation, and backward displacement to the WHOLE BOX
+            this.el.style.transform = `perspective(950px) translate3d(${this.currentMoveX.toFixed(1)}px, ${this.currentMoveY.toFixed(1)}px, ${this.currentTransZ.toFixed(1)}px) rotateX(${this.currentRotX.toFixed(2)}deg) rotateY(${this.currentRotY.toFixed(2)}deg) skew(${this.currentSkewX.toFixed(2)}deg, ${this.currentSkewY.toFixed(2)}deg) scale3d(0.978, 0.978, 0.978)`;
 
             const isSettled = !this.isHovered &&
                 Math.abs(this.currentRotX) < 0.05 &&
                 Math.abs(this.currentRotY) < 0.05 &&
+                Math.abs(this.currentSkewX) < 0.05 &&
+                Math.abs(this.currentSkewY) < 0.05 &&
                 Math.abs(this.currentTransZ) < 0.05 &&
                 Math.abs(this.currentMoveX) < 0.05 &&
                 Math.abs(this.currentMoveY) < 0.05;
@@ -214,7 +177,7 @@
                 useEffect(() => {
                     const count = initCardControllers();
                     setCardsCount(count);
-                    console.log(`[React-3D-Cards] React ${React.version} successfully attached to ${count} cards across all sections.`);
+                    console.log(`[React-3D-Cards] React ${React.version} controlling full-box 3D bending across ${count} cards.`);
                 }, []);
 
                 return h('div', {
