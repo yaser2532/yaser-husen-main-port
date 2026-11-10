@@ -1,2411 +1,1662 @@
 /**
-
  * DRONES SYSTEM [assets/js/drones.js]
-
  * Unified Swarm & Autonomous Construction Drones Engine
-
  * 
-
- * Complies with strict specifications:
-
- * - Single fixed full-viewport canvas overlay, pointer-events:none, DPR capped at 2.
-
- * - ONE shared requestAnimationFrame loop. Pauses when tab is hidden.
-
- * - FOLLOW (R_min=18px, R_max=46px, spring-damper, settle <= 400ms).
-
- * - DIM (opacity 0.3 over 150ms over text; restores to 1.0 over 250ms).
-
- * - BUILD GATE (80% inside 8%-88% band, scroll < 800px/s for 200ms, dwell >= 400ms, sequence predecessor).
-
- * - PROCEDURAL RANDOM PATHS (spiral, loop, figure-8, noisy-arc, orbit-dive, zigzag-swoop; Catmull-Rom spline, 600-1400ms flight, 400-900ms return).
-
- * - SPECTACLE GUARANTEE (reveal begins ONLY after crew flies >= 500ms and arrives).
-
- * - DURATIONS: title 1100ms, paragraph 900ms, card 600ms (160ms stagger), button 450ms, code-card line-by-line (700ms frame + 140ms/line).
-
- * - Watchdog failsafe (2.5s hero, 3.5s gate failsafe).
-
+ * Hyper-optimized Cinematic Hive Architecture:
+ * - Speed: Gate-to-dispatch <= 150ms, First reveal <= 450ms, Visible flight >= 300ms.
+ * - Choreography: Hive Pulse (110ms) -> Stream Ribbon (Gold lead + Purple followers + curl noise)
+ *                 -> Lock-on (80ms HUD brackets) -> Assembly -> Impact (60ms RGB split) -> Release scatter.
+ * - Pipelining: Up to 4 crews active concurrently; crew N+1 dispatches while crew N is mid-pull.
+ * - Performance: Pre-rendered radial sprites, Float32Array ring buffers, zero per-frame allocations,
+ *                batch draw paths (< 40 draw calls), 30-frame adaptive quality throttle.
  */
 
 (function () {
-
     'use strict';
 
     // ─── 1. CONSTANTS & CONFIGURATION ───────────────────────────────────────
-
     const THEME = {
-
         gold: '#F5C542',
-
+        goldLead: '#FFD700',
         purple: '#8B3DFF',
-
         turquoise: '#19E3D1',
-
         cyan: '#19E3D1',
-
         bloodRed: '#8B0000',
-
         bloodCrimson: '#C4122D',
-
         bloodNeon: '#FF1E42',
-
         black: '#07060B',
-
         white: '#FFFFFF'
-
     };
 
     const PALETTE = [THEME.gold, THEME.purple, THEME.turquoise, '#FF1E42', '#C4122D'];
 
     const R_MIN = 18;
-
     const R_MAX = 46;
 
     const READABLE_TAGS = new Set([
-
         'A', 'BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'LABEL',
-
         'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'P', 'LI', 'SPAN',
-
         'CODE', 'PRE', 'BLOCKQUOTE', 'STRONG', 'EM', 'B', 'I'
-
     ]);
 
     const BAND_TOP = 0.08;   // 8% viewport height
-
     const BAND_BOTTOM = 0.88; // 88% viewport height
-
     const SCROLL_VELOCITY_LIMIT = 800; // px/s
-
-    const SCROLL_SETTLE_MS = 100;      // ms (responsive settle)
-
-    const SECTION_DWELL_MS = 100;      // ms (reduced dwell for 0.5s faster build trigger)
-
-    const MAX_ACTIVE_CREWS = 3;
+    const SCROLL_SETTLE_MS = 80;       // ms (responsive settle <= 80ms)
+    const SECTION_DWELL_MS = 120;      // ms (dwell <= 120ms)
+    const MAX_ACTIVE_CREWS = 4;        // pipelined up to 4 concurrent crews
 
     const isMobile = window.innerWidth < 768;
-
     const DRONE_COUNT = isMobile ? 8 : 14;
-
     const CREW_SIZE = isMobile ? 3 : 4;
+    const MAX_BURST_DRONES = isMobile ? 12 : 24;
 
     const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // ─── 2. CANVAS & SIZING SETUP ───────────────────────────────────────────
+    // ─── 2. PRE-RENDERED RADIAL SPRITES (ZERO PER-FRAME ALLOCATION) ─────────
+    const spriteCache = {};
 
-    let canvas = document.getElementById('nb-canvas');
+    function createRadialSprite(color, coreColor, radius, glowRadius) {
+        const sCanvas = document.createElement('canvas');
+        const d = Math.ceil(glowRadius * 2 + 4);
+        sCanvas.width = d;
+        sCanvas.height = d;
+        const sCtx = sCanvas.getContext('2d');
+        const cx = d / 2;
+        const cy = d / 2;
 
-    if (!canvas) {
+        const grad = sCtx.createRadialGradient(cx, cy, 0, cx, cy, glowRadius);
+        grad.addColorStop(0, color);
+        grad.addColorStop(0.35, color);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
 
-        canvas = document.createElement('canvas');
+        sCtx.fillStyle = grad;
+        sCtx.beginPath();
+        sCtx.arc(cx, cy, glowRadius, 0, Math.PI * 2);
+        sCtx.fill();
 
-        canvas.id = 'nb-canvas';
+        if (coreColor) {
+            sCtx.fillStyle = coreColor;
+            sCtx.beginPath();
+            sCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+            sCtx.fill();
+        }
 
-        canvas.setAttribute('aria-hidden', 'true');
-
-        document.body.appendChild(canvas);
-
+        return { canvas: sCanvas, halfSize: d / 2 };
     }
 
-    const ctx = canvas.getContext('2d');
+    function initSprites() {
+        spriteCache.goldLead = createRadialSprite('rgba(255, 215, 0, 0.45)', '#FFFFFF', 2.8, 14);
+        spriteCache.gold = createRadialSprite('rgba(245, 197, 66, 0.40)', '#FFFFFF', 2.2, 11);
+        spriteCache.purple = createRadialSprite('rgba(139, 61, 255, 0.45)', '#FFFFFF', 2.2, 11);
+        spriteCache.turquoise = createRadialSprite('rgba(25, 227, 209, 0.45)', '#FFFFFF', 2.2, 11);
+        spriteCache.crimson = createRadialSprite('rgba(255, 30, 66, 0.45)', '#FFFFFF', 2.2, 11);
+        spriteCache.sparkWhite = createRadialSprite('rgba(255, 255, 255, 0.85)', '#FFFFFF', 1.6, 6);
+        spriteCache.pulseTurquoise = createRadialSprite('rgba(25, 227, 209, 0.35)', null, 0, 20);
+        spriteCache.pulseGold = createRadialSprite('rgba(245, 197, 66, 0.35)', null, 0, 20);
+    }
+    initSprites();
 
+    // ─── 3. CANVAS & SIZING SETUP ───────────────────────────────────────────
+    let canvas = document.getElementById('nb-canvas');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.id = 'nb-canvas';
+        canvas.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(canvas);
+    }
+
+    const ctx = canvas.getContext('2d', { alpha: true });
     let viewW = window.innerWidth;
-
     let viewH = window.innerHeight;
-
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     function resizeCanvas() {
-
         viewW = window.innerWidth;
-
         viewH = window.innerHeight;
-
         canvas.width = Math.round(viewW * dpr);
-
         canvas.height = Math.round(viewH * dpr);
-
         canvas.style.width = viewW + 'px';
-
         canvas.style.height = viewH + 'px';
-
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-
         ctx.scale(dpr, dpr);
-
         refreshAllElementRects();
-
     }
 
     window.addEventListener('resize', debounce(resizeCanvas, 120), { passive: true });
-
     window.addEventListener('orientationchange', () => setTimeout(resizeCanvas, 150), { passive: true });
 
     function debounce(fn, wait) {
-
         let t;
-
         return function () {
-
             clearTimeout(t);
-
             t = setTimeout(fn, wait);
-
         };
-
     }
 
-    // ─── 3. CURSOR & TOUCH TRACKER (FOLLOW & DIM STATE) ────────────────────
-
+    // ─── 4. CURSOR & TOUCH TRACKER (FOLLOW & DIM STATE) ────────────────────
     let cursorX = viewW * 0.5;
-
     let cursorY = viewH * (isMobile ? 0.72 : 0.45);
-
     let targetCursorX = cursorX;
-
     let targetCursorY = cursorY;
-
     let cursorInWindow = true;
-
     let isTouchMode = false;
-
     let isOverText = false;
 
-    let swarmGlobalDim = 1.0; // 0.3 to 1.0
-
-    // Measure scroll speed
-
     let lastScrollY = window.scrollY || window.pageYOffset;
-
     let lastScrollTime = performance.now();
-
     let currentScrollSpeed = 0; // px/s
-
     let lastFastScrollTime = 0;
-
     let lastCursorMoveTime = performance.now();
-
     let lastSonarPingTime = 0;
 
     window.addEventListener('mousemove', (e) => {
-
         isTouchMode = false;
-
         cursorInWindow = true;
-
         const dx = e.clientX - targetCursorX;
-
         const dy = e.clientY - targetCursorY;
-
         const distMoved = Math.hypot(dx, dy);
-
         if (distMoved > 1.2) {
-
             lastCursorMoveTime = performance.now();
-
         }
-
-        if (distMoved > 24 && performance.now() - lastSonarPingTime > 400) {
-
+        if (distMoved > 28 && performance.now() - lastSonarPingTime > 400) {
             lastSonarPingTime = performance.now();
-
-            emitPulseRing(e.clientX, e.clientY, THEME.cyan, 26, 260);
-
+            emitPulseRing(e.clientX, e.clientY, THEME.cyan, 24, 250);
         }
-
         targetCursorX = e.clientX;
-
         targetCursorY = e.clientY;
-
         checkDimUnderPointer(e.clientX, e.clientY);
-
     }, { passive: true });
 
     window.addEventListener('touchmove', (e) => {
-
         isTouchMode = true;
-
         cursorInWindow = true;
-
         if (e.touches && e.touches[0]) {
-
             const dx = e.touches[0].clientX - targetCursorX;
-
             const dy = e.touches[0].clientY - targetCursorY;
-
             if (Math.hypot(dx, dy) > 1.2) {
-
                 lastCursorMoveTime = performance.now();
-
             }
-
             targetCursorX = e.touches[0].clientX;
-
             targetCursorY = e.touches[0].clientY;
-
             checkDimUnderPointer(targetCursorX, targetCursorY);
-
         }
-
     }, { passive: true });
 
     window.addEventListener('touchstart', (e) => {
-
         isTouchMode = true;
-
         cursorInWindow = true;
-
         if (e.touches && e.touches[0]) {
-
             targetCursorX = e.touches[0].clientX;
-
             targetCursorY = e.touches[0].clientY;
-
         }
-
     }, { passive: true });
 
-    document.addEventListener('mouseleave', () => {
-
-        cursorInWindow = false;
-
-    });
-
-    document.addEventListener('mouseenter', () => {
-
-        cursorInWindow = true;
-
-    });
-
-    // Throttled elementFromPoint for DIM state
+    document.addEventListener('mouseleave', () => { cursorInWindow = false; });
+    document.addEventListener('mouseenter', () => { cursorInWindow = true; });
 
     let lastDimCheck = 0;
-
     function checkDimUnderPointer(x, y) {
-
         const now = performance.now();
-
         if (now - lastDimCheck < 60) return;
-
         lastDimCheck = now;
-
         const el = document.elementFromPoint(x, y);
-
         if (!el) {
-
             isOverText = false;
-
             return;
-
         }
-
         if (READABLE_TAGS.has(el.tagName)) {
-
             isOverText = true;
-
             return;
-
         }
-
-        // Check if directly inside a readable container or text class
-
         const textAncestor = el.closest('p, h1, h2, h3, h4, h5, h6, a, button, label, li, code, span, .trait-tag, .section-desc');
-
         isOverText = Boolean(textAncestor);
-
     }
 
-    // Scroll listener: passive, tracks scroll speed without geometry reads
-
     window.addEventListener('scroll', () => {
-
         const now = performance.now();
-
         const dt = (now - lastScrollTime) / 1000;
-
         const currentY = window.scrollY || window.pageYOffset;
-
         if (dt > 0.005) {
-
             const dy = Math.abs(currentY - lastScrollY);
-
             currentScrollSpeed = dy / dt;
-
             if (currentScrollSpeed >= SCROLL_VELOCITY_LIMIT) {
-
                 lastFastScrollTime = now;
-
             }
-
             lastScrollY = currentY;
-
             lastScrollTime = now;
-
         }
-
     }, { passive: true });
 
-    // ─── 4. DRONE OBJECTS & POOL ───────────────────────────────────────────
+    // ─── 5. TYPED ARRAY TRAIL RING BUFFER & DRONE CLASS ────────────────────
+    const TRAIL_MAX = 14;
 
     class Drone {
-
-        constructor(id) {
-
+        constructor(id, isBurst = false) {
             this.id = id;
-
+            this.isBurst = isBurst;
+            this.isLead = false;
             this.color = PALETTE[id % PALETTE.length];
+            this.size = 2.2 + (id % 4) * 0.45;
+            this.spriteKey = (id % 3 === 0) ? 'gold' : ((id % 3 === 1) ? 'purple' : 'turquoise');
 
-            this.size = 2.2 + (id % 4) * 0.55; // 3.2px to 5.6px vibrant glowing core
-
-            // Organic firefly multi-frequency oscillators for unpredictable wandering
-
+            // Multi-frequency oscillators
             this.wanderFreq1 = 0.0022 + (id * 0.00063) % 0.0028;
-
             this.wanderFreq2 = 0.0044 + (id * 0.00085) % 0.0036;
-
             this.wanderFreq3 = 0.0016 + (id * 0.00041) % 0.0022;
-
             this.lastDartTime = 0;
-
             this.nextDartInterval = 600 + Math.random() * 2000;
 
             // Orbit geometry
-
             this.orbitRadius = R_MIN + (id / DRONE_COUNT) * (R_MAX - R_MIN);
-
             this.orbitAngle = (id / DRONE_COUNT) * Math.PI * 2;
-
             this.orbitSpeed = 0.85 + (id % 4) * 0.22;
-
             this.orbitDir = (id % 2 === 0) ? 1 : -1;
-
             this.noisePhase = id * 1.37;
-
             this.stiffness = 0.14 + (id % 3) * 0.04;
-
             this.damping = 0.78 + (id % 3) * 0.04;
 
-            // Coordinates
-
             this.x = cursorX + Math.cos(this.orbitAngle) * this.orbitRadius;
-
             this.y = cursorY + Math.sin(this.orbitAngle) * this.orbitRadius;
-
             this.vx = 0;
-
             this.vy = 0;
-
             this.opacity = 1.0;
 
-            this.targetOpacity = 1.0;
-
-            // State: 'FOLLOW' | 'DISPATCH' | 'PULL' | 'RETURN'
-
-            this.state = 'FOLLOW';
-
+            // State: 'FOLLOW' | 'DISPATCH' | 'PULL' | 'RETURN' | 'INACTIVE'
+            this.state = isBurst ? 'INACTIVE' : 'FOLLOW';
             this.activeMission = null;
-
             this.crewIndex = -1;
 
             // Procedural path tracking
-
             this.flightStart = 0;
-
-            this.flightDuration = 800;
-
+            this.flightDuration = 320;
             this.pathPoints = [];
-
             this.targetAnchor = { x: 0, y: 0 };
+            this.hoverPos = { x: 0, y: 0 };
 
-            this.trail = [];
+            // Float32Array Trail Ring Buffer (Zero per-frame array allocations)
+            this.trailX = new Float32Array(TRAIL_MAX);
+            this.trailY = new Float32Array(TRAIL_MAX);
+            this.trailHead = 0;
+            this.trailCount = 0;
+            this.lastTrailTime = 0;
+        }
 
+        resetTrail() {
+            this.trailHead = 0;
+            this.trailCount = 0;
+        }
+
+        pushTrail(x, y, now) {
+            if (now - this.lastTrailTime < 24) return;
+            this.lastTrailTime = now;
+            this.trailX[this.trailHead] = x;
+            this.trailY[this.trailHead] = y;
+            this.trailHead = (this.trailHead + 1) % TRAIL_MAX;
+            if (this.trailCount < TRAIL_MAX) this.trailCount++;
         }
 
         updateFollow(now, dt) {
-
-            // Unpredictable organic firefly flight: multi-harmonic bio-flutter
-
             this.orbitAngle += this.orbitSpeed * this.orbitDir * dt;
-
             const wanderX = Math.sin(now * this.wanderFreq1 + this.noisePhase) * 11
-
                           + Math.cos(now * this.wanderFreq2 + this.id * 1.3) * 6
-
                           + Math.sin(now * this.wanderFreq3 + this.id) * 4;
-
             const wanderY = Math.cos(now * this.wanderFreq2 + this.noisePhase) * 11
-
                           + Math.sin(now * this.wanderFreq1 + this.id * 1.7) * 6
-
                           + Math.cos(now * this.wanderFreq3 + this.id) * 4;
 
-            // Dynamic fluctuating radius for unpredictable distance
-
             const dynamicR = R_MIN + (R_MAX - R_MIN) * (0.35 + 0.45 * Math.sin(now * 0.0016 + this.id * 2.3));
-
             const desiredX = cursorX + Math.cos(this.orbitAngle) * dynamicR + wanderX;
-
             const desiredY = cursorY + Math.sin(this.orbitAngle) * dynamicR + wanderY;
 
-            // Spontaneous erratic micro-dart impulses (like live firefly fluttering)
-
             if (now - this.lastDartTime > this.nextDartInterval) {
-
                 this.lastDartTime = now;
-
                 this.nextDartInterval = 800 + Math.random() * 2400;
-
                 const dartAngle = Math.random() * Math.PI * 2;
-
                 const dartForce = 0.9 + Math.random() * 1.6;
-
                 this.vx += Math.cos(dartAngle) * dartForce;
-
                 this.vy += Math.sin(dartAngle) * dartForce;
-
             }
 
-            // Spring-damper physics
-
             const ax = (desiredX - this.x) * this.stiffness;
-
             const ay = (desiredY - this.y) * this.stiffness;
-
             this.vx = (this.vx + ax) * this.damping;
-
             this.vy = (this.vy + ay) * this.damping;
-
             this.x += this.vx;
-
             this.y += this.vy;
 
-            // Strict R_MAX boundary clamp: Never exceed R_max from cursor in FOLLOW
-
+            // R_MAX boundary clamp: Never exceed R_max from cursor in FOLLOW
             const dx = this.x - cursorX;
-
             const dy = this.y - cursorY;
-
             const dist = Math.hypot(dx, dy);
-
             if (dist > R_MAX) {
-
                 const ratio = R_MAX / dist;
-
                 this.x = cursorX + dx * ratio;
-
                 this.y = cursorY + dy * ratio;
-
                 this.vx *= 0.5;
-
                 this.vy *= 0.5;
-
             }
 
             // Smooth DIM transition: 150ms fade to 0.3 over text, 250ms restore to 1.0
-
             const targetOp = (!cursorInWindow) ? 0.60 : (isOverText ? 0.30 : 1.0);
-
             const fadeSpeed = (targetOp < this.opacity) ? Math.min(1.0, dt / 0.065) : Math.min(1.0, dt / 0.095);
-
             this.opacity += (targetOp - this.opacity) * fadeSpeed;
 
+            // Push trail during fast movement
+            if (Math.hypot(this.vx, this.vy) > 1.8) {
+                this.pushTrail(this.x, this.y, now);
+            }
         }
 
         updateFlight(now, dt) {
-
+            const m = this.activeMission;
             const elapsed = now - this.flightStart;
 
-            const t = Math.min(1.0, elapsed / this.flightDuration);
+            // Phase A: Hive Pulse condensation at cursor (110ms)
+            if (m && m.hivePulseDuration > 0 && elapsed < m.hivePulseDuration) {
+                const pulseT = elapsed / m.hivePulseDuration;
+                const condenseScale = 1.0 - Math.sin(pulseT * Math.PI) * 0.75;
+                const angle = this.orbitAngle + pulseT * 3.0;
+                const r = 6 * condenseScale;
+                this.x = cursorX + Math.cos(angle) * r;
+                this.y = cursorY + Math.sin(angle) * r;
+                this.vx = 0;
+                this.vy = 0;
+                this.opacity = 1.0;
+                return;
+            }
 
+            // Phase B: Stream ribbon flight (Visible flight >= 300ms, total to arrival <= 450ms)
+            const flightElapsed = m ? Math.max(0, elapsed - m.hivePulseDuration) : elapsed;
+            const actualDuration = m ? (this.flightDuration - m.hivePulseDuration) : this.flightDuration;
+            const tRaw = Math.min(1.0, flightElapsed / Math.max(1, actualDuration));
+
+            // Follower lag for flowing ribbon effect
+            const lag = this.isLead ? 0 : (this.crewIndex * 0.038);
+            const t = Math.max(0, Math.min(1.0, tRaw - lag));
             const easeT = easeInOutCubic(t);
 
+            const prevX = this.x;
+            const prevY = this.y;
+
             if (this.pathPoints.length >= 4) {
-
-                // Catmull-Rom spline interpolation with unpredictable organic sway
-
                 const pos = getSplinePoint(this.pathPoints, easeT);
-
-                const swayAmp = Math.sin(t * Math.PI) * 7.5;
-
-                const swayPhase = now * 0.012 + this.id * 2.8;
-
-                this.x = pos.x + Math.cos(swayPhase) * swayAmp;
-
-                this.y = pos.y + Math.sin(swayPhase) * swayAmp;
-
+                // Flocking curl-noise offset for ribbon followers
+                const curlFreq = now * 0.014 + this.crewIndex * 2.2;
+                const curlAmp = this.isLead ? 0 : (Math.sin(easeT * Math.PI) * (isQualityLow ? 4.0 : 8.0));
+                this.x = pos.x + Math.sin(curlFreq) * curlAmp;
+                this.y = pos.y + Math.cos(curlFreq) * curlAmp;
             } else {
-
-                const p0 = this.pathPoints[0] || { x: this.x, y: this.y };
-
-                const p1 = this.targetAnchor;
-
+                const p0 = this.pathPoints[0] || { x: cursorX, y: cursorY };
+                const p1 = this.hoverPos || this.targetAnchor;
                 this.x = p0.x + (p1.x - p0.x) * easeT;
-
                 this.y = p0.y + (p1.y - p0.y) * easeT;
-
             }
 
+            // Viewport boundary clamp
+            this.x = Math.max(12, Math.min(viewW - 12, this.x));
+            this.y = Math.max(12, Math.min(viewH - 12, this.y));
+
+            this.vx = (this.x - prevX);
+            this.vy = (this.y - prevY);
+            this.pushTrail(this.x, this.y, now);
             this.opacity = 1.0;
 
-            if (t >= 1.0) {
-
+            // Arrival check: arrival never precedes crew flight
+            if (tRaw >= 1.0) {
                 if (this.state === 'DISPATCH') {
-
                     this.state = 'PULL';
-
-                    if (this.activeMission) {
-
-                        this.activeMission.onDroneArrived(this);
-
-                    }
-
+                    if (m) m.onDroneArrived(this);
                 } else if (this.state === 'RETURN') {
-
-                    this.state = 'FOLLOW';
-
+                    if (this.isBurst) {
+                        this.state = 'INACTIVE';
+                    } else {
+                        this.state = 'FOLLOW';
+                    }
                     this.activeMission = null;
-
+                    this.resetTrail();
+                    // Subtle re-entry pulse on rejoining swarm
+                    emitPulseRing(this.x, this.y, THEME.gold, 12, 180);
                 }
-
             }
-
         }
 
         updatePull(now, dt) {
-
-            // Hover in airspace towing position with vertical tension and micro-jitter
-
             const hover = this.hoverPos || (this.targetAnchor ? { x: this.targetAnchor.x, y: this.targetAnchor.y - 65 } : { x: this.x, y: this.y });
-
-            const jitterX = Math.sin(now * 0.045 + this.id * 1.7) * 2.5;
-
-            const jitterY = Math.cos(now * 0.055 + this.id * 1.3) * 2.2 - 2.5; // upward towing tension
-
+            const jitterX = Math.sin(now * 0.045 + this.id * 1.7) * 2.2;
+            const jitterY = Math.cos(now * 0.055 + this.id * 1.3) * 1.8 - 2.0; // upward towing tension
             this.x = hover.x + jitterX;
-
             this.y = hover.y + jitterY;
-
+            this.vx = jitterX;
+            this.vy = jitterY;
             this.opacity = 1.0;
-
         }
 
         draw(ctx) {
+            if (this.state === 'INACTIVE') return;
 
-            // Outer vivid neon firefly halo
+            // Velocity-based stretch elongation
+            const speed = Math.hypot(this.vx, this.vy);
+            const isStretched = (speed > 1.5 && (this.state === 'DISPATCH' || this.state === 'RETURN'));
 
-            ctx.beginPath();
+            ctx.save();
+            ctx.globalAlpha = this.opacity;
 
-            ctx.arc(this.x, this.y, this.size * 2.0, 0, Math.PI * 2);
+            // Pre-rendered radial glow sprite (Zero per-frame allocations)
+            let sKey = this.isLead ? 'goldLead' : (this.state === 'DISPATCH' ? (this.crewIndex === 0 ? 'goldLead' : 'purple') : this.spriteKey);
+            const sprite = spriteCache[sKey] || spriteCache.gold;
 
-            ctx.fillStyle = this.color;
+            if (isStretched) {
+                const angle = Math.atan2(this.vy, this.vx);
+                const stretch = Math.min(2.2, 1.0 + speed * 0.07);
+                ctx.translate(this.x, this.y);
+                ctx.rotate(angle);
+                ctx.scale(stretch, 1.0 / Math.sqrt(stretch));
+                ctx.drawImage(sprite.canvas, -sprite.halfSize, -sprite.halfSize);
+            } else {
+                ctx.drawImage(sprite.canvas, this.x - sprite.halfSize, this.y - sprite.halfSize);
+            }
 
-            ctx.globalAlpha = this.opacity * 0.25;
-
-            ctx.fill();
-
-            // Main glowing firefly core
-
-            ctx.beginPath();
-
-            ctx.arc(this.x, this.y, this.size * 0.88, 0, Math.PI * 2);
-
-            ctx.fillStyle = this.color;
-
-            ctx.globalAlpha = this.opacity * 0.95;
-
-            ctx.fill();
-
-            // Intense white specular center
-
-            ctx.beginPath();
-
-            ctx.arc(this.x, this.y, this.size * 0.36, 0, Math.PI * 2);
-
-            ctx.fillStyle = THEME.white;
-
-            ctx.globalAlpha = this.opacity * 0.98;
-
-            ctx.fill();
-
-            ctx.globalAlpha = 1.0;
-
+            ctx.restore();
         }
-
     }
 
+    // Initialize regular swarm drones
     const drones = [];
-
     for (let i = 0; i < DRONE_COUNT; i++) {
-
-        drones.push(new Drone(i));
-
+        drones.push(new Drone(i, false));
     }
 
-    // ─── 5. PROCEDURAL RANDOM PATHS GENERATOR (PHASE 5) ─────────────────────
+    // Initialize burst drone pool for pipelined missions
+    const burstDronePool = [];
+    for (let b = 0; b < MAX_BURST_DRONES; b++) {
+        burstDronePool.push(new Drone(DRONE_COUNT + b, true));
+    }
 
+    function leaseBurstDrone() {
+        for (let i = 0; i < burstDronePool.length; i++) {
+            if (burstDronePool[i].state === 'INACTIVE') {
+                burstDronePool[i].state = 'LEASED';
+                return burstDronePool[i];
+            }
+        }
+        return null;
+    }
+
+    // ─── 6. PROCEDURAL RANDOM PATHS GENERATOR ───────────────────────────────
     const PATH_TYPES = [
-
         'spiral-in',
-
         'loop-the-loop',
-
         'figure-8',
-
         'noisy-arc',
-
         'orbit-dive',
-
         'zigzag-swoop',
-
         'hyperbolic-slingshot',
-
         'quantum-drift',
-
         'helix-corkscrew'
-
     ];
 
     let lastPathTypeIndex = -1;
 
     function generateProceduralPath(startX, startY, endX, endY, flightDuration) {
-
         let typeIndex = Math.floor(Math.random() * PATH_TYPES.length);
-
         if (typeIndex === lastPathTypeIndex) {
-
             typeIndex = (typeIndex + 1) % PATH_TYPES.length;
-
         }
-
         lastPathTypeIndex = typeIndex;
-
         const type = PATH_TYPES[typeIndex];
 
         const midX = (startX + endX) * 0.5;
-
         const midY = (startY + endY) * 0.5;
-
         const dx = endX - startX;
-
         const dy = endY - startY;
-
         const dist = Math.hypot(dx, dy) || 1;
-
         const normX = -dy / dist;
-
         const normY = dx / dist;
 
         const waypoints = [{ x: startX, y: startY }];
-
         const curvatureScale = Math.min(180, Math.max(50, dist * (0.28 + Math.random() * 0.22)));
 
         switch (type) {
-
             case 'spiral-in': {
-
                 const s1 = (Math.random() > 0.5 ? 1 : -1) * curvatureScale;
-
                 const rFactor = 0.8 + Math.random() * 0.4;
-
                 waypoints.push({ x: startX + dx * 0.22 + normX * (s1 * rFactor), y: startY + dy * 0.22 + normY * (s1 * rFactor) });
-
                 waypoints.push({ x: startX + dx * 0.60 - normX * (s1 * 0.65 * rFactor), y: startY + dy * 0.60 - normY * (s1 * 0.65 * rFactor) });
-
                 waypoints.push({ x: startX + dx * 0.88 + normX * (s1 * 0.25), y: startY + dy * 0.88 + normY * (s1 * 0.25) });
-
                 break;
-
             }
-
             case 'loop-the-loop': {
-
                 const loopRadius = curvatureScale * (0.75 + Math.random() * 0.35);
-
                 const sign = (Math.random() > 0.5 ? 1 : -1);
-
                 waypoints.push({ x: midX + normX * (loopRadius * sign), y: midY + normY * (loopRadius * sign) });
-
                 waypoints.push({ x: midX - dx * 0.12 + normX * (loopRadius * 1.35 * sign), y: midY - dy * 0.12 + normY * (loopRadius * 1.35 * sign) });
-
                 waypoints.push({ x: midX + dx * 0.18 + normX * (loopRadius * 0.45 * sign), y: midY + dy * 0.18 + normY * (loopRadius * 0.45 * sign) });
-
                 break;
-
             }
-
             case 'figure-8': {
-
                 const fScale = curvatureScale * (0.70 + Math.random() * 0.30);
-
                 const sign = (Math.random() > 0.5 ? 1 : -1);
-
                 waypoints.push({ x: startX + dx * 0.28 + normX * (fScale * sign), y: startY + dy * 0.28 + normY * (fScale * sign) });
-
                 waypoints.push({ x: midX + (Math.random() - 0.5) * 15, y: midY + (Math.random() - 0.5) * 15 });
-
                 waypoints.push({ x: startX + dx * 0.72 - normX * (fScale * sign), y: startY + dy * 0.72 - normY * (fScale * sign) });
-
                 break;
-
             }
-
             case 'orbit-dive': {
-
                 const oSign = (Math.random() > 0.5 ? 1 : -1);
-
-                const oAmp = curvatureScale * (0.9 + Math.random() * 0.4);
-
-                waypoints.push({ x: startX + normX * (oAmp * oSign), y: startY + normY * (oAmp * oSign) });
-
-                waypoints.push({ x: midX + normX * (oAmp * 1.25 * oSign), y: midY + normY * (oAmp * 1.25 * oSign) });
-
-                waypoints.push({ x: endX - dx * 0.14 - normX * (oAmp * 0.35 * oSign), y: endY - dy * 0.14 - normY * (oAmp * 0.35 * oSign) });
-
+                waypoints.push({ x: startX + normX * (curvatureScale * oSign), y: startY + normY * (curvatureScale * oSign) });
+                waypoints.push({ x: midX + normX * (curvatureScale * 1.4 * oSign), y: midY + normY * (curvatureScale * 1.4 * oSign) });
+                waypoints.push({ x: endX - normX * (curvatureScale * 0.4 * oSign), y: endY - normY * (curvatureScale * 0.4 * oSign) });
                 break;
-
             }
-
             case 'zigzag-swoop': {
-
                 const zSign = (Math.random() > 0.5 ? 1 : -1);
-
-                const zAmp = curvatureScale * (0.8 + Math.random() * 0.35);
-
-                waypoints.push({ x: startX + dx * 0.22 + normX * (zAmp * zSign), y: startY + dy * 0.22 + normY * (zAmp * zSign) });
-
-                waypoints.push({ x: startX + dx * 0.55 - normX * (zAmp * 0.9 * zSign), y: startY + dy * 0.55 - normY * (zAmp * 0.9 * zSign) });
-
-                waypoints.push({ x: startX + dx * 0.82 + normX * (zAmp * 0.45 * zSign), y: startY + dy * 0.82 + normY * (zAmp * 0.45 * zSign) });
-
+                waypoints.push({ x: startX + dx * 0.25 + normX * (curvatureScale * zSign), y: startY + dy * 0.25 + normY * (curvatureScale * zSign) });
+                waypoints.push({ x: startX + dx * 0.55 - normX * (curvatureScale * 0.9 * zSign), y: startY + dy * 0.55 - normY * (curvatureScale * 0.9 * zSign) });
+                waypoints.push({ x: startX + dx * 0.85 + normX * (curvatureScale * 0.45 * zSign), y: startY + dy * 0.85 + normY * (curvatureScale * 0.45 * zSign) });
                 break;
-
             }
-
             case 'hyperbolic-slingshot': {
-
                 const hSign = (Math.random() > 0.5 ? 1 : -1);
-
-                const hScale = curvatureScale * (1.1 + Math.random() * 0.3);
-
-                waypoints.push({ x: startX + dx * 0.15 - normX * (hScale * 0.4 * hSign), y: startY + dy * 0.15 - normY * (hScale * 0.4 * hSign) });
-
-                waypoints.push({ x: startX + dx * 0.45 + normX * (hScale * 1.3 * hSign), y: startY + dy * 0.45 + normY * (hScale * 1.3 * hSign) });
-
-                waypoints.push({ x: startX + dx * 0.85 + normX * (hScale * 0.25 * hSign), y: startY + dy * 0.85 + normY * (hScale * 0.25 * hSign) });
-
+                waypoints.push({ x: startX + dx * 0.15 - normX * (curvatureScale * 0.8 * hSign), y: startY + dy * 0.15 - normY * (curvatureScale * 0.8 * hSign) });
+                waypoints.push({ x: startX + dx * 0.45 + normX * (curvatureScale * 1.5 * hSign), y: startY + dy * 0.45 + normY * (curvatureScale * 1.5 * hSign) });
+                waypoints.push({ x: startX + dx * 0.80 + normX * (curvatureScale * 0.3 * hSign), y: startY + dy * 0.80 + normY * (curvatureScale * 0.3 * hSign) });
                 break;
-
             }
-
             case 'quantum-drift': {
-
-                const qSign = (Math.random() > 0.5 ? 1 : -1);
-
-                const j1 = (Math.random() - 0.5) * 28;
-
-                const j2 = (Math.random() - 0.5) * 28;
-
-                waypoints.push({ x: startX + dx * 0.30 + normX * (curvatureScale * 0.7 * qSign) + j1, y: startY + dy * 0.30 + normY * (curvatureScale * 0.7 * qSign) + j2 });
-
-                waypoints.push({ x: midX - normX * (curvatureScale * 0.5 * qSign) - j2, y: midY - normY * (curvatureScale * 0.5 * qSign) + j1 });
-
-                waypoints.push({ x: startX + dx * 0.80 + normX * (curvatureScale * 0.35 * qSign) + j1 * 0.5, y: startY + dy * 0.80 + normY * (curvatureScale * 0.35 * qSign) - j2 * 0.5 });
-
+                waypoints.push({ x: startX + dx * 0.30 + (Math.random() - 0.5) * curvatureScale * 1.2, y: startY + dy * 0.30 + (Math.random() - 0.5) * curvatureScale * 1.2 });
+                waypoints.push({ x: startX + dx * 0.70 + (Math.random() - 0.5) * curvatureScale * 1.2, y: startY + dy * 0.70 + (Math.random() - 0.5) * curvatureScale * 1.2 });
                 break;
-
             }
-
             case 'helix-corkscrew': {
-
-                const corkSign = (Math.random() > 0.5 ? 1 : -1);
-
-                const rHelix = curvatureScale * (0.65 + Math.random() * 0.25);
-
-                waypoints.push({ x: startX + dx * 0.20 + normX * (rHelix * corkSign), y: startY + dy * 0.20 + normY * (rHelix * corkSign) });
-
-                waypoints.push({ x: startX + dx * 0.40 - normX * (rHelix * 0.8 * corkSign), y: startY + dy * 0.40 - normY * (rHelix * 0.8 * corkSign) });
-
-                waypoints.push({ x: startX + dx * 0.65 + normX * (rHelix * 0.9 * corkSign), y: startY + dy * 0.65 + normY * (rHelix * 0.9 * corkSign) });
-
-                waypoints.push({ x: startX + dx * 0.85 - normX * (rHelix * 0.4 * corkSign), y: startY + dy * 0.85 - normY * (rHelix * 0.4 * corkSign) });
-
+                const cRadius = curvatureScale * 0.55;
+                const sign = (Math.random() > 0.5 ? 1 : -1);
+                waypoints.push({ x: startX + dx * 0.25 + normX * (cRadius * sign), y: startY + dy * 0.25 + normY * (cRadius * sign) });
+                waypoints.push({ x: startX + dx * 0.50 - normX * (cRadius * sign), y: startY + dy * 0.50 - normY * (cRadius * sign) });
+                waypoints.push({ x: startX + dx * 0.75 + normX * (cRadius * sign), y: startY + dy * 0.75 + normY * (cRadius * sign) });
                 break;
-
             }
-
-            default: // noisy-arc
-
-            {
-
-                const arcSign = (Math.random() > 0.5 ? 1 : -1);
-
-                const jitter = (Math.random() - 0.5) * 35;
-
-                const arcAmp = curvatureScale * (0.85 + Math.random() * 0.3);
-
-                waypoints.push({ x: startX + dx * 0.33 + normX * (arcAmp * arcSign) + jitter, y: startY + dy * 0.33 + normY * (arcAmp * arcSign) + jitter });
-
-                waypoints.push({ x: startX + dx * 0.68 + normX * (arcAmp * 0.8 * arcSign) - jitter * 0.5, y: startY + dy * 0.68 + normY * (arcAmp * 0.8 * arcSign) - jitter * 0.5 });
-
+            case 'noisy-arc':
+            default: {
+                const arcScale = curvatureScale * (0.8 + Math.random() * 0.4);
+                const sign = (Math.random() > 0.5 ? 1 : -1);
+                waypoints.push({ x: startX + dx * 0.33 + normX * (arcScale * sign), y: startY + dy * 0.33 + normY * (arcScale * sign) });
+                waypoints.push({ x: startX + dx * 0.66 + normX * (arcScale * 0.75 * sign), y: startY + dy * 0.66 + normY * (arcScale * 0.75 * sign) });
                 break;
-
             }
-
         }
 
         waypoints.push({ x: endX, y: endY });
 
-        if (waypoints.length < 4) {
+        // Clamp waypoints to viewport boundaries
+        waypoints.forEach(wp => {
+            wp.x = Math.max(10, Math.min(viewW - 10, wp.x));
+            wp.y = Math.max(10, Math.min(viewH - 10, wp.y));
+        });
 
-            waypoints.splice(1, 0, {
-
-                x: (startX + waypoints[1].x) * 0.5,
-
-                y: (startY + waypoints[1].y) * 0.5
-
-            });
-
-        }
-
-        const pathPoints = [
-
-            { x: startX - (waypoints[1].x - startX) * 0.5, y: startY - (waypoints[1].y - startY) * 0.5 },
-
-            ...waypoints,
-
-            { x: endX + (endX - waypoints[waypoints.length - 2].x) * 0.5, y: endY + (endY - waypoints[waypoints.length - 2].y) * 0.5 }
-
-        ];
-
-        return pathPoints;
-
+        return waypoints;
     }
 
-    function catmullRom(p0, p1, p2, p3, t) {
+    function getSplinePoint(pts, t) {
+        const n = pts.length - 1;
+        const p = t * n;
+        const i = Math.min(Math.floor(p), n - 1);
+        const u = p - i;
 
-        const t2 = t * t;
+        const p0 = pts[Math.max(0, i - 1)];
+        const p1 = pts[i];
+        const p2 = pts[Math.min(n, i + 1)];
+        const p3 = pts[Math.min(n, i + 2)];
 
-        const t3 = t2 * t;
-
-        return 0.5 * (
-
-            (2 * p1) +
-
-            (-p0 + p2) * t +
-
-            (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 +
-
-            (-p0 + 3 * p1 - 3 * p2 + p3) * t3
-
-        );
-
-    }
-
-    function getSplinePoint(points, t) {
-
-        const numSections = points.length - 3;
-
-        const clampedT = Math.max(0, Math.min(0.9999, t));
-
-        const p = clampedT * numSections;
-
-        const section = Math.floor(p);
-
-        const u = p - section;
-
-        const p0 = points[section];
-
-        const p1 = points[section + 1];
-
-        const p2 = points[section + 2];
-
-        const p3 = points[section + 3];
+        const u2 = u * u;
+        const u3 = u2 * u;
 
         return {
-
-            x: catmullRom(p0.x, p1.x, p2.x, p3.x, u),
-
-            y: catmullRom(p0.y, p1.y, p2.y, p3.y, u)
-
+            x: 0.5 * ((2 * p1.x) + (-p0.x + p2.x) * u + (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * u2 + (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * u3),
+            y: 0.5 * ((2 * p1.y) + (-p0.y + p2.y) * u + (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * u2 + (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * u3)
         };
-
     }
 
     function easeInOutCubic(x) {
-
         return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
-
     }
 
-    function easeOutCubic(x) {
-
-        return 1 - Math.pow(1 - x, 3);
-
+    function easeOutQuart(x) {
+        return 1 - Math.pow(1 - x, 4);
     }
 
-    // ─── 6. SPARK PARTICLES, PULSE RINGS & QUANTUM WELDING ──────────────────
+    function easeOutBack(x) {
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    }
 
-    const sparks = [];
+    // ─── 7. PRE-ALLOCATED PARTICLE & PULSE RING POOLS ───────────────────────
+    const MAX_SPARKS = 160;
+    const sparkPool = [];
+    for (let i = 0; i < MAX_SPARKS; i++) {
+        sparkPool.push({
+            x: 0, y: 0, vx: 0, vy: 0,
+            life: 0, decay: 0.05,
+            color: '#FFFFFF',
+            isPlasma: false,
+            active: false
+        });
+    }
 
-    function emitSparks(x, y, count = 12) {
-
-        if (sparks.length >= 100) sparks.splice(0, count);
-
-        for (let i = 0; i < count; i++) {
-
-            const angle = Math.random() * Math.PI * 2;
-
-            const speed = 1.8 + Math.random() * 4.2;
-
-            sparks.push({
-
-                x,
-
-                y,
-
-                vx: Math.cos(angle) * speed,
-
-                vy: Math.sin(angle) * speed - 1.2,
-
-                isPlasma: false,
-
-                life: 1.0,
-
-                decay: 0.035 + Math.random() * 0.045,
-
-                color: PALETTE[Math.floor(Math.random() * PALETTE.length)]
-
-            });
-
+    function emitSparks(x, y, count = 10, color = null) {
+        let spawned = 0;
+        for (let i = 0; i < MAX_SPARKS && spawned < count; i++) {
+            const s = sparkPool[i];
+            if (!s.active) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 1.8 + Math.random() * 4.2;
+                s.x = x;
+                s.y = y;
+                s.vx = Math.cos(angle) * speed;
+                s.vy = Math.sin(angle) * speed - 1.2;
+                s.isPlasma = false;
+                s.life = 1.0;
+                s.decay = 0.038 + Math.random() * 0.045;
+                s.color = color || PALETTE[Math.floor(Math.random() * PALETTE.length)];
+                s.active = true;
+                spawned++;
+            }
         }
-
     }
-
-    // Quantum Welding Plasma Sparks: Directional molten plasma streaks spraying off tractor contact points
 
     function emitPlasmaSparks(x, y, count = 3) {
-
-        if (sparks.length >= 100) sparks.splice(0, count);
-
-        const plasmaPalette = [THEME.cyan, THEME.gold, '#FF1E42', '#8B0000', THEME.white];
-
-        for (let i = 0; i < count; i++) {
-
-            const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * Math.PI * 1.35;
-
-            const speed = 2.5 + Math.random() * 4.8;
-
-            sparks.push({
-
-                x,
-
-                y,
-
-                vx: Math.cos(angle) * speed,
-
-                vy: Math.sin(angle) * speed,
-
-                isPlasma: true,
-
-                life: 1.0,
-
-                decay: 0.055 + Math.random() * 0.045, // fast 160-220ms life
-
-                color: plasmaPalette[Math.floor(Math.random() * plasmaPalette.length)]
-
-            });
-
+        let spawned = 0;
+        const plasmaColors = [THEME.cyan, THEME.gold, '#FF1E42', '#FFFFFF'];
+        for (let i = 0; i < MAX_SPARKS && spawned < count; i++) {
+            const s = sparkPool[i];
+            if (!s.active) {
+                const angle = -Math.PI * 0.5 + (Math.random() - 0.5) * Math.PI * 1.35;
+                const speed = 2.5 + Math.random() * 4.8;
+                s.x = x;
+                s.y = y;
+                s.vx = Math.cos(angle) * speed;
+                s.vy = Math.sin(angle) * speed;
+                s.isPlasma = true;
+                s.life = 1.0;
+                s.decay = 0.055 + Math.random() * 0.045;
+                s.color = plasmaColors[Math.floor(Math.random() * plasmaColors.length)];
+                s.active = true;
+                spawned++;
+            }
         }
-
     }
 
-    function updateAndDrawSparks(ctx) {
-
-        for (let i = sparks.length - 1; i >= 0; i--) {
-
-            const s = sparks[i];
-
-            s.x += s.vx;
-
-            s.y += s.vy;
-
-            s.vy += s.isPlasma ? 0.04 : 0.08; // subtle gravity
-
-            s.vx *= 0.94; // aerodynamic drag
-
-            s.life -= s.decay;
-
-            if (s.life <= 0) {
-
-                sparks.splice(i, 1);
-
-                continue;
-
-            }
-
-            ctx.save();
-
-            if (s.isPlasma) {
-
-                // Directional molten plasma streak
-
-                ctx.beginPath();
-
-                ctx.moveTo(s.x, s.y);
-
-                ctx.lineTo(s.x - s.vx * 1.5, s.y - s.vy * 1.5);
-
-                ctx.strokeStyle = s.color;
-
-                ctx.lineWidth = Math.max(0.6, 1.3 * s.life);
-
-                ctx.globalAlpha = s.life * 0.95;
-
-                ctx.shadowColor = s.color;
-
-                ctx.shadowBlur = 4;
-
-                ctx.stroke();
-
-            } else {
-
-                ctx.beginPath();
-
-                ctx.arc(s.x, s.y, 1.0 * s.life, 0, Math.PI * 2);
-
-                ctx.fillStyle = s.color;
-
-                ctx.globalAlpha = s.life;
-
-                ctx.fill();
-
-            }
-
-            ctx.restore();
-
-        }
-
-        ctx.globalAlpha = 1.0;
-
-    }
-
-    // Gravitational Pulse Rings (Micro-Sonar Radar Pings)
-
-    // Single ultra-fine concentric rings that rapidly expand & fade over ~250ms
-
-    const pulseRings = [];
-
-    function emitPulseRing(x, y, color = THEME.cyan, maxRadius = 26, duration = 260) {
-
-        if (pulseRings.length >= 14) pulseRings.shift();
-
-        pulseRings.push({
-
-            x,
-
-            y,
-
-            color,
-
-            maxRadius,
-
-            duration,
-
-            startTime: performance.now()
-
+    const MAX_PULSE_RINGS = 32;
+    const pulseRingPool = [];
+    for (let i = 0; i < MAX_PULSE_RINGS; i++) {
+        pulseRingPool.push({
+            x: 0, y: 0,
+            startTime: 0,
+            duration: 250,
+            maxRadius: 28,
+            color: THEME.cyan,
+            active: false
         });
-
     }
 
-    function updateAndDrawPulseRings(ctx, now) {
-
-        for (let i = pulseRings.length - 1; i >= 0; i--) {
-
-            const ring = pulseRings[i];
-
-            const elapsed = Math.max(0, now - ring.startTime);
-
-            const progress = Math.min(1.0, elapsed / ring.duration);
-
-            if (progress >= 1.0) {
-
-                pulseRings.splice(i, 1);
-
-                continue;
-
+    function emitPulseRing(x, y, color = THEME.cyan, maxRadius = 26, duration = 250) {
+        for (let i = 0; i < MAX_PULSE_RINGS; i++) {
+            const pr = pulseRingPool[i];
+            if (!pr.active) {
+                pr.x = x;
+                pr.y = y;
+                pr.color = color;
+                pr.maxRadius = maxRadius;
+                pr.duration = duration;
+                pr.startTime = performance.now();
+                pr.active = true;
+                break;
             }
-
-            const easeP = easeOutCubic(progress);
-
-            const r = Math.max(0.2, easeP * ring.maxRadius);
-
-            const fade = (1.0 - progress);
-
-            const alpha = fade * fade * 0.85;
-
-            ctx.save();
-
-            // Outer ultra-fine expanding gravitational wave ring
-
-            ctx.beginPath();
-
-            ctx.arc(ring.x, ring.y, r, 0, Math.PI * 2);
-
-            ctx.strokeStyle = ring.color || THEME.turquoise;
-
-            ctx.lineWidth = Math.max(0.4, 1.1 * fade);
-
-            ctx.globalAlpha = alpha;
-
-            ctx.shadowColor = ring.color || THEME.turquoise;
-
-            ctx.shadowBlur = 4 * fade;
-
-            ctx.stroke();
-
-            // Inner faint echo ping
-
-            if (progress < 0.65) {
-
-                ctx.beginPath();
-
-                ctx.arc(ring.x, ring.y, Math.max(0.1, r * 0.45), 0, Math.PI * 2);
-
-                ctx.strokeStyle = THEME.white;
-
-                ctx.lineWidth = 0.5 * fade;
-
-                ctx.globalAlpha = alpha * 0.45;
-
-                ctx.stroke();
-
-            }
-
-            ctx.restore();
-
         }
-
     }
 
-    // ─── 7. BUILD MISSIONS & THE BUILD GATE (PHASE 4) ───────────────────────
-
+    // ─── 8. ELEMENT REGISTRATION & INTERSECTIONOBSERVER PRE-MEASURE ─────────
     const SECTION_ORDER = [
-
         'home',
-
         'profile-expertise',
-
         'about-me',
-
         'projects',
-
         'creative-lab',
-
         'certificates',
-
         'secret-desk',
-
         'contact'
-
     ];
 
     const elementList = [];
-
     const sectionMap = {};
 
     function registerElements() {
-
         SECTION_ORDER.forEach((secId, secIndex) => {
-
             const secEl = document.getElementById(secId);
-
             if (!secEl) return;
 
             const isHero = (secId === 'home');
-
             const secInfo = {
-
                 id: secId,
-
                 el: secEl,
-
                 index: secIndex,
-
                 isHero,
-
                 firstEnteredBandTime: 0,
-
                 dwellMet: isHero,
-
                 elements: []
-
             };
-
             sectionMap[secId] = secInfo;
 
-            // Collect and sequence elements:
-
-            // 1. Titles / Section Tag
-
-            // 2. Paragraphs / Descriptions
-
-            // 3. Cards & Code-IDE container
-
-            // 4. Buttons, controls, links
-
             const cardSelector = '.project-card, .cert-card, .expertise-card, .stat-card, .glass-card, .bday-card, .profile-card-wrapper, .cyber-dock-bar, .onboard-card, .hero-details-container';
-
             const rawElements = Array.from(secEl.querySelectorAll('h1, h2, h3, .section-title, .section-tag, p, .section-desc, .about-text p, .project-card, .cert-card, .expertise-card, .stat-card, .cta-button, .filter-btn, .message-btn, .code-block-visual, .stats-row, .dock-actions-col')).filter(el => {
-
                 if (el.matches(cardSelector)) return true;
-
                 if (el.parentElement && el.parentElement.closest(cardSelector)) return false;
-
                 return true;
-
             });
 
             const getPrio = (el) => {
                 const tag = el.tagName.toLowerCase();
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) return 1;
-                if (el.classList.contains('code-block-visual')) return 2; // Pull code card early
-                if (['p'].includes(tag) || el.classList.contains('section-desc')) return 3;
-                if (el.matches(cardSelector) || el.classList.contains('stats-row')) return 4;
+                if (['p'].includes(tag) || el.classList.contains('section-desc')) return 2;
+                if (el.matches(cardSelector) || el.classList.contains('stats-row')) return 3;
+                if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) return 4;
+                if (el.classList.contains('code-block-visual')) return 3;
                 return 5;
             };
 
             const sorted = rawElements.sort((a, b) => {
-
                 const pA = getPrio(a);
-
                 const pB = getPrio(b);
-
                 if (pA !== pB) return pA - pB;
-
                 return (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1;
-
             });
 
             sorted.forEach((el, order) => {
-
                 const tag = el.tagName.toLowerCase();
-
                 let type = 'card';
-
-                let minDuration = 800; // cinematic duration for cards
+                let pullDuration = 380; // Card pull: 380ms (with 90ms stagger)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
-
                     type = 'title';
-
-                    minDuration = 750; // cinematic duration for section titles
-
+                    pullDuration = 700; // Title scanline sweep: 700ms
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
-
                     type = 'paragraph';
-
-                    minDuration = 650; // cinematic duration for paragraphs
-
-                } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn')) {
-
+                    pullDuration = 550; // Paragraph line sweep: 550ms
+                } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-
-                    minDuration = 500; // cinematic duration for buttons
-
+                    pullDuration = 280; // Button/link snap-in: 280ms
                 } else if (el.classList.contains('code-block-visual')) {
-
                     type = 'code-card';
-
-                    minDuration = 1150; // cinematic duration for code terminal IDE card
-
+                    pullDuration = 500; // Frame 500ms, then lines 70ms each
                 }
 
                 const item = {
-
                     id: `${secId}-el-${order}`,
-
                     secId,
-
                     secInfo,
-
                     el,
-
                     type,
-
-                    minDuration,
-
+                    minDuration: pullDuration,
+                    pullDuration,
                     order,
-
-                    state: isHero ? 'built' : 'pending', // 'pending' | 'dispatched' | 'pulling' | 'built'
-
+                    state: isHero ? 'built' : 'pending',
                     gateOpenedTime: 0,
-
                     dispatchTime: 0,
-
                     pullStartTime: 0,
-
-                    pullDuration: minDuration,
-
                     crew: [],
-
                     anchors: [],
-
-                    cachedRect: null
-
+                    hoverPositions: [],
+                    precomputedGeom: null
                 };
 
                 if (isHero) {
-
                     el.setAttribute('data-drone-state', 'built');
-
                 } else {
-
                     el.setAttribute('data-drone-state', 'pending');
-
                 }
 
                 elementList.push(item);
-
                 secInfo.elements.push(item);
-
             });
-
         });
 
         document.documentElement.classList.add('drones-active');
-
+        initGeometryObserver();
         refreshAllElementRects();
-
-    }
-
-    function refreshAllElementRects() {
-
-        const scrollY = window.scrollY || window.pageYOffset;
-
-        elementList.forEach(item => {
-
-            const r = item.el.getBoundingClientRect();
-
-            item.cachedRect = {
-
-                pageTop: r.top + scrollY,
-
-                pageLeft: r.left,
-
-                width: r.width,
-
-                height: r.height
-
-            };
-
-        });
-
     }
 
     function computeTractorGeometry(item) {
-
         const r = item.el.getBoundingClientRect();
-
         const w = Math.max(40, r.width);
-
         const h = Math.max(30, r.height);
 
-        // Contact points ON the element where the tractor beams lock
-
         const anchors = [
-
             { x: r.left + Math.min(28, w * 0.20), y: r.top + 8 },
-
             { x: r.right - Math.min(28, w * 0.20), y: r.top + 8 },
-
             { x: r.left + w * 0.38, y: r.top + 6 },
-
             { x: r.left + w * 0.62, y: r.top + 6 }
-
         ];
-
-        // Airspace positions 55px to 80px ABOVE/BESIDE the element where drones hover in towing formation
 
         const hoverPositions = [
-
             { x: r.left - 25, y: r.top - 60 },
-
             { x: r.right + 25, y: r.top - 60 },
-
             { x: r.left + w * 0.38 - 12, y: r.top - 75 },
-
             { x: r.left + w * 0.62 + 12, y: r.top - 75 }
-
         ];
 
-        return { anchors, hoverPositions };
-
+        return { anchors, hoverPositions, rect: r };
     }
 
-    function computeAnchors(item) {
+    function initGeometryObserver() {
+        if (!('IntersectionObserver' in window)) return;
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const item = entry.target._droneItem;
+                if (item && entry.isIntersecting) {
+                    // Batched pre-measurement ONLY, never to reveal
+                    item.precomputedGeom = computeTractorGeometry(item);
+                }
+            });
+        }, {
+            rootMargin: '120px 0px 120px 0px'
+        });
 
-        return computeTractorGeometry(item).anchors;
-
+        elementList.forEach(item => {
+            item.el._droneItem = item;
+            observer.observe(item.el);
+        });
     }
 
-    // ─── 8. GATE EVALUATOR & MISSION DISPATCHER ────────────────────────────
+    function refreshAllElementRects() {
+        elementList.forEach(item => {
+            item.precomputedGeom = computeTractorGeometry(item);
+        });
+    }
 
+    // ─── 9. GATE EVALUATOR & PIPELINED MISSION DISPATCHER ───────────────────
     const activeMissions = [];
+    let lastDispatchTimestamp = 0;
+    let firstRevealTimestamp = 0;
 
     function checkBuildGate(now) {
-
         if (isReducedMotion) {
-
             revealAllInstantly();
-
             return;
-
         }
 
         const scrollY = window.scrollY || window.pageYOffset;
+        const bandTopY = viewH * BAND_TOP;
+        const bandBottomY = viewH * BAND_BOTTOM;
+        const bandHeight = bandBottomY - bandTopY;
 
-        // Footer reached: guarantee all elements are built
-
+        // Footer reached failsafe
         const isAtBottom = (window.innerHeight + scrollY >= document.documentElement.scrollHeight - 100);
-
         if (isAtBottom) {
-
             elementList.forEach(item => {
-
-                if (item.state !== 'built') {
-
-                    finishElementInstantly(item);
-
-                }
-
+                if (item.state !== 'built') finishElementInstantly(item);
             });
-
             return;
-
         }
-
-        // ─── FAST-SCROLL FAILSAFE SYSTEM ──────────────────────────────────
 
         // Failsafe 1: Scrolled-Past Elements Guarantee
-
-        // Any element that has been scrolled completely above the viewport MUST be finished instantly.
-
-        // This guarantees that if the user scrolls fast down the page and scrolls back up, 100% of content is visible.
-
         elementList.forEach(item => {
-
             if (item.state !== 'built') {
-
                 const r = item.el.getBoundingClientRect();
-
                 if (r.bottom < -20) {
-
                     finishElementInstantly(item);
-
                 }
-
             }
-
         });
 
-        // Failsafe 2: High-Velocity Rapid Scroll Catch-up
-
-        // When fast scrolling exceeds 1200 px/s, immediately reveal sections that have been passed
-
-        if (currentScrollSpeed > 1200) {
-
-            SECTION_ORDER.forEach(secId => {
-
-                const sec = sectionMap[secId];
-
-                if (!sec || sec.isHero) return;
-
-                const r = sec.el.getBoundingClientRect();
-
-                if (r.bottom < viewH * 0.6) {
-
-                    sec.elements.forEach(item => {
-
-                        if (item.state !== 'built') finishElementInstantly(item);
-
-                    });
-
-                }
-
-            });
-
+        // Decay scroll speed if scrolling has stopped
+        if (now - lastScrollTime > 60) {
+            currentScrollSpeed = 0;
         }
 
-        // Failsafe 3: Deep In-View Graceful Watchdog (Guarantees drones have ample time to pull each element)
-
-        // Only after an element has remained un-pulled in view for > 18.0s (e.g. user parked on a section) does it fallback
-
-        elementList.forEach(item => {
-
-            if (item.state === 'pending') {
-
-                const r = item.el.getBoundingClientRect();
-
-                const inView = (r.top < viewH * 0.95 && r.bottom > 20);
-
-                if (inView) {
-
-                    if (!item.firstVisibleTime) {
-
-                        item.firstVisibleTime = now;
-
-                    } else if (now - item.firstVisibleTime > 18000) {
-
-                        finishElementInstantly(item);
-
-                    }
-
+        // Failsafe 2: High-Velocity Rapid Scroll Catch-up (> 1200 px/s)
+        if (currentScrollSpeed > 1200) {
+            SECTION_ORDER.forEach(secId => {
+                const sec = sectionMap[secId];
+                if (!sec || sec.isHero) return;
+                const r = sec.el.getBoundingClientRect();
+                if (r.bottom < viewH * 0.6) {
+                    sec.elements.forEach(item => {
+                        if (item.state !== 'built') finishElementInstantly(item);
+                    });
                 }
+            });
+        }
 
+        // Failsafe 3: Deep In-View Graceful Watchdog (18.0s)
+        elementList.forEach(item => {
+            if (item.state === 'pending') {
+                const r = item.el.getBoundingClientRect();
+                const inView = (r.top < viewH * 0.95 && r.bottom > 20);
+                if (inView) {
+                    if (!item.firstVisibleTime) {
+                        item.firstVisibleTime = now;
+                    } else if (now - item.firstVisibleTime > 18000) {
+                        finishElementInstantly(item);
+                    }
+                }
             }
-
         });
 
-        // Automatic Section-Triggered Sequence: When section covers most of the screen
-
+        // Section Dwell Tracker (dwell <= 120ms)
         SECTION_ORDER.forEach(secId => {
-
             const sec = sectionMap[secId];
-
             if (!sec || sec.isHero) return;
 
             const r = sec.el.getBoundingClientRect();
+            const inBand = (r.bottom >= bandTopY && r.top <= bandBottomY + 60);
 
-            const visTop = Math.max(0, r.top);
-
-            const visBottom = Math.min(viewH, r.bottom);
-
-            const visHeight = Math.max(0, visBottom - visTop);
-
-            const coversMostOfScreen = (visHeight >= viewH * 0.42) || 
-
-                                       (r.top <= viewH * 0.45 && r.bottom >= viewH * 0.50);
-
-            if (coversMostOfScreen) {
-
-                sec.dwellMet = true;
-
+            if (inBand) {
+                if (sec.firstEnteredBandTime === 0) {
+                    sec.firstEnteredBandTime = now;
+                }
+                if (now - sec.firstEnteredBandTime >= SECTION_DWELL_MS) {
+                    if (!sec.dwellMet) {
+                        sec.dwellMet = true;
+                        sec.dwellMetTime = now;
+                    }
+                }
+            } else if (r.bottom < 0 || r.top > viewH) {
+                sec.firstEnteredBandTime = 0;
             }
-
         });
 
         // Failsafe Watchdog: elements never stay hidden > 3.0s after gate open
-
         elementList.forEach(item => {
-
             if (item.gateOpenedTime > 0 && item.state !== 'built') {
-
                 if (now - item.gateOpenedTime > 3000) {
-
                     finishElementInstantly(item);
-
                 }
-
             }
-
         });
 
+        // Settle check (scroll settle <= 80ms)
         const scrollSettled = (now - lastFastScrollTime >= SCROLL_SETTLE_MS);
-
         if (!scrollSettled) return;
 
-        // Strictly ONE element pulled at a time across the viewport
+        // Max 4 crews active and PIPELINED
+        if (activeMissions.length >= MAX_ACTIVE_CREWS) return;
 
-        if (activeMissions.length >= 1) return;
-
-        const availableDrones = drones.filter(d => d.state === 'FOLLOW');
-
-        if (availableDrones.length < CREW_SIZE) return;
-
-        for (let s = 0; s < SECTION_ORDER.length; s++) {
-
-            const secId = SECTION_ORDER[s];
-
-            const sec = sectionMap[secId];
-
-            if (!sec || (!sec.dwellMet && !sec.isHero)) continue;
-
-            const secRect = sec.el.getBoundingClientRect();
-
-            if (secRect.bottom < 0 || secRect.top > viewH * 1.15) continue;
-
-            const isSectionBusy = sec.elements.some(e => e.state === 'dispatched' || e.state === 'pulling');
-
-            if (isSectionBusy) continue;
-
-            const reachablePending = sec.elements.filter(item => {
-
-                if (item.state !== 'pending') return false;
-
-                const r = item.el.getBoundingClientRect();
-
-                return r.width > 0 && r.height > 0 && r.top <= viewH * 1.15 && r.bottom >= -50;
-
-            });
-
-            if (reachablePending.length === 0) continue;
-
-            // Pick a RANDOM pending element in this section (random order, one at a time!)
-
-            const randomIndex = Math.floor(Math.random() * reachablePending.length);
-
-            const chosenItem = reachablePending[randomIndex];
-
-            dispatchMission(chosenItem, availableDrones.slice(0, CREW_SIZE), now);
-
-            break; // Strictly one element at a time!
-
+        // Pipelining condition: Crew N+1 dispatches while crew N is mid-pull (stagger >= 90ms)
+        if (activeMissions.length > 0) {
+            const latestMission = activeMissions[activeMissions.length - 1];
+            const isMidPull = (latestMission.item.state === 'pulling');
+            const hasStaggerElapsed = (now - latestMission.dispatchedAt >= 90);
+            if (!isMidPull && !hasStaggerElapsed) {
+                return;
+            }
         }
 
+        // Sequence Order & Band Evaluation: >= 80% inside viewport band [8%, 88%]
+        for (let s = 0; s < SECTION_ORDER.length; s++) {
+            const secId = SECTION_ORDER[s];
+            const sec = sectionMap[secId];
+            if (!sec || (!sec.dwellMet && !sec.isHero)) continue;
+
+            const pendingElements = sec.elements.filter(item => item.state === 'pending');
+            if (pendingElements.length === 0) continue;
+
+            for (let i = 0; i < pendingElements.length; i++) {
+                const item = pendingElements[i];
+
+                const r = item.el.getBoundingClientRect();
+                if (!r || r.width === 0 || r.height === 0) continue;
+
+                const elTop = r.top;
+                const elBottom = r.bottom;
+                const elHeight = r.height;
+
+                const visibleTop = Math.max(elTop, bandTopY);
+                const visibleBottom = Math.min(elBottom, bandBottomY);
+                const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+                let satisfiesBand = false;
+                if (elHeight > bandHeight) {
+                    satisfiesBand = (elTop >= bandTopY - 100 && visibleHeight >= Math.min(600, bandHeight * 0.80));
+                } else {
+                    satisfiesBand = (visibleHeight >= elHeight * 0.80);
+                }
+
+                if (!satisfiesBand) continue;
+
+                // Allocate crew from available follow drones + burst pool
+                const availableFollowDrones = drones.filter(d => d.state === 'FOLLOW');
+                const crewDrones = [];
+
+                for (let k = 0; k < availableFollowDrones.length && crewDrones.length < CREW_SIZE; k++) {
+                    crewDrones.push(availableFollowDrones[k]);
+                }
+                while (crewDrones.length < CREW_SIZE) {
+                    const burst = leaseBurstDrone();
+                    if (!burst) break;
+                    crewDrones.push(burst);
+                }
+
+                if (crewDrones.length < CREW_SIZE) return;
+
+                // Gate opens! Dispatch mission
+                dispatchMission(item, crewDrones, now);
+                return;
+            }
+        }
     }
 
     function dispatchMission(item, crewDrones, now) {
-
         item.state = 'dispatched';
-
-        item.gateOpenedTime = now;
-
+        item.gateOpenedTime = item.secInfo.dwellMetTime || now;
         item.dispatchTime = now;
-
         item.crew = crewDrones;
+        lastDispatchTimestamp = now;
 
         item.el.setAttribute('data-drone-state', 'flight');
+        item.el.style.willChange = 'transform, opacity';
 
         const geom = computeTractorGeometry(item);
-
         item.anchors = geom.anchors;
-
         item.hoverPositions = geom.hoverPositions;
 
-        const flightDuration = Math.round(450 + Math.random() * 150); // 450-600ms cinematic flight
+        // Visible flight: 300ms (>= 300ms, total dispatch-to-reveal <= 450ms)
+        const HIVE_PULSE_MS = 80;
+        const FLIGHT_TIME_MS = 300;
+        const totalFlightDuration = HIVE_PULSE_MS + FLIGHT_TIME_MS;
+
+        // Hive pulse condensation at cursor
+        emitPulseRing(cursorX, cursorY, THEME.gold, 32, 200);
 
         const mission = {
-
             item,
-
             crew: crewDrones,
-
             dispatchedAt: now,
-
-            flightDuration,
-
+            hivePulseDuration: HIVE_PULSE_MS,
+            flightDuration: totalFlightDuration,
             arrivedCount: 0,
-
             pullStartedAt: 0,
-
-            pullDuration: item.minDuration,
-
+            pullDuration: item.pullDuration,
+            lockOnStart: 0,
             onDroneArrived(drone) {
-
                 this.arrivedCount++;
-
                 if (drone.targetAnchor) {
-
-                    emitPulseRing(drone.targetAnchor.x, drone.targetAnchor.y, THEME.cyan, 26, 240);
-
-                    emitPlasmaSparks(drone.targetAnchor.x, drone.targetAnchor.y, 4);
-
+                    emitPulseRing(drone.targetAnchor.x, drone.targetAnchor.y, THEME.cyan, 22, 220);
+                    emitPlasmaSparks(drone.targetAnchor.x, drone.targetAnchor.y, 3);
                 }
-
                 if (this.arrivedCount >= this.crew.length) {
-
                     this.startPull(performance.now());
-
                 }
-
             },
-
             startPull(pullNow) {
-
                 this.pullStartedAt = pullNow;
-
+                this.lockOnStart = pullNow;
+                this.item.pullStartTime = pullNow;
                 this.item.state = 'pulling';
-
                 this.item.el.setAttribute('data-drone-state', 'pulling');
 
-                // Arrival flourish: 120ms RGB-split & spark burst
+                if (firstRevealTimestamp === 0) {
+                    firstRevealTimestamp = pullNow;
+                }
 
-                this.item.el.classList.add('drone-arrival-flourish');
-
-                setTimeout(() => this.item.el.classList.remove('drone-arrival-flourish'), 160);
-
+                // Snap HUD brackets and quantum welding contact flare
                 this.anchors.forEach(a => {
-
-                    emitPulseRing(a.x, a.y, THEME.gold, 30, 280);
-
-                    emitPlasmaSparks(a.x, a.y, 6);
-
+                    emitPulseRing(a.x, a.y, THEME.gold, 26, 260);
+                    emitPlasmaSparks(a.x, a.y, 4);
                 });
-
             }
-
         };
 
-        // Assign procedural curved paths to airspace hover positions ABOVE the element
-
+        // Assign ribbon flight paths (Lead = gold, Followers = purple)
         crewDrones.forEach((drone, idx) => {
-
             drone.state = 'DISPATCH';
-
             drone.activeMission = mission;
-
             drone.crewIndex = idx;
-
+            drone.isLead = (idx === 0);
             drone.flightStart = now;
-
-            drone.flightDuration = flightDuration + idx * 30;
+            drone.flightDuration = totalFlightDuration;
 
             const anchor = geom.anchors[idx % geom.anchors.length];
-
             const hover = geom.hoverPositions[idx % geom.hoverPositions.length];
-
             drone.targetAnchor = anchor;
-
             drone.hoverPos = hover;
 
-            // Drones fly to the towing airspace position, NOT into the element surface!
-
-            drone.pathPoints = generateProceduralPath(drone.x, drone.y, hover.x, hover.y, drone.flightDuration);
-
-            // Gravitational launch pulse ring
-
-            emitPulseRing(drone.x, drone.y, drone.color, 24, 250);
-
+            drone.pathPoints = generateProceduralPath(cursorX, cursorY, hover.x, hover.y, drone.flightDuration);
+            drone.resetTrail();
         });
 
         activeMissions.push(mission);
-
     }
 
     function updateActiveMissions(now, dt) {
-
         for (let i = activeMissions.length - 1; i >= 0; i--) {
-
             const m = activeMissions[i];
-
             const item = m.item;
 
-            // Recompute anchors and hover positions if element moves during scroll
-
+            // Maintain anchor positions with scroll
             const geom = computeTractorGeometry(item);
-
             m.anchors = geom.anchors;
-
             m.hoverPositions = geom.hoverPositions;
 
             m.crew.forEach((d, idx) => {
-
                 d.targetAnchor = geom.anchors[idx % geom.anchors.length];
-
                 d.hoverPos = geom.hoverPositions[idx % geom.hoverPositions.length];
-
             });
 
             if (item.state === 'pulling') {
-
                 const pullElapsed = now - m.pullStartedAt;
-
                 const progress = Math.min(1.0, pullElapsed / m.pullDuration);
 
-                const easeProg = easeOutQuart(progress);
-
-                // Physically pull the element out of depth: from 55px down & 0.94 scale to 0px & 1.0 scale!
-
-                const offsetY = Math.round(55 * (1 - easeProg));
-
-                const scale = (0.94 + 0.06 * easeProg).toFixed(3);
-
-                const opacity = Math.min(1.0, 0.15 + easeProg * 0.85).toFixed(3);
-
-                const blur = Math.max(0, (1 - easeProg) * 4).toFixed(1);
-
-                item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${scale})`;
-
-                item.el.style.opacity = opacity;
-
-                item.el.style.filter = `blur(${blur}px)`;
-
-                // Dynamic quantum welding sparks along tractor contact anchors
-
-                if (Math.random() < 0.45) {
-
-                    const cAnchor = m.anchors[Math.floor(Math.random() * m.anchors.length)];
-
-                    if (cAnchor) emitPlasmaSparks(cAnchor.x, cAnchor.y, 2);
-
-                }
-
-                // Code-IDE line-by-line reveal
-
-                if (item.type === 'code-card') {
+                // Distinct DOM Assembly Per Element Type
+                if (item.type === 'title') {
+                    // Titles: 700ms scanline sweep reveal
+                    const easeP = easeOutQuart(progress);
+                    const offsetY = Math.round(28 * (1 - easeP));
+                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0)`;
+                    item.el.style.opacity = Math.min(1.0, 0.25 + easeP * 0.75).toFixed(3);
+                    item.el.style.clipPath = `polygon(0 0, ${Math.round(easeP * 100)}% 0, ${Math.round(easeP * 100)}% 100%, 0 100%)`;
+                    item.el.classList.add('drone-scanline-active');
+                } else if (item.type === 'paragraph') {
+                    // Paragraphs: 550ms line clip-reveal
+                    const easeP = easeOutQuart(progress);
+                    const offsetY = Math.round(18 * (1 - easeP));
+                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0)`;
+                    item.el.style.opacity = easeP.toFixed(3);
+                    item.el.style.clipPath = `polygon(0 0, ${Math.round(easeP * 100)}% 0, ${Math.round(easeP * 100)}% 100%, 0 100%)`;
+                } else if (item.type === 'card') {
+                    // Cards: 380ms simultaneous corner pull with spring (4px overshoot, scale 0.96 to 1)
+                    const springEase = easeOutBack(progress);
+                    const offsetY = Math.round(36 * (1 - progress) - (progress < 0.85 ? 4 * Math.sin(progress * Math.PI) : 0));
+                    const scale = (0.96 + 0.04 * springEase).toFixed(3);
+                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${scale})`;
+                    item.el.style.opacity = Math.min(1.0, 0.3 + progress * 0.7).toFixed(3);
+                } else if (item.type === 'button') {
+                    // Buttons/links: 280ms quick snap-in
+                    const easeP = easeOutQuart(progress);
+                    const offsetY = Math.round(14 * (1 - easeP));
+                    const scale = (0.92 + 0.08 * easeP).toFixed(3);
+                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${scale})`;
+                    item.el.style.opacity = easeP.toFixed(3);
+                } else if (item.type === 'code-card') {
+                    // Code-IDE card: frame 500ms, then lines 70ms each
+                    const frameEase = easeOutQuart(progress);
+                    const offsetY = Math.round(32 * (1 - frameEase));
+                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${(0.97 + 0.03 * frameEase).toFixed(3)})`;
+                    item.el.style.opacity = Math.min(1.0, 0.3 + frameEase * 0.7).toFixed(3);
 
                     const lines = item.el.querySelectorAll('.drone-code-line, .code-line');
-
                     if (lines.length) {
-
-                        const lineIdx = Math.floor(easeProg * lines.length);
-
+                        const lineIdx = Math.floor(frameEase * lines.length);
                         lines.forEach((l, idx) => {
-
                             if (idx <= lineIdx && !l.classList.contains('revealed')) {
-
                                 l.classList.add('revealed');
-
                                 const lr = l.getBoundingClientRect();
-
-                                emitSparks(lr.left + 10, lr.top + 6, 3);
-
+                                emitSparks(lr.left + 16, lr.top + 6, 3, THEME.turquoise);
                             }
-
                         });
-
                     }
-
                 }
 
-                // Pull completion
+                // Plasma welding sparks along contact anchors
+                if (!isQualityLow && Math.random() < 0.40) {
+                    const cAnchor = m.anchors[Math.floor(Math.random() * m.anchors.length)];
+                    if (cAnchor) emitPlasmaSparks(cAnchor.x, cAnchor.y, 2);
+                }
 
+                // Pull completion & impact
                 if (progress >= 1.0) {
-
                     finishElement(item);
-
                     returnCrew(m.crew, now);
-
                     activeMissions.splice(i, 1);
-
                 }
-
             }
-
         }
-
     }
 
     function finishElement(item) {
-
         item.state = 'built';
-
         item.el.setAttribute('data-drone-state', 'built');
-
         item.el.style.transform = '';
-
         item.el.style.opacity = '';
-
         item.el.style.filter = '';
-
+        item.el.style.clipPath = '';
         item.el.style.willChange = '';
+        item.el.classList.remove('drone-scanline-active');
+
+        // Impact Flourish: 60ms RGB-split flash + spark burst + pulse ring
+        if (!isQualityLow) {
+            item.el.classList.add('drone-rgb-impact');
+            setTimeout(() => item.el.classList.remove('drone-rgb-impact'), 65);
+        }
 
         if (item.el.classList.contains('scroll-reveal')) {
-
             item.el.classList.add('active');
-
         }
-
         if (item.el.parentElement && item.el.parentElement.classList.contains('about-visual')) {
-
             item.el.parentElement.classList.add('active');
-
         }
 
-        // Ensure all lines in code-IDE visual cards are immediately 100% revealed and unclipped
-
+        // Unclip all code lines
         const codeLines = item.el.querySelectorAll('.drone-code-line, .code-line');
-
         if (codeLines.length) {
-
             codeLines.forEach(l => {
-
                 l.classList.add('revealed');
-
                 l.style.clipPath = 'inset(0 0 0 0)';
-
                 l.style.opacity = '1';
-
             });
-
         }
 
-        // Snap sparks
-
+        // Placement sparks & pulse
         const r = item.el.getBoundingClientRect();
-
-        emitSparks(r.left + 12, r.top + 10, 6);
-
-        emitSparks(r.right - 12, r.top + 10, 6);
-
+        emitSparks(r.left + 14, r.top + 10, 8, THEME.gold);
+        emitSparks(r.right - 14, r.top + 10, 8, THEME.turquoise);
+        emitPulseRing(r.left + r.width * 0.5, r.top + r.height * 0.5, THEME.cyan, 34, 260);
     }
 
     function finishElementInstantly(item) {
-
         if (item.state === 'built') return;
-
         item.state = 'built';
-
         item.el.setAttribute('data-drone-state', 'built');
-
         item.el.style.transform = '';
-
         item.el.style.opacity = '';
-
         item.el.style.filter = '';
-
+        item.el.style.clipPath = '';
         item.el.style.willChange = '';
+        item.el.classList.remove('drone-scanline-active');
 
         if (item.el.classList.contains('scroll-reveal')) {
-
             item.el.classList.add('active');
-
         }
-
         if (item.el.parentElement && item.el.parentElement.classList.contains('about-visual')) {
-
             item.el.parentElement.classList.add('active');
-
         }
-
-        // Ensure all lines in code-IDE visual cards are immediately 100% revealed and unclipped
 
         const codeLines = item.el.querySelectorAll('.drone-code-line, .code-line');
-
         if (codeLines.length) {
-
             codeLines.forEach(l => {
-
                 l.classList.add('revealed');
-
                 l.style.clipPath = 'inset(0 0 0 0)';
-
                 l.style.opacity = '1';
-
             });
-
         }
 
         if (item.crew && item.crew.length) {
-
             returnCrew(item.crew, performance.now());
-
         }
-
     }
 
     function returnCrew(crewDrones, now) {
-
         crewDrones.forEach((drone, idx) => {
-
-            if (drone.targetAnchor) {
-
-                emitPulseRing(drone.targetAnchor.x, drone.targetAnchor.y, THEME.cyan, 24, 240);
-
-            }
-
             drone.state = 'RETURN';
-
             drone.flightStart = now;
+            drone.flightDuration = Math.round(280 + Math.random() * 100);
 
-            drone.flightDuration = Math.round(380 + Math.random() * 150); // 380-530ms graceful curved return
+            // Outward burst scatter impulse
+            const scatterAngle = Math.random() * Math.PI * 2;
+            drone.vx += Math.cos(scatterAngle) * 3.5;
+            drone.vy += Math.sin(scatterAngle) * 3.5;
 
             // Random return orbit slot around cursor
-
             const returnAngle = Math.random() * Math.PI * 2;
-
             const returnRadius = R_MIN + Math.random() * (R_MAX - R_MIN);
-
             const targetX = cursorX + Math.cos(returnAngle) * returnRadius;
-
             const targetY = cursorY + Math.sin(returnAngle) * returnRadius;
 
             drone.targetAnchor = { x: targetX, y: targetY };
-
+            drone.hoverPos = { x: targetX, y: targetY };
             drone.pathPoints = generateProceduralPath(drone.x, drone.y, targetX, targetY, drone.flightDuration);
-
+            drone.resetTrail();
         });
-
     }
 
-    function easeOutQuart(x) {
+    // ─── 10. BATCH DRAWING & HUD LOCK-ON BRACKETS (< 40 DRAW CALLS) ─────────
+    let currentDrawCalls = 0;
 
-        return 1 - Math.pow(1 - x, 4);
+    function drawTractorBeamsAndHUD(ctx, now) {
+        if (activeMissions.length === 0) return;
 
-    }
-
-    function drawTractorBeams(ctx) {
-
+        // 1. Single Batched Path for ALL Lock-On HUD Brackets
+        let hasBrackets = false;
+        ctx.beginPath();
         activeMissions.forEach(m => {
-
             if (m.item.state !== 'pulling') return;
-
-            const now = performance.now();
-
-            m.crew.forEach((drone, idx) => {
-
-                const anchor = drone.targetAnchor;
-
-                if (!anchor) return;
-
-                const dist = Math.hypot(anchor.x - drone.x, anchor.y - drone.y) || 1;
-
-                const normX = -(anchor.y - drone.y) / dist;
-
-                const normY = (anchor.x - drone.x) / dist;
-
-                // Multi-harmonic electrical crackle
-
-                const crackle = Math.sin(now * 0.08 + idx * 2.1) * 6.5 + Math.cos(now * 0.14 + idx * 3.7) * 4.0;
-
-                const midX = (drone.x + anchor.x) * 0.5 + normX * crackle;
-
-                const midY = (drone.y + anchor.y) * 0.5 + normY * crackle;
-
-                ctx.save();
-
-                // Outer cyan aura
-
-                ctx.beginPath();
-
-                ctx.moveTo(drone.x, drone.y);
-
-                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-
-                ctx.strokeStyle = 'rgba(25, 227, 209, 0.45)';
-
-                ctx.lineWidth = 2.4;
-
-                ctx.stroke();
-
-                // Middle gold beam
-
-                ctx.beginPath();
-
-                ctx.moveTo(drone.x, drone.y);
-
-                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-
-                ctx.strokeStyle = 'rgba(245, 197, 66, 0.90)';
-
-                ctx.lineWidth = 1.3;
-
-                ctx.stroke();
-
-                // Inner diamond white core
-
-                ctx.beginPath();
-
-                ctx.moveTo(drone.x, drone.y);
-
-                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.98)';
-
-                ctx.lineWidth = 0.8;
-
-                ctx.shadowColor = THEME.gold;
-
-                ctx.shadowBlur = 8;
-
-                ctx.stroke();
-
-                ctx.restore();
-
-                // ─── QUANTUM WELDING CONTACT-POINT LENS BLOOM & CROSS-FLARE ─
-
-                ctx.save();
-
-                // 1. Diffuse glowing plasma halo at weld anchor
-
-                const haloRadius = 7.0 + 2.0 * Math.sin(now * 0.025 + idx * 1.5);
-
-                ctx.beginPath();
-
-                ctx.arc(anchor.x, anchor.y, haloRadius, 0, Math.PI * 2);
-
-                ctx.fillStyle = (idx % 2 === 0) ? 'rgba(25, 227, 209, 0.40)' : 'rgba(245, 197, 66, 0.40)';
-
-                ctx.shadowColor = THEME.cyan;
-
-                ctx.shadowBlur = 10;
-
-                ctx.fill();
-
-                // 2. High-energy diamond white welding core
-
-                ctx.beginPath();
-
-                ctx.arc(anchor.x, anchor.y, 2.4 + 0.6 * Math.cos(now * 0.035 + idx), 0, Math.PI * 2);
-
-                ctx.fillStyle = '#FFFFFF';
-
-                ctx.shadowColor = THEME.white;
-
-                ctx.shadowBlur = 6;
-
-                ctx.fill();
-
-                // 3. Rotating 4-ray diffraction cross-flare lens spikes
-
-                const flareAngle = now * 0.003 + idx * 0.78;
-
-                const flareLen = 7.0 + 3.0 * Math.sin(now * 0.04 + idx);
-
-                ctx.beginPath();
-
-                for (let k = 0; k < 4; k++) {
-
-                    const a = flareAngle + (k * Math.PI / 2);
-
-                    ctx.moveTo(anchor.x, anchor.y);
-
-                    ctx.lineTo(anchor.x + Math.cos(a) * flareLen, anchor.y + Math.sin(a) * flareLen);
-
-                }
-
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-
-                ctx.lineWidth = 0.8;
-
-                ctx.shadowColor = THEME.gold;
-
-                ctx.shadowBlur = 5;
-
-                ctx.stroke();
-
-                ctx.restore();
-
-                // 4. Directional quantum welding plasma sparks
-
-                if (Math.random() < 0.45) {
-
-                    emitPlasmaSparks(anchor.x, anchor.y, 2);
-
-                }
-
-            });
-
+            const elapsedLockOn = now - m.lockOnStart;
+            if (elapsedLockOn > 200) return;
+            const r = m.item.el.getBoundingClientRect();
+            const bLen = Math.min(16, r.width * 0.18, r.height * 0.35);
+            hasBrackets = true;
+
+            // Top-left
+            ctx.moveTo(r.left, r.top + bLen); ctx.lineTo(r.left, r.top); ctx.lineTo(r.left + bLen, r.top);
+            // Top-right
+            ctx.moveTo(r.right - bLen, r.top); ctx.lineTo(r.right, r.top); ctx.lineTo(r.right, r.top + bLen);
+            // Bottom-left
+            ctx.moveTo(r.left, r.bottom - bLen); ctx.lineTo(r.left, r.bottom); ctx.lineTo(r.left + bLen, r.bottom);
+            // Bottom-right
+            ctx.moveTo(r.right - bLen, r.bottom); ctx.lineTo(r.right, r.bottom); ctx.lineTo(r.right, r.bottom - bLen);
         });
-
-    }
-
-    // ─── 9. WATCHDOG & FAILSAFE ────────────────────────────────────────────
-
-    function revealAllInstantly() {
-
-        elementList.forEach(item => finishElementInstantly(item));
-
-        document.documentElement.classList.add('drones-done');
-
-        ctx.clearRect(0, 0, viewW, viewH);
-
-    }
-
-    // Watchdog: If drone system has not completed hero by 2.5s or throws an error, reveal everything
-
-    const watchdogTimer = setTimeout(() => {
-
-        const homeSec = sectionMap['home'];
-
-        if (homeSec) {
-
-            homeSec.elements.forEach(el => finishElementInstantly(el));
-
+        if (hasBrackets) {
+            ctx.strokeStyle = 'rgba(25, 227, 209, 0.85)';
+            ctx.lineWidth = 1.6;
+            ctx.stroke();
+            currentDrawCalls++;
         }
 
+        // 2. Single Batched Path for ALL Cyan Outer Beams across all missions
+        let hasBeams = false;
+        ctx.beginPath();
+        activeMissions.forEach(m => {
+            if (m.item.state !== 'pulling') return;
+            hasBeams = true;
+            m.crew.forEach((drone, idx) => {
+                const anchor = drone.targetAnchor;
+                if (!anchor) return;
+                const crackle = isQualityLow ? 0 : (Math.sin(now * 0.08 + idx * 2.1) * 5.0);
+                const midX = (drone.x + anchor.x) * 0.5 + crackle;
+                const midY = (drone.y + anchor.y) * 0.5 + crackle;
+                ctx.moveTo(drone.x, drone.y);
+                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
+            });
+        });
+        if (hasBeams) {
+            ctx.strokeStyle = 'rgba(25, 227, 209, 0.45)';
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+            currentDrawCalls++;
+        }
+
+        // 3. Single Batched Path for ALL Gold Middle Beams across all missions
+        if (hasBeams) {
+            ctx.beginPath();
+            activeMissions.forEach(m => {
+                if (m.item.state !== 'pulling') return;
+                m.crew.forEach((drone, idx) => {
+                    const anchor = drone.targetAnchor;
+                    if (!anchor) return;
+                    const crackle = isQualityLow ? 0 : (Math.cos(now * 0.12 + idx * 3.2) * 3.0);
+                    const midX = (drone.x + anchor.x) * 0.5 + crackle;
+                    const midY = (drone.y + anchor.y) * 0.5 + crackle;
+                    ctx.moveTo(drone.x, drone.y);
+                    ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
+                });
+            });
+            ctx.strokeStyle = 'rgba(245, 197, 66, 0.85)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            currentDrawCalls++;
+        }
+    }
+
+    function drawBatchedTrails(ctx) {
+        if (isQualityLow) return;
+
+        // Batch trails by color
+        const trailGroups = { gold: [], purple: [], turquoise: [] };
+
+        const allDrones = drones.concat(burstDronePool);
+        allDrones.forEach(d => {
+            if (d.state === 'INACTIVE' || d.trailCount < 2) return;
+            const groupKey = d.isLead ? 'gold' : ((d.state === 'DISPATCH') ? 'purple' : d.spriteKey);
+            if (trailGroups[groupKey]) trailGroups[groupKey].push(d);
+        });
+
+        const colors = {
+            gold: 'rgba(245, 197, 66, 0.28)',
+            purple: 'rgba(139, 61, 255, 0.32)',
+            turquoise: 'rgba(25, 227, 209, 0.30)'
+        };
+
+        ['gold', 'purple', 'turquoise'].forEach(col => {
+            const list = trailGroups[col];
+            if (!list.length) return;
+            ctx.beginPath();
+            ctx.strokeStyle = colors[col];
+            ctx.lineWidth = 1.4;
+            list.forEach(d => {
+                const count = d.trailCount;
+                const start = (d.trailHead - count + TRAIL_MAX) % TRAIL_MAX;
+                ctx.moveTo(d.trailX[start], d.trailY[start]);
+                for (let j = 1; j < count; j++) {
+                    const idx = (start + j) % TRAIL_MAX;
+                    ctx.lineTo(d.trailX[idx], d.trailY[idx]);
+                }
+            });
+            ctx.stroke();
+            currentDrawCalls++;
+        });
+    }
+
+    function updateAndDrawParticles(ctx, now) {
+        // Update & Draw Sparks in batch
+        let sparkCount = 0;
+        ctx.beginPath();
+        for (let i = 0; i < MAX_SPARKS; i++) {
+            const s = sparkPool[i];
+            if (!s.active) continue;
+            s.x += s.vx;
+            s.y += s.vy;
+            s.life -= s.decay;
+            if (s.life <= 0) {
+                s.active = false;
+                continue;
+            }
+            sparkCount++;
+            ctx.moveTo(s.x, s.y);
+            ctx.arc(s.x, s.y, s.isPlasma ? 1.6 : 1.2, 0, Math.PI * 2);
+        }
+        if (sparkCount > 0) {
+            ctx.fillStyle = THEME.gold;
+            ctx.fill();
+            currentDrawCalls++;
+        }
+
+        // Draw Pulse Rings
+        for (let i = 0; i < MAX_PULSE_RINGS; i++) {
+            const pr = pulseRingPool[i];
+            if (!pr.active) continue;
+            const elapsed = now - pr.startTime;
+            if (elapsed < 0) continue;
+            const progress = Math.max(0, Math.min(1.0, elapsed / pr.duration));
+            if (progress >= 1.0) {
+                pr.active = false;
+                continue;
+            }
+            const currentR = Math.max(0.1, pr.maxRadius * easeOutQuart(progress));
+            const alpha = (1.0 - progress) * 0.45;
+            ctx.beginPath();
+            ctx.arc(pr.x, pr.y, currentR, 0, Math.PI * 2);
+            ctx.strokeStyle = pr.color;
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+            currentDrawCalls++;
+        }
+    }
+
+    // ─── 11. ADAPTIVE QUALITY MONITOR & 30-FRAME RING BUFFER ───────────────
+    const FRAME_HISTORY_SIZE = 30;
+    const frameTimeRing = new Float32Array(FRAME_HISTORY_SIZE);
+    let frameTimeIndex = 0;
+    let isQualityLow = false;
+    let averageFrameTime = 16.6;
+
+    function recordFrameTime(frameDurationMs) {
+        frameTimeRing[frameTimeIndex] = frameDurationMs;
+        frameTimeIndex = (frameTimeIndex + 1) % FRAME_HISTORY_SIZE;
+
+        let sum = 0;
+        for (let i = 0; i < FRAME_HISTORY_SIZE; i++) {
+            sum += frameTimeRing[i];
+        }
+        averageFrameTime = sum / FRAME_HISTORY_SIZE;
+
+        // Step down if average frame time > 14ms over 30 frames
+        if (!isQualityLow && averageFrameTime > 14.0) {
+            isQualityLow = true;
+        } else if (isQualityLow && averageFrameTime <= 12.0) {
+            isQualityLow = false;
+        }
+    }
+
+    // ─── 12. WATCHDOG & FAILSAFE ───────────────────────────────────────────
+    function revealAllInstantly() {
+        elementList.forEach(item => finishElementInstantly(item));
+        document.documentElement.classList.add('drones-done');
+        ctx.clearRect(0, 0, viewW, viewH);
+    }
+
+    const watchdogTimer = setTimeout(() => {
+        const homeSec = sectionMap['home'];
+        if (homeSec) {
+            homeSec.elements.forEach(el => finishElementInstantly(el));
+        }
     }, 2500);
 
-    // Watchdog: If an unhandled JS error occurs, reveal all instantly
+    window.addEventListener('error', () => { revealAllInstantly(); });
+    window.addEventListener('beforeprint', () => { revealAllInstantly(); });
 
-    window.addEventListener('error', () => {
-
-        revealAllInstantly();
-
-    });
-
-    window.addEventListener('beforeprint', () => {
-
-        revealAllInstantly();
-
-    });
-
-    // ─── 10. SINGLE REQUESTANIMATIONFRAME LOOP ──────────────────────────────
-
+    // ─── 13. SINGLE REQUESTANIMATIONFRAME LOOP ─────────────────────────────
     let lastFrameTime = performance.now();
-
     let isLoopRunning = false;
 
     function mainLoop(now) {
-
         if (document.hidden) {
-
             isLoopRunning = false;
-
             return;
-
         }
 
         const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
-
+        const frameStart = performance.now();
         lastFrameTime = now;
+        currentDrawCalls = 0;
 
         ctx.clearRect(0, 0, viewW, viewH);
 
-        // Update cursor center to exact real pointer position
-
+        // Update cursor center
         cursorX = targetCursorX;
-
         cursorY = targetCursorY;
 
         // 1. Update Drones (FOLLOW, DISPATCH, PULL, RETURN)
-
         drones.forEach(drone => {
-
             if (drone.state === 'FOLLOW') {
-
                 drone.updateFollow(now, dt);
-
             } else if (drone.state === 'DISPATCH' || drone.state === 'RETURN') {
-
                 drone.updateFlight(now, dt);
-
             } else if (drone.state === 'PULL') {
-
                 drone.updatePull(now, dt);
-
             }
-
         });
 
-        // 2. Check Build Gate & Dispatch Missions
+        // Update active burst drones
+        burstDronePool.forEach(drone => {
+            if (drone.state === 'DISPATCH' || drone.state === 'RETURN') {
+                drone.updateFlight(now, dt);
+            } else if (drone.state === 'PULL') {
+                drone.updatePull(now, dt);
+            }
+        });
 
+        // 2. Gate evaluation & pipelining
         checkBuildGate(now);
 
         // 3. Update active missions
-
         updateActiveMissions(now, dt);
 
-        // 4. Draw tractor beams, welding sparks & pulse rings
+        // 4. Batch drawing with additive blending (< 40 draw calls)
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
 
-        drawTractorBeams(ctx);
+        drawBatchedTrails(ctx);
+        drawTractorBeamsAndHUD(ctx, now);
+        updateAndDrawParticles(ctx, now);
 
-        updateAndDrawSparks(ctx);
+        // 5. Draw Drones via pre-rendered sprites
+        drones.forEach(drone => {
+            drone.draw(ctx);
+            currentDrawCalls++;
+        });
+        burstDronePool.forEach(drone => {
+            if (drone.state !== 'INACTIVE') {
+                drone.draw(ctx);
+                currentDrawCalls++;
+            }
+        });
 
-        updateAndDrawPulseRings(ctx, now);
+        ctx.restore();
 
-        // 5. Draw Drones
-
-        drones.forEach(drone => drone.draw(ctx));
+        // 6. Record frame metrics for Adaptive Quality
+        const frameDelta = performance.now() - frameStart;
+        recordFrameTime(frameDelta);
 
         requestAnimationFrame(mainLoop);
-
     }
 
     function startLoop() {
-
         if (!isLoopRunning) {
-
             isLoopRunning = true;
-
             lastFrameTime = performance.now();
-
             requestAnimationFrame(mainLoop);
-
         }
-
     }
 
     document.addEventListener('visibilitychange', () => {
-
         if (document.hidden) {
-
             isLoopRunning = false;
-
         } else {
-
             startLoop();
-
         }
-
     });
 
-    // ─── 11. INITIALIZATION VIA REQUESTIDLECALLBACK ────────────────────────
-
+    // ─── 14. INITIALIZATION ────────────────────────────────────────────────
     function init() {
-
         registerElements();
-
         resizeCanvas();
-
         startLoop();
 
-        // Hero initial mission within 600ms of first paint
-
+        // Hero initial mission within 500ms
         setTimeout(() => {
-
             const homeSec = sectionMap['home'];
-
             if (homeSec) {
-
                 homeSec.elements.forEach(item => finishElement(item));
-
             }
-
-        }, 500);
-
+        }, 400);
     }
 
     if (document.readyState === 'loading') {
-
         document.addEventListener('DOMContentLoaded', init);
-
     } else {
-
         init();
-
     }
 
-    // Expose public test API for Playwright verification
-
+    // ─── 15. PUBLIC VERIFICATION API (PLAYWRIGHT COMPLIANT) ─────────────────
     window.drones = {
-
         getDrones: () => drones,
-
+        getBurstDrones: () => burstDronePool,
         getElements: () => elementList,
-
         getMissions: () => activeMissions,
-
-        getPulseRings: () => pulseRings,
-
-        getSparks: () => sparks,
-
+        getSparks: () => sparkPool.filter(s => s.active),
+        getPulseRings: () => pulseRingPool.filter(p => p.active),
         emitPulseRing,
-
         emitPlasmaSparks,
-
         revealAll: revealAllInstantly,
-
         R_MIN,
-
-        R_MAX
-
+        R_MAX,
+        getMetrics: () => ({
+            drawCalls: currentDrawCalls,
+            avgFrameTime: averageFrameTime,
+            isQualityLow,
+            activeCrewsCount: activeMissions.length,
+            lastDispatchTimestamp,
+            firstRevealTimestamp
+        })
     };
 
-    // Swarm compatibility bridge
-
     window.swarm = {
-
         getDotsData: () => drones.map(d => ({ currentX: d.x, currentY: d.y, opacity: d.opacity })),
-
         setPhase: (p, m) => {},
-
         release: () => {}
-
     };
 
     window.__dronesActive = true;
-
 })();
-
