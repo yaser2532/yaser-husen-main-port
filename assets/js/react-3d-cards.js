@@ -26,7 +26,7 @@
     const hasReact = (typeof React !== 'undefined');
     const hasReactDOM = (typeof ReactDOM !== 'undefined');
 
-    const CARD_SELECTOR = '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card, .glass-card, .bday-card, .code-block-visual, .hero-about-tile, .contact-card, .profile-card-wrapper, .nano-chat-card, .cyber-dock-bar';
+    const CARD_SELECTOR = '.project-card, .cert-card, .expertise-card, .onboard-card, .stat-card, .glass-card, .bday-card, .code-block-visual, .hero-about-tile, .contact-card, .nano-chat-card, .cyber-dock-bar';
 
     class Card3DController {
         constructor(el) {

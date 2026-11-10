@@ -2870,74 +2870,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
+    let navScrollTicking = false;
+    const headerContentEl = document.querySelector('.header-content');
+
     window.addEventListener('scroll', () => {
+        if (!navScrollTicking) {
+            navScrollTicking = true;
+            requestAnimationFrame(() => {
+                handleNavbarScroll();
 
+                const scrolled = window.scrollY;
+                const heroHeight = window.innerHeight;
 
+                if (headerContentEl && scrolled <= heroHeight) {
+                    const percent = scrolled / heroHeight;
+                    headerContentEl.style.opacity = (1 - percent * 0.92).toFixed(3);
+                    headerContentEl.style.transform = `translate3d(0, ${(percent * 45).toFixed(1)}px, 0)`;
+                }
 
-        handleNavbarScroll();
+                if (backToTop) {
+                    backToTop.style.opacity = (scrolled > 800) ? '1' : '0';
+                    backToTop.style.pointerEvents = (scrolled > 800) ? 'auto' : 'none';
+                }
 
-
-
-
-
-
-
-        // Smooth parallax fade for hero content on scroll
-
-
-
-        const scrolled = window.scrollY;
-
-
-
-        const heroHeight = window.innerHeight;
-
-
-
-        const headerContent = document.querySelector('.header-content');
-
-
-
-        if (headerContent && scrolled <= heroHeight) {
-
-
-
-            const percent = scrolled / heroHeight;
-
-
-
-            headerContent.style.opacity = (1 - percent * 0.92).toFixed(3);
-
-
-
-            headerContent.style.transform = `translate3d(0, ${(percent * 45).toFixed(1)}px, 0)`;
-
-
-
+                navScrollTicking = false;
+            });
         }
-
-
-
-
-
-
-
-        if (backToTop) {
-
-
-
-            backToTop.style.opacity = (scrolled > 800) ? '1' : '0';
-
-
-
-            backToTop.style.pointerEvents = (scrolled > 800) ? 'auto' : 'none';
-
-
-
-        }
-
-
-
     }, { passive: true });
 
 
@@ -8601,77 +8559,40 @@ function initHeroToExpertiseBlurScrub() {
 
 
         if (p < 0.01) {
-
             heroEl.style.filter = '';
-
             heroEl.style.transform = '';
-
             heroEl.style.opacity = '';
-
             heroEl.style.willChange = '';
-
         } else if (p >= 0.98) {
-
-            heroEl.style.filter = 'blur(12px)';
-
+            heroEl.style.filter = '';
             heroEl.style.transform = 'translate3d(0, -35px, 0) scale(0.94)';
-
             heroEl.style.opacity = '0';
-
             heroEl.style.willChange = '';
-
         } else {
-
-            const heroBlur = (p * 12).toFixed(1);
-
             const heroScale = (1.0 - p * 0.06).toFixed(3);
-
             const heroY = (-p * 35).toFixed(1);
-
             const heroOpacity = Math.max(0, 1.0 - p * 1.05).toFixed(3);
 
-            heroEl.style.filter = `blur(${heroBlur}px)`;
-
+            heroEl.style.filter = '';
             heroEl.style.transform = `translate3d(0, ${heroY}px, 0) scale(${heroScale})`;
-
             heroEl.style.opacity = heroOpacity;
-
-            heroEl.style.willChange = 'transform, filter, opacity';
-
+            heroEl.style.willChange = 'transform, opacity';
         }
 
-
-
         if (p >= 0.90) {
-
             profileEl.style.filter = '';
-
             profileEl.style.transform = '';
-
             profileEl.style.opacity = '';
-
             profileEl.style.willChange = '';
-
         } else {
-
             const easeP = p * p * (3 - 2 * p);
-
-            const profileBlur = Math.max(0, (1.0 - easeP) * 14).toFixed(1);
-
             const profileY = ((1.0 - easeP) * 40).toFixed(1);
-
             const profileOpacity = (0.25 + easeP * 0.75).toFixed(3);
 
-
-
-            profileEl.style.filter = `blur(${profileBlur}px)`;
-
+            profileEl.style.filter = '';
             profileEl.style.transform = `translate3d(0, ${profileY}px, 0)`;
-
             profileEl.style.opacity = profileOpacity;
-
-            profileEl.style.willChange = 'transform, filter, opacity';
-
+            profileEl.style.willChange = 'transform, opacity';
         }
 
 

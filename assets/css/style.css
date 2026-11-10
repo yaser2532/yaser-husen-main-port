@@ -155,7 +155,7 @@
 
 html {
 
-    scroll-behavior: smooth;
+    scroll-behavior: auto !important;
 
 }
 
@@ -9943,8 +9943,7 @@ a.nav-link:hover::after,
 .bday-card,
 .code-block-visual,
 .hero-about-tile,
-.contact-card,
-.profile-card-wrapper {
+.contact-card {
     transform-style: preserve-3d !important;
     perspective: 1100px !important;
     will-change: transform !important;
@@ -10030,7 +10029,6 @@ a.nav-link:hover::after,
 .code-block-visual:hover,
 .hero-about-tile:hover,
 .contact-card:hover,
-.profile-card-wrapper:hover,
 .cp-3d-card:hover {
     box-shadow: 0 20px 42px rgba(0, 0, 0, 0.75), 0 6px 14px rgba(0, 0, 0, 0.50);
     border-color: rgba(255, 255, 255, 0.16) !important;
@@ -10196,8 +10194,7 @@ a.cta-button:hover * {
 .bday-card,
 .code-block-visual,
 .hero-about-tile,
-.contact-card,
-.profile-card-wrapper {
+.contact-card {
     transform-style: preserve-3d !important;
     will-change: transform !important;
 }
@@ -10438,8 +10435,7 @@ header nav a:hover::after {
 .bday-card,
 .code-block-visual,
 .hero-about-tile,
-.contact-card,
-.profile-card-wrapper {
+.contact-card {
     background: rgba(20, 10, 36, 0.72) !important;
     border: 1px solid rgba(157, 77, 255, 0.35) !important;
     backdrop-filter: blur(14px) !important;
@@ -10461,7 +10457,6 @@ header nav a:hover::after {
 .code-block-visual:hover,
 .hero-about-tile:hover,
 .contact-card:hover,
-.profile-card-wrapper:hover,
 .card-3d-active {
     border-color: #19E3D1 !important;
     background: rgba(20, 10, 36, 0.85) !important;
@@ -10593,12 +10588,70 @@ header nav a:hover::after {
 /* =========================================================================
    ZERO HORIZONTAL OVERFLOW & FULL-BLEED SECTIONS (NO BLACK GAP ON RIGHT)
    ========================================================================= */
-html, body {
+html {
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow-x: clip !important;
+    box-sizing: border-box !important;
+}
+
+body {
     width: 100% !important;
     max-width: 100vw !important;
     overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch;
     box-sizing: border-box !important;
 }
+
+/* =========================================================================
+   PROFILE IMAGE CIRCULAR FRAME WITH GRADIENT COLOR BORDER
+   Clean, circular frame with cyber gradient border and soft glow
+   ========================================================================= */
+.profile-card-wrapper {
+    position: relative !important;
+    width: 18.75rem !important;
+    height: 18.75rem !important;
+    border-radius: 50% !important;
+    padding: 5px !important;
+    background: linear-gradient(135deg, #19E3D1 0%, #FF1E42 32%, #9D4DFF 65%, #F5C542 100%) !important;
+    box-shadow: 
+        0 0 25px rgba(25, 227, 209, 0.45),
+        0 0 50px rgba(157, 77, 255, 0.35),
+        0 0 18px rgba(255, 30, 66, 0.35) !important;
+    border: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease !important;
+    overflow: hidden !important;
+}
+
+.profile-card-wrapper:hover {
+    transform: scale(1.04) !important;
+    box-shadow: 
+        0 0 35px rgba(25, 227, 209, 0.65),
+        0 0 70px rgba(157, 77, 255, 0.55),
+        0 0 30px rgba(255, 30, 66, 0.55),
+        0 0 100px rgba(245, 197, 66, 0.35) !important;
+}
+
+.profile-details-img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    display: block !important;
+    border: 3px solid #0d0818 !important;
+    background-color: #0d0818 !important;
+}
+
+@media (max-width: 768px) {
+    .profile-card-wrapper {
+        width: 15rem !important;
+        height: 15rem !important;
+    }
+}
+
 
 section, header, footer, main, .cyber-dock-footer {
     width: 100% !important;
