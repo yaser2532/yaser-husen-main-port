@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-        const NUM_DOTS = window.__dronesActive ? 0 : 8;
+        const NUM_DOTS = 0; // Handled exclusively by drones.js canvas swarm
 
 
 
@@ -1207,6 +1207,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         function animateGlow() {
+        if (NUM_DOTS === 0) return;
 
 
 

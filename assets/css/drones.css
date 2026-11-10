@@ -27,16 +27,14 @@
 /* Applied ONLY when html.drones-active is present, ensuring pure HTML/CSS paints if JS is off */
 html.drones-active [data-drone-state="pending"] {
     opacity: 0 !important;
-    transform: translate3d(0, 32px, 0) !important;
-    filter: blur(2px) !important;
+    transform: translate3d(0, 24px, 0) !important;
     pointer-events: none !important;
     will-change: transform, opacity;
 }
 
 html.drones-active [data-drone-state="flight"] {
     opacity: 0 !important;
-    transform: translate3d(0, 32px, 0) !important;
-    filter: blur(2px) !important;
+    transform: translate3d(0, 24px, 0) !important;
     pointer-events: none !important;
     will-change: transform, opacity;
 }
