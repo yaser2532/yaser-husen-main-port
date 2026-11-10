@@ -7736,11 +7736,11 @@ function initCosmicBackground() {
 
 
 
-  // B. Mid-range Constellation Points (850 stars, size 2.4)
+  // B. Mid-range Constellation Points (Reduced from 850 down to 260 stars, size 1.8 for clean, uncluttered upper sky)
 
 
 
-  const midStars = createStarfield(850, 2.4, 480, 360, 400, 0.96);
+  const midStars = createStarfield(260, 1.8, 480, 360, 400, 0.88);
 
 
 
@@ -7752,11 +7752,11 @@ function initCosmicBackground() {
 
 
 
-  // C. Foreground Twinkling Stellar Points (90 stars, size 1.6, wide panoramic ratio, soft starlight)
+  // C. Foreground Twinkling Stellar Points (Reduced from 90 down to 30 stars, size 1.4, subtle soft starlight)
 
 
 
-  const foregroundStars = createStarfield(90, 1.6, 900, 680, 500, 0.58);
+  const foregroundStars = createStarfield(30, 1.4, 900, 680, 500, 0.50);
 
 
 
@@ -7792,7 +7792,7 @@ function initCosmicBackground() {
 
 
 
-    getInfo: () => ({ tier: 'high', stars: 3800, active: true })
+    getInfo: () => ({ tier: 'high', stars: 2890, active: true })
 
 
 

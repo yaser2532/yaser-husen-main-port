@@ -86,14 +86,14 @@
     }
 
     function initSprites() {
-        spriteCache.goldLead = createRadialSprite('rgba(255, 215, 0, 0.45)', '#FFFFFF', 2.8, 14);
-        spriteCache.gold = createRadialSprite('rgba(245, 197, 66, 0.40)', '#FFFFFF', 2.2, 11);
-        spriteCache.purple = createRadialSprite('rgba(139, 61, 255, 0.45)', '#FFFFFF', 2.2, 11);
-        spriteCache.turquoise = createRadialSprite('rgba(25, 227, 209, 0.45)', '#FFFFFF', 2.2, 11);
-        spriteCache.crimson = createRadialSprite('rgba(255, 30, 66, 0.45)', '#FFFFFF', 2.2, 11);
-        spriteCache.sparkWhite = createRadialSprite('rgba(255, 255, 255, 0.85)', '#FFFFFF', 1.6, 6);
-        spriteCache.pulseTurquoise = createRadialSprite('rgba(25, 227, 209, 0.35)', null, 0, 20);
-        spriteCache.pulseGold = createRadialSprite('rgba(245, 197, 66, 0.35)', null, 0, 20);
+        spriteCache.goldLead = createRadialSprite('rgba(255, 215, 0, 0.45)', '#FFFFFF', 2.2, 11);
+        spriteCache.gold = createRadialSprite('rgba(245, 197, 66, 0.40)', '#FFFFFF', 1.8, 9);
+        spriteCache.purple = createRadialSprite('rgba(139, 61, 255, 0.45)', '#FFFFFF', 1.8, 9);
+        spriteCache.turquoise = createRadialSprite('rgba(25, 227, 209, 0.45)', '#FFFFFF', 1.8, 9);
+        spriteCache.crimson = createRadialSprite('rgba(255, 30, 66, 0.45)', '#FFFFFF', 1.8, 9);
+        spriteCache.sparkWhite = createRadialSprite('rgba(255, 255, 255, 0.85)', '#FFFFFF', 1.3, 5);
+        spriteCache.pulseTurquoise = createRadialSprite('rgba(25, 227, 209, 0.35)', null, 0, 16);
+        spriteCache.pulseGold = createRadialSprite('rgba(245, 197, 66, 0.35)', null, 0, 16);
     }
     initSprites();
 
@@ -230,7 +230,7 @@
 
     // ─── 5. TYPED ARRAY TRAIL RING BUFFER & DRONE CLASS ────────────────────
     const TRAIL_MAX = 14;
-    const IRREGULAR_SIZES = [1.5, 3.8, 2.2, 4.6, 1.4, 3.2, 2.7, 4.4, 1.8, 3.5, 2.3, 4.8, 1.6, 3.9];
+    const IRREGULAR_SIZES = [1.2, 2.8, 1.8, 3.4, 1.1, 2.4, 2.0, 3.2, 1.4, 2.6, 1.7, 3.5, 1.3, 2.9];
 
     class Drone {
         constructor(id, isBurst = false) {
@@ -442,7 +442,7 @@
             // Pre-rendered radial glow sprite (Zero per-frame allocations)
             let sKey = this.isLead ? 'goldLead' : (this.state === 'DISPATCH' ? (this.crewIndex === 0 ? 'goldLead' : 'purple') : this.spriteKey);
             const sprite = spriteCache[sKey] || spriteCache.gold;
-            const sizeScale = (this.size || 2.2) / 2.2;
+            const sizeScale = (this.size || 1.8) / 1.8;
 
             ctx.translate(this.x, this.y);
 

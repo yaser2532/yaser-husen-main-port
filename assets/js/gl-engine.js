@@ -138,7 +138,7 @@
     const starTex = createStarTexture();
 
     // 1. Foreground Twinkling Stars (Crisp, brilliant diamond white & bright cyber accents)
-    const FG_STARS = 850;
+    const FG_STARS = 260; // Reduced from 850 down to 260 for clean, uncluttered upper sky
     const fgGeom = new THREE.BufferGeometry();
     const fgPos = new Float32Array(FG_STARS * 3);
     const fgCol = new Float32Array(FG_STARS * 3);
