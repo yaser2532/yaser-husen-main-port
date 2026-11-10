@@ -783,20 +783,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let pullDuration = 180; // Card pull: 180ms (increased pulling speed by 0.3s)
+                let pullDuration = 280; // Card pull: 280ms (reduced speed by 0.1s)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    pullDuration = 400; // Title scanline sweep: 400ms (increased pulling speed by 0.3s)
+                    pullDuration = 500; // Title scanline sweep: 500ms (reduced speed by 0.1s)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    pullDuration = 250; // Paragraph line sweep: 250ms (increased pulling speed by 0.3s)
+                    pullDuration = 350; // Paragraph line sweep: 350ms (reduced speed by 0.1s)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-                    pullDuration = 150; // Button/link snap-in: 150ms (increased pulling speed by 0.3s)
+                    pullDuration = 250; // Button/link snap-in: 250ms (reduced speed by 0.1s)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    pullDuration = 250; // Frame 250ms, then lines 40ms each (increased pulling speed by 0.3s)
+                    pullDuration = 350; // Frame 350ms, then lines 50ms each (reduced speed by 0.1s)
                 }
 
                 const item = {
