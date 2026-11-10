@@ -44,7 +44,7 @@
     const SCROLL_VELOCITY_LIMIT = 800; // px/s
     const SCROLL_SETTLE_MS = 80;       // ms (responsive settle <= 80ms)
     const SECTION_DWELL_MS = 120;      // ms (dwell <= 120ms)
-    const MAX_ACTIVE_CREWS = 4;        // pipelined up to 4 concurrent crews
+    const MAX_ACTIVE_CREWS = 1;        // Strictly one element rendered at a time in sequence
 
     const isMobile = window.innerWidth < 768;
     const DRONE_COUNT = isMobile ? 8 : 14;
@@ -230,6 +230,7 @@
 
     // ─── 5. TYPED ARRAY TRAIL RING BUFFER & DRONE CLASS ────────────────────
     const TRAIL_MAX = 14;
+    const IRREGULAR_SIZES = [1.5, 3.8, 2.2, 4.6, 1.4, 3.2, 2.7, 4.4, 1.8, 3.5, 2.3, 4.8, 1.6, 3.9];
 
     class Drone {
         constructor(id, isBurst = false) {
@@ -237,7 +238,7 @@
             this.isBurst = isBurst;
             this.isLead = false;
             this.color = PALETTE[id % PALETTE.length];
-            this.size = 2.2 + (id % 4) * 0.45;
+            this.size = IRREGULAR_SIZES[id % IRREGULAR_SIZES.length];
             this.spriteKey = (id % 3 === 0) ? 'gold' : ((id % 3 === 1) ? 'purple' : 'turquoise');
 
             // Multi-frequency oscillators
@@ -288,12 +289,8 @@
         }
 
         pushTrail(x, y, now) {
-            if (now - this.lastTrailTime < 24) return;
-            this.lastTrailTime = now;
-            this.trailX[this.trailHead] = x;
-            this.trailY[this.trailHead] = y;
-            this.trailHead = (this.trailHead + 1) % TRAIL_MAX;
-            if (this.trailCount < TRAIL_MAX) this.trailCount++;
+            // Tails removed as per user specification - zero trail tracking
+            return;
         }
 
         updateFollow(now, dt) {
@@ -445,18 +442,20 @@
             // Pre-rendered radial glow sprite (Zero per-frame allocations)
             let sKey = this.isLead ? 'goldLead' : (this.state === 'DISPATCH' ? (this.crewIndex === 0 ? 'goldLead' : 'purple') : this.spriteKey);
             const sprite = spriteCache[sKey] || spriteCache.gold;
+            const sizeScale = (this.size || 2.2) / 2.2;
+
+            ctx.translate(this.x, this.y);
 
             if (isStretched) {
                 const angle = Math.atan2(this.vy, this.vx);
                 const stretch = Math.min(2.2, 1.0 + speed * 0.07);
-                ctx.translate(this.x, this.y);
                 ctx.rotate(angle);
-                ctx.scale(stretch, 1.0 / Math.sqrt(stretch));
-                ctx.drawImage(sprite.canvas, -sprite.halfSize, -sprite.halfSize);
+                ctx.scale(sizeScale * stretch, sizeScale / Math.sqrt(stretch));
             } else {
-                ctx.drawImage(sprite.canvas, this.x - sprite.halfSize, this.y - sprite.halfSize);
+                ctx.scale(sizeScale, sizeScale);
             }
 
+            ctx.drawImage(sprite.canvas, -sprite.halfSize, -sprite.halfSize);
             ctx.restore();
         }
     }
@@ -775,20 +774,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let pullDuration = 380; // Card pull: 380ms (with 90ms stagger)
+                let pullDuration = 680; // Card pull: 680ms (380 + 300ms)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    pullDuration = 700; // Title scanline sweep: 700ms
+                    pullDuration = 1000; // Title scanline sweep: 1000ms (700 + 300ms)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    pullDuration = 550; // Paragraph line sweep: 550ms
+                    pullDuration = 850; // Paragraph line sweep: 850ms (550 + 300ms)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-                    pullDuration = 280; // Button/link snap-in: 280ms
+                    pullDuration = 580; // Button/link snap-in: 580ms (280 + 300ms)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    pullDuration = 500; // Frame 500ms, then lines 70ms each
+                    pullDuration = 800; // Frame 800ms (500 + 300ms), then lines paced
                 }
 
                 const item = {
@@ -878,6 +877,7 @@
     const activeMissions = [];
     let lastDispatchTimestamp = 0;
     let firstRevealTimestamp = 0;
+    let lastMissionFinishTime = 0;
 
     function checkBuildGate(now) {
         if (isReducedMotion) {
@@ -966,10 +966,10 @@
             }
         });
 
-        // Failsafe Watchdog: elements never stay hidden > 3.0s after gate open
+        // Failsafe Watchdog: dispatched elements never hang > 4.5s
         elementList.forEach(item => {
-            if (item.gateOpenedTime > 0 && item.state !== 'built') {
-                if (now - item.gateOpenedTime > 3000) {
+            if (item.dispatchTime > 0 && item.state !== 'built') {
+                if (now - item.dispatchTime > 4500) {
                     finishElementInstantly(item);
                 }
             }
@@ -979,18 +979,9 @@
         const scrollSettled = (now - lastFastScrollTime >= SCROLL_SETTLE_MS);
         if (!scrollSettled) return;
 
-        // Max 4 crews active and PIPELINED
+        // Strictly one element rendered at a time in sequence
         if (activeMissions.length >= MAX_ACTIVE_CREWS) return;
-
-        // Pipelining condition: Crew N+1 dispatches while crew N is mid-pull (stagger >= 90ms)
-        if (activeMissions.length > 0) {
-            const latestMission = activeMissions[activeMissions.length - 1];
-            const isMidPull = (latestMission.item.state === 'pulling');
-            const hasStaggerElapsed = (now - latestMission.dispatchedAt >= 90);
-            if (!isMidPull && !hasStaggerElapsed) {
-                return;
-            }
-        }
+        if (now - lastMissionFinishTime < 90) return; // 90ms clear beat between sequential elements
 
         // Sequence Order & Band Evaluation: >= 80% inside viewport band [8%, 88%]
         for (let s = 0; s < SECTION_ORDER.length; s++) {
@@ -1048,7 +1039,7 @@
 
     function dispatchMission(item, crewDrones, now) {
         item.state = 'dispatched';
-        item.gateOpenedTime = item.secInfo.dwellMetTime || now;
+        item.gateOpenedTime = now;
         item.dispatchTime = now;
         item.crew = crewDrones;
         lastDispatchTimestamp = now;
@@ -1215,6 +1206,7 @@
 
     function finishElement(item) {
         item.state = 'built';
+        lastMissionFinishTime = performance.now();
         item.el.setAttribute('data-drone-state', 'built');
         item.el.style.transform = '';
         item.el.style.opacity = '';
@@ -1263,6 +1255,13 @@
         item.el.style.clipPath = '';
         item.el.style.willChange = '';
         item.el.classList.remove('drone-scanline-active');
+
+        const missionIdx = activeMissions.findIndex(m => m.item === item);
+        if (missionIdx !== -1) {
+            const m = activeMissions[missionIdx];
+            returnCrew(m.crew, performance.now());
+            activeMissions.splice(missionIdx, 1);
+        }
 
         if (item.el.classList.contains('scroll-reveal')) {
             item.el.classList.add('active');
@@ -1388,42 +1387,8 @@
     }
 
     function drawBatchedTrails(ctx) {
-        if (isQualityLow) return;
-
-        // Batch trails by color
-        const trailGroups = { gold: [], purple: [], turquoise: [] };
-
-        const allDrones = drones.concat(burstDronePool);
-        allDrones.forEach(d => {
-            if (d.state === 'INACTIVE' || d.trailCount < 2) return;
-            const groupKey = d.isLead ? 'gold' : ((d.state === 'DISPATCH') ? 'purple' : d.spriteKey);
-            if (trailGroups[groupKey]) trailGroups[groupKey].push(d);
-        });
-
-        const colors = {
-            gold: 'rgba(245, 197, 66, 0.28)',
-            purple: 'rgba(139, 61, 255, 0.32)',
-            turquoise: 'rgba(25, 227, 209, 0.30)'
-        };
-
-        ['gold', 'purple', 'turquoise'].forEach(col => {
-            const list = trailGroups[col];
-            if (!list.length) return;
-            ctx.beginPath();
-            ctx.strokeStyle = colors[col];
-            ctx.lineWidth = 1.4;
-            list.forEach(d => {
-                const count = d.trailCount;
-                const start = (d.trailHead - count + TRAIL_MAX) % TRAIL_MAX;
-                ctx.moveTo(d.trailX[start], d.trailY[start]);
-                for (let j = 1; j < count; j++) {
-                    const idx = (start + j) % TRAIL_MAX;
-                    ctx.lineTo(d.trailX[idx], d.trailY[idx]);
-                }
-            });
-            ctx.stroke();
-            currentDrawCalls++;
-        });
+        // Tails removed per user specification - zero trail lines rendered
+        return;
     }
 
     function updateAndDrawParticles(ctx, now) {
