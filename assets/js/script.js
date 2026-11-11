@@ -267,6 +267,15 @@ function getDefaultNote(name) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Prevent browser auto-scroll/restoration jumps on mobile page load or refresh
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    if (!window.location.hash || window.location.hash === '#' || window.location.hash === '#home') {
+        if (window.scrollY > 0 && !sessionStorage.getItem('navigated_internally')) {
+            window.scrollTo(0, 0);
+        }
+    }
 
 
 
@@ -2885,8 +2894,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (headerContentEl && scrolled <= heroHeight) {
                     const percent = scrolled / heroHeight;
-                    headerContentEl.style.opacity = (1 - percent * 0.92).toFixed(3);
-                    headerContentEl.style.transform = `translate3d(0, ${(percent * 45).toFixed(1)}px, 0)`;
+                    headerContentEl.style.opacity = Math.max(0, 1 - percent * 0.95).toFixed(3);
+                    if (window.innerWidth > 768 && window.matchMedia('(hover: hover)').matches) {
+                        headerContentEl.style.transform = `translate3d(0, ${(percent * 20).toFixed(1)}px, 0)`;
+                    } else {
+                        headerContentEl.style.transform = 'none';
+                    }
                 }
 
                 if (backToTop) {

@@ -154,9 +154,14 @@
 }
 
 html {
+    scroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+}
 
-    scroll-behavior: smooth !important;
-
+@media (hover: hover) and (pointer: fine) {
+    html {
+        scroll-behavior: smooth;
+    }
 }
 
 body {
@@ -656,43 +661,36 @@ section, .section-padding {
    ========================================================================== */
 
 .scroll-reveal {
-
     opacity: 0;
-
-    transform: translateY(1.2rem);
-
-    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-
+    transform: translateY(0.8rem);
+    transition: opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     will-change: opacity, transform;
-
 }
 
 .scroll-reveal.active {
-
     opacity: 1;
-
     transform: translateY(0);
-
 }
 
 .fade-left {
-
-    transform: translateX(-1.2rem);
-
+    transform: translateX(-0.8rem);
 }
 
 .fade-right {
-
-    transform: translateX(1.2rem);
-
+    transform: translateX(0.8rem);
 }
 
 .scroll-reveal.fade-left.active,
-
 .scroll-reveal.fade-right.active {
-
     transform: translate(0);
+}
 
+/* Section containers must remain 100% physically stable in layout flow (zero jump) */
+section,
+.section-padding,
+.cyber-dock-footer,
+header {
+    transform: none !important;
 }
 
 /* ==========================================================================
@@ -1022,33 +1020,20 @@ section, .section-padding {
    ========================================================================== */
 
 header {
-
     min-height: 100vh;
-
+    min-height: 100svh;
+    min-height: 100dvh;
     height: auto;
-
     position: relative;
-
     top: 0;
-
     display: flex;
-
     justify-content: flex-start;
-
     align-items: center;
-
     text-align: left;
-
     padding: 6rem 6vw 4rem;
-
     overflow: visible !important;
-
     z-index: 1;
-
     transform-origin: top center;
-
-    will-change: transform, opacity;
-
 }
 
 header::before {
@@ -10672,17 +10657,31 @@ section, header, footer, main, .cyber-dock-footer {
 
 
 /* On mobile viewports, prevent any horizontal scroll push from fade animations */
-@media (max-width: 768px) {
+/* On mobile and touch viewports: 100% stable 1:1 direct scrolling, zero spring jumps */
+@media (max-width: 768px), (hover: none) {
+    html {
+        scroll-behavior: auto !important;
+    }
+
+    .scroll-reveal,
+    .scroll-reveal.fade-up,
     .scroll-reveal.fade-left,
     .scroll-reveal.fade-right,
+    .fade-up,
     .fade-left,
     .fade-right {
-        transform: translateY(1.2rem) !important;
+        transform: none !important;
+        transition: opacity 0.35s ease-out !important;
     }
+
+    .scroll-reveal.active,
+    .scroll-reveal.fade-up.active,
     .scroll-reveal.fade-left.active,
     .scroll-reveal.fade-right.active {
-        transform: translateY(0) !important;
+        transform: none !important;
+        opacity: 1 !important;
     }
+
     .expertise-showcase,
     .expertise-cards-grid {
         max-width: 100% !important;
