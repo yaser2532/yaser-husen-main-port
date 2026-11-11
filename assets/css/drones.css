@@ -5,10 +5,12 @@
  */
 
 :root {
-    --drone-gold: #F5C542;
-    --drone-purple: #8B3DFF;
-    --drone-turquoise: #19E3D1;
-    --drone-black: #07060B;
+    --drone-gold: #FBBF24;
+    --drone-purple: #8B5CF6;
+    --drone-turquoise: #00F5D4;
+    --drone-cyan: #00F5D4;
+    --drone-magenta: #FF2A5F;
+    --drone-black: #07080E;
 }
 
 /* 1. Full-Viewport Fixed Canvas Overlay */
@@ -84,8 +86,8 @@ html.drones-active [data-drone-state="built"] {
     bottom: 0;
     width: 3px;
     right: 0;
-    background: linear-gradient(180deg, transparent, #19E3D1, #FFFFFF, #19E3D1, transparent);
-    box-shadow: 0 0 10px #19E3D1, 0 0 18px #F5C542;
+    background: linear-gradient(180deg, transparent, #00F5D4, #FFFFFF, #00F5D4, transparent);
+    box-shadow: 0 0 10px #00F5D4, 0 0 18px #8B5CF6;
     pointer-events: none;
 }
 

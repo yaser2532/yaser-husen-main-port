@@ -8580,20 +8580,11 @@ function initHeroToExpertiseBlurScrub() {
             heroEl.style.willChange = 'transform, opacity';
         }
 
-        if (p >= 0.90) {
+        if (profileEl) {
             profileEl.style.filter = '';
             profileEl.style.transform = '';
             profileEl.style.opacity = '';
             profileEl.style.willChange = '';
-        } else {
-            const easeP = p * p * (3 - 2 * p);
-            const profileY = ((1.0 - easeP) * 40).toFixed(1);
-            const profileOpacity = (0.25 + easeP * 0.75).toFixed(3);
-
-            profileEl.style.filter = '';
-            profileEl.style.transform = `translate3d(0, ${profileY}px, 0)`;
-            profileEl.style.opacity = profileOpacity;
-            profileEl.style.willChange = 'transform, opacity';
         }
 
 
@@ -8645,12 +8636,86 @@ function initHeroToExpertiseBlurScrub() {
 
 
 if (document.readyState === 'loading') {
-
     document.addEventListener('DOMContentLoaded', initHeroToExpertiseBlurScrub);
-
 } else {
-
     initHeroToExpertiseBlurScrub();
-
 }
+
+/* =========================================================================
+   BUTTERY-SMOOTH MOUSEWHEEL INTERPOLATOR (ZERO JITTER ON NOTCHED WHEELS)
+   - Only activates for discrete wheel notches on mouse (deltaMode 1 or large deltaY)
+   - Bypasses trackpads (fine pixel deltaMode 0 with small increments) and touch devices
+   - Maintains native 60/120fps rAF interpolation
+   ========================================================================= */
+(function initSmoothMouseScroll() {
+    // Only on pointer devices that support hover (not touch screens)
+    if (window.matchMedia && !window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        return;
+    }
+    
+    let isWheeling = false;
+    let targetScrollY = window.scrollY || window.pageYOffset;
+    let currentScrollY = targetScrollY;
+    let animFrame = null;
+    let wheelTimeout = null;
+
+    function renderSmoothScroll() {
+        const diff = targetScrollY - currentScrollY;
+        if (Math.abs(diff) < 0.5) {
+            currentScrollY = targetScrollY;
+            window.scrollTo(0, currentScrollY);
+            isWheeling = false;
+            document.body.classList.remove('is-scrolling-smooth');
+            return;
+        }
+
+        // Smooth cubic momentum dampening
+        currentScrollY += diff * 0.16;
+        window.scrollTo(0, Math.round(currentScrollY));
+        animFrame = requestAnimationFrame(renderSmoothScroll);
+    }
+
+    window.addEventListener('wheel', (e) => {
+        // Allow ctrl+wheel (browser zoom) and shift+wheel (horizontal)
+        if (e.ctrlKey || e.shiftKey) return;
+
+        // Detect if standard mouse wheel notch (typically deltaY >= 40 or deltaMode === 1)
+        const isNotchedWheel = (e.deltaMode === 1 || Math.abs(e.deltaY) >= 40);
+        if (!isNotchedWheel) {
+            // Trackpad natural smooth pixel scroll: let browser handle natively
+            currentScrollY = window.scrollY || window.pageYOffset;
+            targetScrollY = currentScrollY;
+            return;
+        }
+
+        e.preventDefault();
+        
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        
+        // Accumulate target scroll
+        targetScrollY = Math.max(0, Math.min(maxScroll, targetScrollY + e.deltaY));
+        
+        if (!isWheeling) {
+            isWheeling = true;
+            currentScrollY = window.scrollY || window.pageYOffset;
+            document.body.classList.add('is-scrolling-smooth');
+            if (animFrame) cancelAnimationFrame(animFrame);
+            animFrame = requestAnimationFrame(renderSmoothScroll);
+        }
+
+        clearTimeout(wheelTimeout);
+        wheelTimeout = setTimeout(() => {
+            isWheeling = false;
+            document.body.classList.remove('is-scrolling-smooth');
+        }, 300);
+    }, { passive: false });
+
+    // Sync on direct user actions (keys, scrollbars, touch)
+    window.addEventListener('scroll', () => {
+        if (!isWheeling) {
+            currentScrollY = window.scrollY || window.pageYOffset;
+            targetScrollY = currentScrollY;
+        }
+    }, { passive: true });
+})();
 

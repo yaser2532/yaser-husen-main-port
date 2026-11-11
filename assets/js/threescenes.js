@@ -223,10 +223,17 @@
       blowCandle3D(i);
     };
 
-    // ─── Animate ──────────────────────────────────────────
+    // ─── Animate (Visibility-Gated for Zero Idle GPU Load) ──
     let t = 0;
+    let isCakeVisible = false;
+    let cakeAnimId = null;
+
     function animate() {
-      requestAnimationFrame(animate);
+      if (!isCakeVisible) {
+        cakeAnimId = null;
+        return;
+      }
+      cakeAnimId = requestAnimationFrame(animate);
       t += 0.016;
 
       // Gentle auto-rotate
@@ -242,7 +249,19 @@
 
       renderer.render(scene, camera);
     }
-    animate();
+
+    if ('IntersectionObserver' in window) {
+      const cakeObserver = new IntersectionObserver((entries) => {
+        isCakeVisible = entries[0].isIntersecting;
+        if (isCakeVisible && !cakeAnimId) {
+          animate();
+        }
+      }, { threshold: 0.05 });
+      cakeObserver.observe(canvas);
+    } else {
+      isCakeVisible = true;
+      animate();
+    }
 
     // Handle resize
     window.addEventListener('resize', () => {
@@ -381,9 +400,15 @@
     shadowPlane.position.y = -1.32;
     giftScene.add(shadowPlane);
 
-    // ─── Animate ──────────────────────────────────────────
+    // ─── Animate (Visibility-Gated for Zero Idle GPU Load) ──
     let t = 0;
+    let isGiftVisible = false;
+
     function animate() {
+      if (!isGiftVisible) {
+        giftAnimId = null;
+        return;
+      }
       giftAnimId = requestAnimationFrame(animate);
       t += 0.016;
 
@@ -425,7 +450,19 @@
 
       giftRenderer.render(giftScene, giftCamera);
     }
-    animate();
+
+    if ('IntersectionObserver' in window) {
+      const giftObserver = new IntersectionObserver((entries) => {
+        isGiftVisible = entries[0].isIntersecting;
+        if (isGiftVisible && !giftAnimId) {
+          animate();
+        }
+      }, { threshold: 0.05 });
+      giftObserver.observe(canvas);
+    } else {
+      isGiftVisible = true;
+      animate();
+    }
 
     // Handle resize
     window.addEventListener('resize', () => {

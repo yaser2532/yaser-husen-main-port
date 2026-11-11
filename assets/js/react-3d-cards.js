@@ -66,6 +66,7 @@
 
         handleMouseEnter(e) {
             this.isHovered = true;
+            this.cachedRect = this.el.getBoundingClientRect();
             this.targetTransZ = 32.0; // Physical 3D pop-up lift forward
             this.targetMoveY = -8.0;  // Spring pop-up elevation
             this.targetScale = 1.03;  // Pop-up scale
@@ -75,7 +76,11 @@
         }
 
         handleMouseMove(e) {
-            const rect = this.el.getBoundingClientRect();
+            let rect = this.cachedRect;
+            if (!rect || !rect.width || !rect.height) {
+                rect = this.el.getBoundingClientRect();
+                this.cachedRect = rect;
+            }
             if (!rect.width || !rect.height) return;
 
             const x = e.clientX - rect.left;
@@ -107,6 +112,7 @@
 
         handleMouseLeave() {
             this.isHovered = false;
+            this.cachedRect = null;
             // Smoothly settle back to flat resting geometry
             this.targetRotX = 0;
             this.targetRotY = 0;

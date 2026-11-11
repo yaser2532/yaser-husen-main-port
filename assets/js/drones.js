@@ -16,19 +16,19 @@
 
     // ─── 1. CONSTANTS & CONFIGURATION ───────────────────────────────────────
     const THEME = {
-        gold: '#F5C542',
-        goldLead: '#FFD700',
-        purple: '#8B3DFF',
-        turquoise: '#19E3D1',
-        cyan: '#19E3D1',
-        bloodRed: '#8B0000',
-        bloodCrimson: '#C4122D',
-        bloodNeon: '#FF1E42',
-        black: '#07060B',
+        gold: '#FBBF24',
+        goldLead: '#FDE047',
+        purple: '#8B5CF6',
+        turquoise: '#00F5D4',
+        cyan: '#00F5D4',
+        bloodRed: '#FF2A5F',
+        bloodCrimson: '#E11D48',
+        bloodNeon: '#FF2A5F',
+        black: '#07080E',
         white: '#FFFFFF'
     };
 
-    const PALETTE = [THEME.gold, THEME.purple, THEME.turquoise, '#FF1E42', '#C4122D'];
+    const PALETTE = [THEME.cyan, THEME.purple, THEME.bloodNeon, THEME.gold];
 
     const R_MIN = 18;
     const R_MAX = 46;
@@ -108,7 +108,7 @@
     const ctx = canvas.getContext('2d', { alpha: true });
     let viewW = window.innerWidth;
     let viewH = window.innerHeight;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
 
     function resizeCanvas() {
         viewW = window.innerWidth;
@@ -930,8 +930,8 @@
                 }
 
                 const r = item.el.getBoundingClientRect();
-                // Element has scrolled past upper viewport or above screen:
-                if (r.bottom < viewH * 0.35) {
+                // Element has genuinely scrolled past upper viewport (completely above screen):
+                if (r.bottom < -20) {
                     finishElementInstantly(item);
                     continue;
                 }
@@ -942,7 +942,7 @@
                     if (inView) {
                         if (!item.firstVisibleTime) {
                             item.firstVisibleTime = now;
-                        } else if (now - item.firstVisibleTime > 5000) {
+                        } else if (now - item.firstVisibleTime > 6000) {
                             finishElementInstantly(item);
                         }
                     }
@@ -950,13 +950,13 @@
             }
 
             // Section-Level Scrolled-Past Guarantee:
-            // If visitor scrolled past a section (bottom passed above 50% viewport or top < -100px),
-            // reveal all its remaining elements immediately.
+            // If visitor scrolled past an entire section (bottom has moved completely above viewport),
+            // reveal all its remaining elements immediately as fail-safe.
             SECTION_ORDER.forEach(secId => {
                 const sec = sectionMap[secId];
                 if (!sec || sec.isHero) return;
                 const r = sec.el.getBoundingClientRect();
-                if (r.bottom < viewH * 0.55 || r.top < -120) {
+                if (r.bottom < -40) {
                     sec.elements.forEach(item => {
                         if (item.state !== 'built') {
                             finishElementInstantly(item);
@@ -1185,42 +1185,48 @@
                 const pullElapsed = now - m.pullStartedAt;
                 const progress = Math.min(1.0, pullElapsed / m.pullDuration);
 
-                // Distinct DOM Assembly Per Element Type
+                // Distinct 3D Kinetic Assembly Per Element Type (Cinematic Gen-Z Physics)
                 if (item.type === 'title') {
-                    // Titles: 700ms scanline sweep reveal
+                    // Titles: 3D Scanline laser sweep with chromatic holographic emergence
                     const easeP = easeOutQuart(progress);
-                    const offsetY = Math.round(28 * (1 - easeP));
-                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0)`;
-                    item.el.style.opacity = Math.min(1.0, 0.25 + easeP * 0.75).toFixed(3);
+                    const offsetY = Math.round(24 * (1 - easeP));
+                    const rotX = (8 * (1 - easeP)).toFixed(1);
+                    const zDepth = Math.round(-30 * (1 - easeP));
+                    item.el.style.transform = `perspective(900px) translate3d(0, ${offsetY}px, ${zDepth}px) rotateX(${rotX}deg)`;
+                    item.el.style.opacity = Math.min(1.0, 0.2 + easeP * 0.8).toFixed(3);
                     item.el.style.clipPath = `polygon(0 0, ${Math.round(easeP * 100)}% 0, ${Math.round(easeP * 100)}% 100%, 0 100%)`;
                     item.el.classList.add('drone-scanline-active');
                 } else if (item.type === 'paragraph') {
-                    // Paragraphs: 550ms line clip-reveal
+                    // Paragraphs: smooth progressive unfurl with upward glide
                     const easeP = easeOutQuart(progress);
                     const offsetY = Math.round(18 * (1 - easeP));
                     item.el.style.transform = `translate3d(0, ${offsetY}px, 0)`;
                     item.el.style.opacity = easeP.toFixed(3);
                     item.el.style.clipPath = `polygon(0 0, ${Math.round(easeP * 100)}% 0, ${Math.round(easeP * 100)}% 100%, 0 100%)`;
                 } else if (item.type === 'card') {
-                    // Cards: 380ms simultaneous corner pull with spring (4px overshoot, scale 0.96 to 1)
+                    // Cards: Authentic 3D Gen-Z holographic corner pull-out with depth and spring
                     const springEase = easeOutBack(progress);
-                    const offsetY = Math.round(36 * (1 - progress) - (progress < 0.85 ? 4 * Math.sin(progress * Math.PI) : 0));
-                    const scale = (0.96 + 0.04 * springEase).toFixed(3);
-                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${scale})`;
-                    item.el.style.opacity = Math.min(1.0, 0.3 + progress * 0.7).toFixed(3);
-                } else if (item.type === 'button') {
-                    // Buttons/links: 280ms quick snap-in
                     const easeP = easeOutQuart(progress);
-                    const offsetY = Math.round(14 * (1 - easeP));
+                    const zDepth = Math.round(-65 * (1 - easeP));
+                    const rotX = (10 * (1 - easeP)).toFixed(2);
+                    const offsetY = Math.round(36 * (1 - progress) - (progress < 0.85 ? 4 * Math.sin(progress * Math.PI) : 0));
+                    const scale = (0.95 + 0.05 * springEase).toFixed(3);
+                    item.el.style.transform = `perspective(1000px) translate3d(0, ${offsetY}px, ${zDepth}px) rotateX(${rotX}deg) scale(${scale})`;
+                    item.el.style.opacity = Math.min(1.0, 0.2 + progress * 0.8).toFixed(3);
+                } else if (item.type === 'button') {
+                    // Buttons: 3D forward pop-up snap
+                    const easeP = easeOutQuart(progress);
+                    const offsetY = Math.round(12 * (1 - easeP));
                     const scale = (0.92 + 0.08 * easeP).toFixed(3);
-                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${scale})`;
+                    item.el.style.transform = `perspective(800px) translate3d(0, ${offsetY}px, 15px) scale(${scale})`;
                     item.el.style.opacity = easeP.toFixed(3);
                 } else if (item.type === 'code-card') {
-                    // Code-IDE card: frame 500ms, then lines 70ms each
+                    // Code-IDE card: 3D terminal materialization + line scanning
                     const frameEase = easeOutQuart(progress);
-                    const offsetY = Math.round(32 * (1 - frameEase));
-                    item.el.style.transform = `translate3d(0, ${offsetY}px, 0) scale(${(0.97 + 0.03 * frameEase).toFixed(3)})`;
-                    item.el.style.opacity = Math.min(1.0, 0.3 + frameEase * 0.7).toFixed(3);
+                    const offsetY = Math.round(30 * (1 - frameEase));
+                    const zDepth = Math.round(-50 * (1 - frameEase));
+                    item.el.style.transform = `perspective(1000px) translate3d(0, ${offsetY}px, ${zDepth}px) rotateX(${(7 * (1 - frameEase)).toFixed(1)}deg) scale(${(0.96 + 0.04 * frameEase).toFixed(3)})`;
+                    item.el.style.opacity = Math.min(1.0, 0.25 + frameEase * 0.75).toFixed(3);
 
                     const lines = item.el.querySelectorAll('.drone-code-line, .code-line');
                     if (lines.length) {
@@ -1229,7 +1235,7 @@
                             if (idx <= lineIdx && !l.classList.contains('revealed')) {
                                 l.classList.add('revealed');
                                 const lr = l.getBoundingClientRect();
-                                emitSparks(lr.left + 16, lr.top + 6, 3, THEME.turquoise);
+                                emitSparks(lr.left + 16, lr.top + 6, 3, THEME.cyan);
                             }
                         });
                     }
@@ -1405,13 +1411,13 @@
             });
         });
         if (hasBeams) {
-            ctx.strokeStyle = 'rgba(25, 227, 209, 0.45)';
-            ctx.lineWidth = 2.2;
+            ctx.strokeStyle = 'rgba(0, 245, 212, 0.65)';
+            ctx.lineWidth = 2.0;
             ctx.stroke();
             currentDrawCalls++;
         }
 
-        // 3. Single Batched Path for ALL Gold Middle Beams across all missions
+        // 3. Single Batched Path for ALL Core Resonant Beams across all missions
         if (hasBeams) {
             ctx.beginPath();
             activeMissions.forEach(m => {
@@ -1426,7 +1432,7 @@
                     ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
                 });
             });
-            ctx.strokeStyle = 'rgba(245, 197, 66, 0.85)';
+            ctx.strokeStyle = 'rgba(139, 92, 246, 0.85)';
             ctx.lineWidth = 1.2;
             ctx.stroke();
             currentDrawCalls++;
