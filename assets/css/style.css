@@ -9638,16 +9638,40 @@ a.nav-link:hover::after,
 
 /* 3. Hero Section Fluid Scaling (Mobile & Tablet) */
 @media (max-width: 48rem) {
+    header#home {
+        padding: 4.75rem 1.25rem 2.5rem !important;
+        min-height: auto !important;
+        height: auto !important;
+    }
+    .header-content {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+    .hero-kinetic-row {
+        gap: 0.45rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+    .hero-sticker-badge,
+    .hero-clock-pill,
+    .hero-spec-stamp,
+    .utc-clock-badge,
+    .status-badge,
+    .cyber-spec-stamp {
+        font-size: clamp(0.68rem, 2.6vw, 0.76rem) !important;
+        padding: 0.25rem 0.6rem !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
     .hero-title {
-        font-size: clamp(1.9rem, 7.5vw, 2.75rem) !important;
-        line-height: 1.25 !important;
-        margin-bottom: 0.65rem !important;
+        font-size: clamp(1.85rem, 7.5vw, 2.5rem) !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0.35rem !important;
         word-break: break-word !important;
     }
     .hero-subtitle {
-        font-size: clamp(1.0rem, 3.8vw, 1.25rem) !important;
-        line-height: 1.4 !important;
-        margin-bottom: 1rem !important;
+        font-size: clamp(0.92rem, 3.4vw, 1.15rem) !important;
+        line-height: 1.35 !important;
+        margin-bottom: 0.75rem !important;
     }
     .hero-details-container {
         width: 100% !important;
@@ -9655,30 +9679,40 @@ a.nav-link:hover::after,
         box-sizing: border-box !important;
     }
     .hero-about-tile {
-        padding: 1.1rem 1.25rem !important;
+        padding: 0.85rem 1rem !important;
+        margin-bottom: 0.75rem !important;
         width: 100% !important;
         box-sizing: border-box !important;
     }
-    .utc-clock-badge,
-    .status-badge,
-    .cyber-spec-stamp {
-        font-size: clamp(0.70rem, 2.4vw, 0.80rem) !important;
-        padding: 0.35rem 0.75rem !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
+    .hero-about-tile p {
+        font-size: clamp(0.82rem, 2.8vw, 0.90rem) !important;
+        line-height: 1.45 !important;
     }
+    .hero-traits-list {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 0.35rem !important;
+        margin-bottom: 1.1rem !important;
+    }
+    .hero-traits-list .trait-tag {
+        font-size: clamp(0.68rem, 2.5vw, 0.75rem) !important;
+        padding: 0.25rem 0.65rem !important;
+        margin: 0 !important;
+    }
+    .hero-actions,
     .hero-cta-group {
         display: flex !important;
         flex-direction: column !important;
         width: 100% !important;
         gap: 0.75rem !important;
     }
+    .hero-actions .cta-button,
     .hero-cta-group .cta-button {
         width: 100% !important;
         text-align: center !important;
         justify-content: center !important;
-        padding: 0.85rem 1.5rem !important;
-        min-height: 48px !important;
+        padding: 0.75rem 1.4rem !important;
+        min-height: 46px !important;
     }
 }
 
@@ -9689,9 +9723,9 @@ a.nav-link:hover::after,
         gap: 2rem !important;
     }
     .stats-row {
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 0.85rem !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.55rem !important;
         width: 100% !important;
         margin-top: 1.5rem !important;
         box-sizing: border-box !important;
@@ -9699,7 +9733,15 @@ a.nav-link:hover::after,
     .stats-row .stat-card {
         width: 100% !important;
         box-sizing: border-box !important;
-        padding: 1.1rem 1rem !important;
+        padding: 0.85rem 0.5rem !important;
+        text-align: center !important;
+    }
+    .stats-row .stat-number {
+        font-size: clamp(1.25rem, 5vw, 1.65rem) !important;
+    }
+    .stats-row .stat-label {
+        font-size: clamp(0.65rem, 2.2vw, 0.72rem) !important;
+        line-height: 1.25 !important;
     }
     .code-block-visual {
         width: 100% !important;
