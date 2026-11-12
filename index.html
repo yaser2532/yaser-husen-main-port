@@ -208,8 +208,19 @@
 
     </style>
 
-
-
+    <script>
+        // Ensure browser starts at top of Hero section on initial load/refresh
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#home') {
+            try {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            } catch (e) {}
+        }
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+    </script>
 </head>
 
 
