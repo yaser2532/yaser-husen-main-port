@@ -7595,21 +7595,9 @@ function initCosmicBackground() {
 
 
       positions.push(
-
-
-
         (Math.random() - 0.5) * rangeX,
-
-
-
         (Math.random() - 0.5) * rangeY,
-
-
-
-        (Math.random() - 0.5) * rangeZ
-
-
-
+        -(60 + Math.random() * (rangeZ || 450))
       );
 
 
@@ -7702,42 +7690,16 @@ function initCosmicBackground() {
 
 
 
-  const deepStars = createStarfield(2600, 1.2, 700, 520, 600, 0.92);
-
-
-
+  // A. Deep Universe Starfield (Small, sharp pinpoint twinkling stars, size 0.65)
+  const deepStars = createStarfield(2800, 0.65, 750, 560, 600, 0.95);
   scene.add(deepStars);
 
-
-
-
-
-
-
-  // B. Mid-range Constellation Points (Reduced from 850 down to 260 stars, size 1.8 for clean, uncluttered upper sky)
-
-
-
-  const midStars = createStarfield(260, 1.8, 480, 360, 400, 0.88);
-
-
-
+  // B. Mid-range Constellation Points (Tiny cosmic diamonds, size 0.78)
+  const midStars = createStarfield(280, 0.78, 500, 380, 420, 0.88);
   scene.add(midStars);
 
-
-
-
-
-
-
-  // C. Foreground Twinkling Stellar Points (Reduced from 90 down to 30 stars, size 1.4, subtle soft starlight)
-
-
-
-  const foregroundStars = createStarfield(30, 1.4, 900, 680, 500, 0.50);
-
-
-
+  // C. Foreground Twinkling Stellar Points (Delicate starlight, size 0.82, never larger than drone dots)
+  const foregroundStars = createStarfield(35, 0.82, 900, 680, 500, 0.60);
   scene.add(foregroundStars);
 
 
@@ -7830,19 +7792,12 @@ function initCosmicBackground() {
 
 
 
-      targetCamX = normX * 48;
+      // Subtle celestial panoramic depth (stable and smooth, no jarring screen shift on card hover)
+      targetCamX = normX * 12;
+      targetCamY = -normY * 9;
 
-
-
-      targetCamY = -normY * 36;
-
-
-
-      container.style.setProperty('--bg-pan-x', `${(-normX * 18).toFixed(1)}px`);
-
-
-
-      container.style.setProperty('--bg-pan-y', `${(-normY * 14).toFixed(1)}px`);
+      container.style.setProperty('--bg-pan-x', `${(-normX * 5).toFixed(1)}px`);
+      container.style.setProperty('--bg-pan-y', `${(-normY * 4).toFixed(1)}px`);
 
 
 
@@ -7942,14 +7897,8 @@ function initCosmicBackground() {
 
 
 
-      if (fgPos[i] > 80) {
-
-
-
-        fgPos[i] = -350;
-
-
-
+      if (fgPos[i] > -40) {
+        fgPos[i] = -420;
       }
 
 

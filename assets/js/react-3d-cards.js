@@ -67,9 +67,8 @@
         handleMouseEnter(e) {
             this.isHovered = true;
             this.cachedRect = this.el.getBoundingClientRect();
-            this.targetTransZ = 32.0; // Physical 3D pop-up lift forward
-            this.targetMoveY = -8.0;  // Spring pop-up elevation
-            this.targetScale = 1.03;  // Pop-up scale
+            this.targetTransZ = -12.0; // Inward tactile depression (matches footer pressure bending)
+            this.targetScale = 0.99;   // Elastic shock-absorber yield
             this.el.classList.add('card-3d-active');
             this.el.style.setProperty('transition', 'none', 'important');
             this.startLoop();
@@ -90,16 +89,16 @@
             const normX = (x / rect.width) * 2 - 1;
             const normY = (y / rect.height) * 2 - 1;
 
-            // Authentic 3D Tilt angles tracking cursor (up to 16.5 degrees)
-            const MAX_TILT = 16.5;
-            this.targetRotX = -normY * MAX_TILT; // Tilts toward cursor in Y
-            this.targetRotY = normX * MAX_TILT;  // Tilts toward cursor in X
+            // Physical Inward Pressure Bending (Matches Footer Behavior: surface bends under cursor weight)
+            const MAX_TILT = 13.5;
+            this.targetRotX = normY * MAX_TILT;   // Top bends in when cursor is top, bottom bends in when cursor is bottom
+            this.targetRotY = -normX * MAX_TILT;  // Left bends in when cursor is left, right bends in when cursor is right
 
-            // 3D Pop-Up Elevation & Micro-magnetic drift (AI Chat Box Pop-Up Physics)
-            this.targetTransZ = 34.0;
-            this.targetScale = 1.03;
-            this.targetMoveX = normX * 8.0;
-            this.targetMoveY = -10.0 + normY * 6.0;
+            // Physical pressure depression into surface (-14px) and elastic compression
+            this.targetTransZ = -14.0;
+            this.targetScale = 0.988;
+            this.targetMoveX = normX * 2.5;
+            this.targetMoveY = normY * 2.5;
 
             // Specular Glare Coordinates
             const glareX = ((normX + 1) / 2 * 100).toFixed(1);
@@ -134,7 +133,7 @@
 
         renderFrame() {
             // Spring damping interpolation (smooth physical flex & settling)
-            const lerp = 0.18;
+            const lerp = 0.16;
 
             this.currentRotX += (this.targetRotX - this.currentRotX) * lerp;
             this.currentRotY += (this.targetRotY - this.currentRotY) * lerp;
@@ -143,14 +142,14 @@
             this.currentTransZ += (this.targetTransZ - this.currentTransZ) * lerp;
             this.currentScale += (this.targetScale - this.currentScale) * lerp;
 
-            // Apply 3D perspective tilt to the WHOLE BOX container
+            // Apply 3D perspective pressure deformation to the container
             this.el.style.transform = `perspective(1000px) translate3d(${this.currentMoveX.toFixed(1)}px, ${this.currentMoveY.toFixed(1)}px, ${this.currentTransZ.toFixed(1)}px) rotateX(${this.currentRotX.toFixed(2)}deg) rotateY(${this.currentRotY.toFixed(2)}deg) scale3d(${this.currentScale.toFixed(3)}, ${this.currentScale.toFixed(3)}, ${this.currentScale.toFixed(3)})`;
 
-            // Dynamic 3D shifting shadow (moves counter to the tilt angle for physical depth)
-            if (this.isHovered || Math.abs(this.currentTransZ) > 1) {
-                const shadowX = (-this.currentRotY * 1.8).toFixed(1);
-                const shadowY = (this.currentRotX * 1.8 + 26).toFixed(1);
-                this.el.style.setProperty('box-shadow', `${shadowX}px ${shadowY}px 48px rgba(0, 0, 0, 0.82), 0 0 20px rgba(25, 227, 209, 0.14), inset 0 0 1px rgba(255, 255, 255, 0.18)`, 'important');
+            // Dynamic tactile depression shadow under pressure
+            if (this.isHovered || Math.abs(this.currentTransZ) > 0.6) {
+                const shadowX = (this.currentRotY * 1.2).toFixed(1);
+                const shadowY = (-this.currentRotX * 1.2 + 12).toFixed(1);
+                this.el.style.setProperty('box-shadow', `${shadowX}px ${shadowY}px 32px rgba(0, 0, 0, 0.78), 0 0 16px rgba(25, 227, 209, 0.20), inset 0 0 14px rgba(25, 227, 209, 0.08)`, 'important');
             }
 
             const isSettled = !this.isHovered &&

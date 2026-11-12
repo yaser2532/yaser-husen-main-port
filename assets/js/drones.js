@@ -45,7 +45,7 @@
     const SCROLL_SETTLE_MS = 30;       // ms (crisp responsive settle)
     const SECTION_DWELL_MS = 90;       // ms (cinematic recognition delay as visitor scrolls in)
     const isMobile = window.innerWidth < 768;
-    const MAX_ACTIVE_CREWS = 2;        // Balanced dual-squad cinematic simultaneous extraction
+    const MAX_ACTIVE_CREWS = isMobile ? 2 : 3;        // Multi-squad cinematic simultaneous extraction (3 squads desktop, 2 mobile)
     const DRONE_COUNT = isMobile ? 8 : 12;
     const CREW_SIZE = 3;
     const MAX_BURST_DRONES = isMobile ? 12 : 20;
@@ -789,20 +789,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let pullDuration = 600; // Card pull: 600ms fluid holographic 3D extraction
+                let pullDuration = 320; // Card pull: 320ms fluid holographic 3D extraction (0.3s faster)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    pullDuration = 680; // Title scanline sweep: 680ms
+                    pullDuration = 380; // Title scanline sweep: 380ms (0.3s faster)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    pullDuration = 560; // Paragraph line sweep: 560ms
+                    pullDuration = 280; // Paragraph line sweep: 280ms (0.3s faster)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-                    pullDuration = 480; // Button/link snap-in: 480ms
+                    pullDuration = 220; // Button/link snap-in: 220ms (0.3s faster)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    pullDuration = 580; // Frame: 580ms
+                    pullDuration = 300; // Frame: 300ms (0.3s faster)
                 }
 
                 const item = {
@@ -931,26 +931,27 @@
                 if (item.state === 'built') continue;
 
                 // Watchdog for hung dispatch
-                if (item.dispatchTime > 0 && now - item.dispatchTime > 4500) {
+                if (item.dispatchTime > 0 && now - item.dispatchTime > 3000) {
                     finishElementInstantly(item);
                     continue;
                 }
 
                 const r = item.el.getBoundingClientRect();
                 // Element has genuinely scrolled past upper viewport (completely above screen):
-                if (r.bottom < -20) {
+                if (r.bottom < 5) {
                     finishElementInstantly(item);
                     continue;
                 }
 
-                // In-view graceful watchdog
+                // In-view graceful watchdog: ensure elements in viewport are never left invisible
                 if (item.state === 'pending') {
-                    const inView = (r.top < viewH * 0.95 && r.bottom > 20);
+                    const inView = (r.top < viewH * 0.95 && r.bottom > 10);
                     if (inView) {
                         if (!item.firstVisibleTime) {
                             item.firstVisibleTime = now;
-                        } else if (now - item.firstVisibleTime > 6000) {
+                        } else if (now - item.firstVisibleTime > 500) {
                             finishElementInstantly(item);
+                            continue;
                         }
                     }
                 }
@@ -963,7 +964,7 @@
                 const sec = sectionMap[secId];
                 if (!sec || sec.isHero) return;
                 const r = sec.el.getBoundingClientRect();
-                if (r.bottom < -40) {
+                if (r.bottom < 20) {
                     sec.elements.forEach(item => {
                         if (item.state !== 'built') {
                             finishElementInstantly(item);
@@ -981,18 +982,16 @@
                 if (!sec || sec.isHero) return;
 
                 const r = sec.el.getBoundingClientRect();
-                // A section only enters band if the user has actually scrolled towards it:
-                // For the first section (#profile-expertise), require scrollY >= 60 or r.top <= viewH * 0.70
-                // For subsequent sections, require section top to be comfortably within view (r.top <= viewH * 0.75)
+                // A section enters band if the user has actually scrolled towards it:
                 const isFirstSec = (sec.index === 1);
-                const hasScrolledIntoSec = isFirstSec ? (scrollY >= 60 && r.top <= viewH * 0.85) : (r.top <= viewH * 0.75);
-                const inBand = hasScrolledIntoSec && (r.bottom >= viewH * 0.10 && r.top <= viewH * 0.75);
+                const hasScrolledIntoSec = isFirstSec ? (scrollY >= 50 || r.top <= viewH * 0.85) : (r.top <= viewH * 0.85);
+                const inBand = hasScrolledIntoSec && (r.bottom >= 10 && r.top <= viewH * 0.85);
 
                 if (inBand) {
                     if (sec.firstEnteredBandTime === 0) {
                         sec.firstEnteredBandTime = now;
                     }
-                    if (now - sec.firstEnteredBandTime >= SECTION_DWELL_MS) {
+                    if (now - sec.firstEnteredBandTime >= SECTION_DWELL_MS || scrollY > 250) {
                         if (!sec.dwellMet) {
                             sec.dwellMet = true;
                             sec.dwellMetTime = now;
@@ -1029,7 +1028,7 @@
                 if (!r || r.width === 0 || r.height === 0) continue;
 
                 // An element qualifies if its top has entered into the viewport
-                if (r.top <= viewH * 0.88 && r.bottom >= viewH * 0.05) {
+                if (r.top <= viewH * 0.95 && r.bottom >= -20) {
                     bandSatisfiedElements.push(item);
                 }
             }
@@ -1063,7 +1062,7 @@
                     dispatchMission(item, crewDrones, now);
                 }
             }
-            return;
+            if (activeMissions.length >= MAX_ACTIVE_CREWS) return;
         }
     }
 
@@ -1084,9 +1083,9 @@
         const initScrollY = window.scrollY || window.pageYOffset;
         const initScrollX = window.scrollX || window.pageXOffset;
 
-        // Visible flight: 220ms (snappy responsive dispatch)
-        const HIVE_PULSE_MS = 70;
-        const FLIGHT_TIME_MS = 220;
+        // Visible flight: 150ms (snappy responsive dispatch, 0.3s overall speedup)
+        const HIVE_PULSE_MS = 40;
+        const FLIGHT_TIME_MS = 150;
         const totalFlightDuration = HIVE_PULSE_MS + FLIGHT_TIME_MS;
 
         // Hive pulse condensation at cursor
@@ -1104,6 +1103,7 @@
             lockOnStart: 0,
             dispatchScrollY: initScrollY,
             dispatchScrollX: initScrollX,
+            safetyTimer: null,
             baseAnchors: geom.anchors.map(a => ({ x: a.x + initScrollX, y: a.y + initScrollY })),
             baseHoverPositions: geom.hoverPositions.map(h => ({ x: h.x + initScrollX, y: h.y + initScrollY })),
             onDroneArrived(drone) {
@@ -1117,6 +1117,10 @@
                 }
             },
             startPull(pullNow) {
+                if (this.safetyTimer) {
+                    clearTimeout(this.safetyTimer);
+                    this.safetyTimer = null;
+                }
                 this.pullStartedAt = pullNow;
                 this.lockOnStart = pullNow;
                 this.item.pullStartTime = pullNow;
@@ -1134,6 +1138,13 @@
                 });
             }
         };
+
+        // Safety watchdog: ensure startPull is always triggered even if drone path lags
+        mission.safetyTimer = setTimeout(() => {
+            if (mission.item.state === 'dispatched' || mission.item.state === 'flight') {
+                mission.startPull(performance.now());
+            }
+        }, totalFlightDuration + 70);
 
         // Assign ribbon flight paths (Lead = gold, Followers = purple)
         crewDrones.forEach((drone, idx) => {
@@ -1240,7 +1251,7 @@
                 }
 
                 // Pull completion & impact
-                if (progress >= 1.0) {
+                if (progress >= 1.0 || pullElapsed > m.pullDuration + 160) {
                     finishElement(item);
                     returnCrew(m.crew, now);
                     activeMissions.splice(i, 1);
@@ -1269,6 +1280,10 @@
         if (item.el.classList.contains('scroll-reveal')) {
             item.el.classList.add('active');
         }
+        const pReveal = item.el.closest('.scroll-reveal');
+        if (pReveal) pReveal.classList.add('active');
+        const pShowcase = item.el.closest('.profile-showcase, .expertise-showcase, .about-text, .certificates-grid, .projects-grid');
+        if (pShowcase) pShowcase.classList.add('active');
         if (item.el.parentElement && item.el.parentElement.classList.contains('about-visual')) {
             item.el.parentElement.classList.add('active');
         }
@@ -1304,6 +1319,7 @@
         const missionIdx = activeMissions.findIndex(m => m.item === item);
         if (missionIdx !== -1) {
             const m = activeMissions[missionIdx];
+            if (m.safetyTimer) clearTimeout(m.safetyTimer);
             returnCrew(m.crew, performance.now());
             activeMissions.splice(missionIdx, 1);
         }
@@ -1311,6 +1327,10 @@
         if (item.el.classList.contains('scroll-reveal')) {
             item.el.classList.add('active');
         }
+        const pReveal = item.el.closest('.scroll-reveal');
+        if (pReveal) pReveal.classList.add('active');
+        const pShowcase = item.el.closest('.profile-showcase, .expertise-showcase, .about-text, .certificates-grid, .projects-grid');
+        if (pShowcase) pShowcase.classList.add('active');
         if (item.el.parentElement && item.el.parentElement.classList.contains('about-visual')) {
             item.el.parentElement.classList.add('active');
         }
