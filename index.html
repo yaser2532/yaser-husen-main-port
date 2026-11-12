@@ -220,12 +220,18 @@
         }
         window.scrollTo(0, 0);
         document.documentElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
     </script>
 </head>
 
 
 
 <body>
+    <script>
+        // Immediate parser-level scroll anchor to top of Hero
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+    </script>
 
 
 

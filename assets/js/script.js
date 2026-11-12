@@ -267,29 +267,28 @@ function getDefaultNote(name) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Prevent browser auto-scroll/restoration jumps on page load or refresh
+    // Strictly prevent auto-scroll restoration jump on initial page load / refresh
     if ('scrollRestoration' in history) {
         history.scrollRestoration = 'manual';
     }
-    if (!sessionStorage.getItem('navigated_internally')) {
-        if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#home') {
-            try {
-                history.replaceState(null, '', window.location.pathname + window.location.search);
-            } catch (e) {}
-        }
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
+    // Clean section hash so browser never bypasses Hero section on start
+    if (window.location.hash && window.location.hash !== '#' && window.location.hash !== '#home') {
+        try {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (e) {}
     }
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    if (document.body) document.body.scrollTop = 0;
 
     window.addEventListener('load', () => {
-        if (!sessionStorage.getItem('navigated_internally')) {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        if (document.body) document.body.scrollTop = 0;
+        setTimeout(() => {
             window.scrollTo(0, 0);
             document.documentElement.scrollTop = 0;
-        }
-    });
-
-    window.addEventListener('beforeunload', () => {
-        sessionStorage.removeItem('navigated_internally');
+        }, 60);
     });
 
 
@@ -2797,28 +2796,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!hash || hash === '#') return;
 
-        sessionStorage.setItem('navigated_internally', 'true');
-
         const targetEl = document.querySelector(hash);
 
-
-
         if (targetEl) {
-
-
-
             e.preventDefault();
-
-
-
             targetEl.scrollIntoView({ behavior: 'smooth' });
-
-
-
-            history.pushState(null, '', hash);
-
-
-
         }
 
 
