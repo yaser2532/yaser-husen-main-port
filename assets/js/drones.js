@@ -43,7 +43,7 @@
     const BAND_BOTTOM = 0.85; // 85% viewport height: elements enter comfortable visual field before extraction
     const SCROLL_VELOCITY_LIMIT = 1800; // px/s (fluid, avoids accidental triggers)
     const SCROLL_SETTLE_MS = 30;       // ms (crisp responsive settle)
-    const SECTION_DWELL_MS = 90;       // ms (cinematic recognition delay as visitor scrolls in)
+    const SECTION_DWELL_MS = 240;      // ms (cinematic recognition delay as visitor scrolls in: +0.15s fine-tuned)
     const isMobile = window.innerWidth < 768;
     const MAX_ACTIVE_CREWS = isMobile ? 2 : 3;        // Multi-squad cinematic simultaneous extraction (3 squads desktop, 2 mobile)
     const DRONE_COUNT = isMobile ? 8 : 12;
@@ -789,20 +789,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let pullDuration = 320; // Card pull: 320ms fluid holographic 3D extraction (0.3s faster)
+                let pullDuration = 470; // Card pull: 470ms cinematic 3D extraction (+0.15s fine-tuned)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    pullDuration = 380; // Title scanline sweep: 380ms (0.3s faster)
+                    pullDuration = 530; // Title scanline sweep: 530ms (+0.15s fine-tuned)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    pullDuration = 280; // Paragraph line sweep: 280ms (0.3s faster)
+                    pullDuration = 430; // Paragraph line sweep: 430ms (+0.15s fine-tuned)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-                    pullDuration = 220; // Button/link snap-in: 220ms (0.3s faster)
+                    pullDuration = 370; // Button/link snap-in: 370ms (+0.15s fine-tuned)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    pullDuration = 300; // Frame: 300ms (0.3s faster)
+                    pullDuration = 450; // Frame: 450ms (+0.15s fine-tuned)
                 }
 
                 const item = {
@@ -949,7 +949,7 @@
                     if (inView) {
                         if (!item.firstVisibleTime) {
                             item.firstVisibleTime = now;
-                        } else if (now - item.firstVisibleTime > 500) {
+                        } else if (now - item.firstVisibleTime > 1200) {
                             finishElementInstantly(item);
                             continue;
                         }
@@ -974,7 +974,7 @@
             });
         }
 
-        // Section Dwell Tracker (cinematic recognition delay as visitor scrolls in)
+        // Section Dwell Tracker (cinematic recognition delay as visitor scrolls in: 240ms)
         if (now - lastDwellCheckTime > 25) {
             lastDwellCheckTime = now;
             SECTION_ORDER.forEach(secId => {
@@ -991,7 +991,7 @@
                     if (sec.firstEnteredBandTime === 0) {
                         sec.firstEnteredBandTime = now;
                     }
-                    if (now - sec.firstEnteredBandTime >= SECTION_DWELL_MS || scrollY > 250) {
+                    if (now - sec.firstEnteredBandTime >= SECTION_DWELL_MS) {
                         if (!sec.dwellMet) {
                             sec.dwellMet = true;
                             sec.dwellMetTime = now;
@@ -1009,7 +1009,7 @@
 
         // Pull out properties in sequence (up to MAX_ACTIVE_CREWS pipelined)
         if (activeMissions.length >= MAX_ACTIVE_CREWS) return;
-        if (now - lastMissionFinishTime < 30 && activeMissions.length === 0) return;
+        if (now - lastMissionFinishTime < 120 && activeMissions.length === 0) return;
 
         // Sequence Order & Band Evaluation: natural top-to-bottom cinematic extraction
         for (let s = 0; s < SECTION_ORDER.length; s++) {
@@ -1083,9 +1083,9 @@
         const initScrollY = window.scrollY || window.pageYOffset;
         const initScrollX = window.scrollX || window.pageXOffset;
 
-        // Visible flight: 150ms (snappy responsive dispatch, 0.3s overall speedup)
-        const HIVE_PULSE_MS = 40;
-        const FLIGHT_TIME_MS = 150;
+        // Visible flight: 280ms ribbon stream before tractor lock (+0.15s cinematic delay)
+        const HIVE_PULSE_MS = 60;
+        const FLIGHT_TIME_MS = 280;
         const totalFlightDuration = HIVE_PULSE_MS + FLIGHT_TIME_MS;
 
         // Hive pulse condensation at cursor
@@ -1144,7 +1144,7 @@
             if (mission.item.state === 'dispatched' || mission.item.state === 'flight') {
                 mission.startPull(performance.now());
             }
-        }, totalFlightDuration + 70);
+        }, totalFlightDuration + 80);
 
         // Assign ribbon flight paths (Lead = gold, Followers = purple)
         crewDrones.forEach((drone, idx) => {
@@ -1399,7 +1399,7 @@
         activeMissions.forEach(m => {
             if (m.item.state !== 'pulling') return;
             const elapsedLockOn = now - m.lockOnStart;
-            if (elapsedLockOn > 200) return;
+            if (elapsedLockOn > 280) return;
             const r = m.item.el.getBoundingClientRect();
             const bLen = Math.min(16, r.width * 0.18, r.height * 0.35);
             hasBrackets = true;
