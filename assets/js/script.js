@@ -3485,18 +3485,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-        // [C-04] When Pull-to-Build is active, reveals are gated to section snap
-
-
-
-        if (document.documentElement.classList.contains('nb-ready') && !document.documentElement.classList.contains('nb-done')) {
-
-
-
+        // When Drone Nanobot Engine or Pull-to-Build is active, reveals are gated to drone extraction
+        if ((document.documentElement.classList.contains('drones-active') || document.documentElement.classList.contains('nb-ready')) && !document.documentElement.classList.contains('drones-done')) {
             return;
-
-
-
         }
 
 

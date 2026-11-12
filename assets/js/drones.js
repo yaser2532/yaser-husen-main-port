@@ -39,16 +39,16 @@
         'CODE', 'PRE', 'BLOCKQUOTE', 'STRONG', 'EM', 'B', 'I'
     ]);
 
-    const BAND_TOP = 0.02;   // 2% viewport height (fast identification at viewport edge)
-    const BAND_BOTTOM = 0.96; // 96% viewport height
-    const SCROLL_VELOCITY_LIMIT = 1600; // px/s (fluid, does not freeze on normal mouse/laptop scrolling)
-    const SCROLL_SETTLE_MS = 25;       // ms (instant responsive dispatch)
-    const SECTION_DWELL_MS = 20;       // ms (instant dwell recognition)
+    const BAND_TOP = 0.05;   // 5% viewport height
+    const BAND_BOTTOM = 0.85; // 85% viewport height: elements enter comfortable visual field before extraction
+    const SCROLL_VELOCITY_LIMIT = 1800; // px/s (fluid, avoids accidental triggers)
+    const SCROLL_SETTLE_MS = 30;       // ms (crisp responsive settle)
+    const SECTION_DWELL_MS = 90;       // ms (cinematic recognition delay as visitor scrolls in)
     const isMobile = window.innerWidth < 768;
-    const MAX_ACTIVE_CREWS = isMobile ? 3 : 4; // Pipeline up to 4 crews simultaneously
-    const DRONE_COUNT = isMobile ? 8 : 14;
-    const CREW_SIZE = isMobile ? 3 : 4;
-    const MAX_BURST_DRONES = isMobile ? 12 : 24;
+    const MAX_ACTIVE_CREWS = 2;        // Balanced dual-squad cinematic simultaneous extraction
+    const DRONE_COUNT = isMobile ? 8 : 12;
+    const CREW_SIZE = 3;
+    const MAX_BURST_DRONES = isMobile ? 12 : 20;
 
     const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -222,8 +222,8 @@
             if (currentScrollSpeed >= SCROLL_VELOCITY_LIMIT) {
                 lastFastScrollTime = now;
             }
-            // Fast-scroll fail-safe: automatically load section properties without delay when scrolling fast
-            if (currentScrollSpeed >= 650 || dy > 80) {
+            // Fast-scroll fail-safe: automatically load section properties without delay when flick-scrolling fast
+            if (currentY > 150 && currentScrollSpeed >= 1600 && dy > 180) {
                 lastFastScrollTime = now;
                 if (typeof triggerFastScrollFailsafe === 'function') {
                     triggerFastScrollFailsafe();
@@ -789,20 +789,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let pullDuration = 580; // Card pull: 580ms (-0.3s speed improvement for snappy cinematic reveal)
+                let pullDuration = 600; // Card pull: 600ms fluid holographic 3D extraction
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    pullDuration = 800; // Title scanline sweep: 800ms (-0.3s speed improvement)
+                    pullDuration = 680; // Title scanline sweep: 680ms
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    pullDuration = 650; // Paragraph line sweep: 650ms (-0.3s speed improvement)
+                    pullDuration = 560; // Paragraph line sweep: 560ms
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-                    pullDuration = 550; // Button/link snap-in: 550ms (-0.3s speed improvement)
+                    pullDuration = 480; // Button/link snap-in: 480ms
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    pullDuration = 650; // Frame 650ms (-0.3s speed improvement)
+                    pullDuration = 580; // Frame: 580ms
                 }
 
                 const item = {
@@ -973,7 +973,7 @@
             });
         }
 
-        // Section Dwell Tracker (ultra-fast 20ms recognition)
+        // Section Dwell Tracker (cinematic recognition delay as visitor scrolls in)
         if (now - lastDwellCheckTime > 25) {
             lastDwellCheckTime = now;
             SECTION_ORDER.forEach(secId => {
@@ -981,7 +981,12 @@
                 if (!sec || sec.isHero) return;
 
                 const r = sec.el.getBoundingClientRect();
-                const inBand = (r.bottom >= bandTopY && r.top <= bandBottomY + 80);
+                // A section only enters band if the user has actually scrolled towards it:
+                // For the first section (#profile-expertise), require scrollY >= 60 or r.top <= viewH * 0.70
+                // For subsequent sections, require section top to be comfortably within view (r.top <= viewH * 0.75)
+                const isFirstSec = (sec.index === 1);
+                const hasScrolledIntoSec = isFirstSec ? (scrollY >= 60 && r.top <= viewH * 0.85) : (r.top <= viewH * 0.75);
+                const inBand = hasScrolledIntoSec && (r.bottom >= viewH * 0.10 && r.top <= viewH * 0.75);
 
                 if (inBand) {
                     if (sec.firstEnteredBandTime === 0) {
@@ -999,7 +1004,7 @@
             });
         }
 
-        // Settle check (fast settle <= 25ms, fluid scrolling)
+        // Settle check (fast settle <= 30ms, fluid scrolling)
         const scrollSettled = (now - lastFastScrollTime >= SCROLL_SETTLE_MS);
         if (!scrollSettled) return;
 
@@ -1007,7 +1012,7 @@
         if (activeMissions.length >= MAX_ACTIVE_CREWS) return;
         if (now - lastMissionFinishTime < 30 && activeMissions.length === 0) return;
 
-        // Sequence Order & Band Evaluation: fast identification as soon as entering viewport
+        // Sequence Order & Band Evaluation: natural top-to-bottom cinematic extraction
         for (let s = 0; s < SECTION_ORDER.length; s++) {
             const secId = SECTION_ORDER[s];
             const sec = sectionMap[secId];
@@ -1023,40 +1028,20 @@
                 const r = item.el.getBoundingClientRect();
                 if (!r || r.width === 0 || r.height === 0) continue;
 
-                const elTop = r.top;
-                const elBottom = r.bottom;
-                const elHeight = r.height;
-
-                const visibleTop = Math.max(elTop, bandTopY);
-                const visibleBottom = Math.min(elBottom, bandBottomY);
-                const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-
-                // Responsive identification: fast recognition as soon as element enters the viewport
-                let satisfiesBand = false;
-                if (elHeight > bandHeight) {
-                    satisfiesBand = (elTop >= bandTopY - 120 && visibleHeight >= 80);
-                } else {
-                    satisfiesBand = (visibleHeight >= Math.min(elHeight * 0.35, 100)) || (elTop >= bandTopY && elTop <= bandBottomY);
-                }
-
-                if (satisfiesBand) {
+                // An element qualifies if its top has entered into the viewport
+                if (r.top <= viewH * 0.88 && r.bottom >= viewH * 0.05) {
                     bandSatisfiedElements.push(item);
                 }
             }
 
             if (bandSatisfiedElements.length === 0) continue;
 
-            // Slots available for simultaneous pull (up to 2)
+            // Slots available for simultaneous pull (up to MAX_ACTIVE_CREWS)
             const availableSlots = MAX_ACTIVE_CREWS - activeMissions.length;
             if (availableSlots <= 0) return;
 
-            // Pick up to availableSlots random properties from the visible pool
-            const toDispatch = [];
-            const pool = [...bandSatisfiedElements];
-            while (toDispatch.length < availableSlots && pool.length > 0) {
-                const randIdx = Math.floor(Math.random() * pool.length);
-                toDispatch.push(pool.splice(randIdx, 1)[0]);
-            }
+            // Pick in natural top-to-bottom visual reading order (NOT random!)
+            const toDispatch = bandSatisfiedElements.slice(0, availableSlots);
 
             for (let d = 0; d < toDispatch.length; d++) {
                 const item = toDispatch[d];
@@ -1344,15 +1329,15 @@
         }
     }
 
-    // Fast-scroll fail-safe: automatically resolve properties immediately when scrolling fast
+    // Fast-scroll fail-safe: automatically resolve properties immediately when flick-scrolling fast
     function triggerFastScrollFailsafe() {
-        const viewH = window.innerHeight;
+        const vH = window.innerHeight;
         for (let i = 0; i < elementList.length; i++) {
             const item = elementList[i];
             if (item.state === 'built') continue;
             const r = item.el.getBoundingClientRect();
-            // If item is currently on screen or approaching rapidly within 600px
-            if (r.top < viewH + 600 && r.bottom > -300) {
+            // Only resolve elements that are currently inside or passed above the viewport
+            if (r.top < vH * 0.90 && r.bottom > -150) {
                 finishElementInstantly(item);
             }
         }
@@ -1623,7 +1608,6 @@
         }
     }, 2500);
 
-    window.addEventListener('error', () => { revealAllInstantly(); });
     window.addEventListener('beforeprint', () => { revealAllInstantly(); });
 
     // ─── 13. SINGLE REQUESTANIMATIONFRAME LOOP ─────────────────────────────
