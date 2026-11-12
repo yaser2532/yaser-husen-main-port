@@ -222,6 +222,13 @@
             if (currentScrollSpeed >= SCROLL_VELOCITY_LIMIT) {
                 lastFastScrollTime = now;
             }
+            // Fast-scroll fail-safe: automatically load section properties without delay when scrolling fast
+            if (currentScrollSpeed >= 650 || dy > 80) {
+                lastFastScrollTime = now;
+                if (typeof triggerFastScrollFailsafe === 'function') {
+                    triggerFastScrollFailsafe();
+                }
+            }
             lastScrollY = currentY;
             lastScrollTime = now;
         }
@@ -782,20 +789,20 @@
             sorted.forEach((el, order) => {
                 const tag = el.tagName.toLowerCase();
                 let type = 'card';
-                let pullDuration = 880; // Card pull: 880ms (+0.3s rendering speed reduction as requested)
+                let pullDuration = 580; // Card pull: 580ms (-0.3s speed improvement for snappy cinematic reveal)
 
                 if (['h1', 'h2', 'h3'].includes(tag) || el.classList.contains('section-title') || el.classList.contains('section-tag')) {
                     type = 'title';
-                    pullDuration = 1100; // Title scanline sweep: 1100ms (+0.3s rendering speed reduction as requested)
+                    pullDuration = 800; // Title scanline sweep: 800ms (-0.3s speed improvement)
                 } else if (tag === 'p' || el.classList.contains('section-desc')) {
                     type = 'paragraph';
-                    pullDuration = 950; // Paragraph line sweep: 950ms (+0.3s rendering speed reduction as requested)
+                    pullDuration = 650; // Paragraph line sweep: 650ms (-0.3s speed improvement)
                 } else if (['a', 'button'].includes(tag) || el.classList.contains('cta-button') || el.classList.contains('filter-btn') || el.classList.contains('message-btn')) {
                     type = 'button';
-                    pullDuration = 850; // Button/link snap-in: 850ms (+0.3s rendering speed reduction as requested)
+                    pullDuration = 550; // Button/link snap-in: 550ms (-0.3s speed improvement)
                 } else if (el.classList.contains('code-block-visual')) {
                     type = 'code-card';
-                    pullDuration = 950; // Frame 950ms (+0.3s rendering speed reduction as requested)
+                    pullDuration = 650; // Frame 650ms (-0.3s speed improvement)
                 }
 
                 const item = {
@@ -1092,9 +1099,9 @@
         const initScrollY = window.scrollY || window.pageYOffset;
         const initScrollX = window.scrollX || window.pageXOffset;
 
-        // Visible flight: 300ms
-        const HIVE_PULSE_MS = 80;
-        const FLIGHT_TIME_MS = 300;
+        // Visible flight: 220ms (snappy responsive dispatch)
+        const HIVE_PULSE_MS = 70;
+        const FLIGHT_TIME_MS = 220;
         const totalFlightDuration = HIVE_PULSE_MS + FLIGHT_TIME_MS;
 
         // Hive pulse condensation at cursor
@@ -1337,6 +1344,20 @@
         }
     }
 
+    // Fast-scroll fail-safe: automatically resolve properties immediately when scrolling fast
+    function triggerFastScrollFailsafe() {
+        const viewH = window.innerHeight;
+        for (let i = 0; i < elementList.length; i++) {
+            const item = elementList[i];
+            if (item.state === 'built') continue;
+            const r = item.el.getBoundingClientRect();
+            // If item is currently on screen or approaching rapidly within 600px
+            if (r.top < viewH + 600 && r.bottom > -300) {
+                finishElementInstantly(item);
+            }
+        }
+    }
+
     function returnCrew(crewDrones, now) {
         crewDrones.forEach((drone, idx) => {
             drone.state = 'RETURN';
@@ -1394,48 +1415,119 @@
             currentDrawCalls++;
         }
 
-        // 2. Single Batched Path for ALL Cyan Outer Beams across all missions
-        let hasBeams = false;
-        ctx.beginPath();
-        activeMissions.forEach(m => {
+        // 2. High-Voltage Static Electricity / Lightning Discharge Tethers [Electric Plasma Engine]
+        const arcs = [];
+        activeMissions.forEach((m, mIdx) => {
             if (m.item.state !== 'pulling') return;
-            hasBeams = true;
             m.crew.forEach((drone, idx) => {
                 const anchor = drone.targetAnchor;
                 if (!anchor) return;
-                const crackle = isQualityLow ? 0 : (Math.sin(now * 0.08 + idx * 2.1) * 5.0);
-                const midX = (drone.x + anchor.x) * 0.5 + crackle;
-                const midY = (drone.y + anchor.y) * 0.5 + crackle;
-                ctx.moveTo(drone.x, drone.y);
-                ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
+                const dx = anchor.x - drone.x;
+                const dy = anchor.y - drone.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < 4) return;
+
+                const nx = -dy / dist;
+                const ny = dx / dist;
+                const segments = Math.max(5, Math.min(9, Math.round(dist / 28)));
+                const points = [{ x: drone.x, y: drone.y }];
+                const seed = mIdx * 17 + idx * 31;
+
+                for (let k = 1; k < segments; k++) {
+                    const t = k / segments;
+                    const bx = drone.x + dx * t;
+                    const by = drone.y + dy * t;
+                    const envelope = Math.sin(t * Math.PI);
+                    // High-frequency zigzag electric discharge
+                    const freq = (now * 0.042 + seed + k * 5.7);
+                    const jitter = (Math.sin(freq) * 0.65 + Math.sin(freq * 2.3 + k) * 0.35);
+                    const arcOffset = jitter * Math.min(18, dist * 0.22) * envelope;
+                    const alongOffset = (Math.cos(freq * 1.8) * 3.5) * envelope;
+
+                    points.push({
+                        x: bx + nx * arcOffset + (dx / dist) * alongOffset,
+                        y: by + ny * arcOffset + (dy / dist) * alongOffset
+                    });
+                }
+                points.push({ x: anchor.x, y: anchor.y });
+
+                // Occasional micro-branch / lightning fork
+                let fork = null;
+                if (!isQualityLow && Math.sin(now * 0.06 + seed) > 0.3 && points.length > 3) {
+                    const branchIdx = Math.floor(points.length * 0.45);
+                    const origin = points[branchIdx];
+                    const forkAngle = Math.atan2(dy, dx) + (idx % 2 === 0 ? 0.65 : -0.65);
+                    const forkLen = 10 + (Math.sin(now * 0.08 + idx) + 1) * 6;
+                    fork = {
+                        x1: origin.x,
+                        y1: origin.y,
+                        x2: origin.x + Math.cos(forkAngle) * forkLen,
+                        y2: origin.y + Math.sin(forkAngle) * forkLen
+                    };
+                }
+
+                arcs.push({ points, fork, drone, anchor, idx });
             });
         });
-        if (hasBeams) {
-            ctx.strokeStyle = 'rgba(0, 245, 212, 0.65)';
-            ctx.lineWidth = 2.0;
+
+        if (arcs.length > 0) {
+            // Pass A: Outer Plasma Glow Halo (Cyber Cyan electric field)
+            ctx.beginPath();
+            arcs.forEach(arc => {
+                const pts = arc.points;
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
+                if (arc.fork) {
+                    ctx.moveTo(arc.fork.x1, arc.fork.y1);
+                    ctx.lineTo(arc.fork.x2, arc.fork.y2);
+                }
+            });
+            ctx.strokeStyle = 'rgba(0, 245, 212, 0.45)';
+            ctx.lineWidth = 3.6;
             ctx.stroke();
             currentDrawCalls++;
-        }
 
-        // 3. Single Batched Path for ALL Core Resonant Beams across all missions
-        if (hasBeams) {
+            // Pass B: Intense Resonant Violet Inner Field
             ctx.beginPath();
-            activeMissions.forEach(m => {
-                if (m.item.state !== 'pulling') return;
-                m.crew.forEach((drone, idx) => {
-                    const anchor = drone.targetAnchor;
-                    if (!anchor) return;
-                    const crackle = isQualityLow ? 0 : (Math.cos(now * 0.12 + idx * 3.2) * 3.0);
-                    const midX = (drone.x + anchor.x) * 0.5 + crackle;
-                    const midY = (drone.y + anchor.y) * 0.5 + crackle;
-                    ctx.moveTo(drone.x, drone.y);
-                    ctx.quadraticCurveTo(midX, midY, anchor.x, anchor.y);
-                });
+            arcs.forEach(arc => {
+                const pts = arc.points;
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
             });
-            ctx.strokeStyle = 'rgba(139, 92, 246, 0.85)';
+            ctx.strokeStyle = 'rgba(139, 92, 246, 0.70)';
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+            currentDrawCalls++;
+
+            // Pass C: Pure Blazing White Electric Core (High-voltage discharge line)
+            ctx.beginPath();
+            arcs.forEach(arc => {
+                const pts = arc.points;
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
+                if (arc.fork) {
+                    ctx.moveTo(arc.fork.x1, arc.fork.y1);
+                    ctx.lineTo(arc.fork.x2, arc.fork.y2);
+                }
+            });
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
             ctx.lineWidth = 1.2;
             ctx.stroke();
             currentDrawCalls++;
+
+            // Contact micro-sparks at anchor points
+            if (!isQualityLow && Math.random() < 0.25) {
+                const randomArc = arcs[Math.floor(Math.random() * arcs.length)];
+                if (randomArc) {
+                    emitSparks(randomArc.anchor.x, randomArc.anchor.y, 1, THEME.cyan);
+                }
+            }
         }
     }
 

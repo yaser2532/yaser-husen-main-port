@@ -1037,53 +1037,42 @@ header {
 }
 
 header::before {
-
     content: '';
-
     position: absolute;
-
     top: 0; left: 0; width: 100%; height: 100%;
-
     background-image: url('../images/Purple_Ghost.jpeg');
-
     background-size: cover;
-
     background-position: center left;
-
     background-repeat: no-repeat;
-
     background-attachment: scroll;
-
     filter: brightness(0.48) contrast(1.15) saturate(1.05) hue-rotate(15deg);
-
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.88) 40%, rgba(0, 0, 0, 0.40) 75%, rgba(0, 0, 0, 0) 100%);
-
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.88) 40%, rgba(0, 0, 0, 0.40) 75%, rgba(0, 0, 0, 0) 100%);
-
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.90) 35%, rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0.10) 72%, rgba(0, 0, 0, 0) 85%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.90) 35%, rgba(0, 0, 0, 0.45) 55%, rgba(0, 0, 0, 0.10) 72%, rgba(0, 0, 0, 0) 85%);
     z-index: 0;
+}
 
+header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 35%;
+    background: linear-gradient(to bottom, transparent 0%, rgba(2, 1, 8, 0.5) 50%, rgba(2, 1, 8, 0.92) 100%);
+    pointer-events: none;
+    z-index: 1;
 }
 
 .overlay {
-
     position: absolute;
-
     top: 0;
-
     left: 0;
-
     width: 100%;
-
     height: 100%;
-
     background: radial-gradient(circle at 25% 45%, rgba(20, 10, 36, 0.35) 0%, rgba(6, 3, 12, 0.65) 65%, rgba(4, 2, 8, 0.88) 100%);
-
-    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.88) 45%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0) 100%);
-
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.88) 45%, rgba(0, 0, 0, 0.35) 80%, rgba(0, 0, 0, 0) 100%);
-
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 40%, rgba(0, 0, 0, 0.30) 65%, rgba(0, 0, 0, 0) 80%);
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.85) 40%, rgba(0, 0, 0, 0.30) 65%, rgba(0, 0, 0, 0) 80%);
     z-index: 1;
-
 }
 
 .page-body-content {
@@ -9812,6 +9801,7 @@ a.nav-link:hover::after,
 
 /* 6. Tablet Multi-Column Balance (48rem - 64rem) */
 @media (min-width: 48.01rem) and (max-width: 64rem) {
+    .expertise-cards-grid,
     .expertise-grid,
     .projects-grid,
     .certificates-grid {
@@ -9826,6 +9816,50 @@ a.nav-link:hover::after,
         display: grid !important;
         grid-template-columns: repeat(3, 1fr) !important;
         gap: 1rem !important;
+    }
+}
+
+/* Large Desktop & Ultrawide Display Expansion (1400px+) */
+@media (min-width: 87.5rem) {
+    .container {
+        max-width: 82rem !important;
+    }
+}
+
+@media (min-width: 112.5rem) {
+    .container {
+        max-width: 90rem !important;
+    }
+}
+
+/* Ultra-compact Mobile Viewport Scaling (<= 340px) */
+@media (max-width: 21.25rem) {
+    .hero-title {
+        font-size: 1.65rem !important;
+    }
+    .hero-subtitle {
+        font-size: 0.85rem !important;
+    }
+    .hero-sticker-badge,
+    .hero-clock-pill,
+    .hero-spec-stamp {
+        font-size: 0.62rem !important;
+        padding: 0.2rem 0.45rem !important;
+    }
+    .stats-row {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* Card Popup Window Mobile Adaptation */
+@media (max-width: 48rem) {
+    .card-popup-window {
+        width: 95vw !important;
+        max-width: 95vw !important;
+        margin: 0 auto !important;
+    }
+    .card-popup-card {
+        padding: 1.1rem !important;
     }
 }
 
