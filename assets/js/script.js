@@ -2933,77 +2933,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeNavDrawer() {
 
-
-
         if (navContainer && navContainer.classList.contains('nav-active')) {
-
-
 
             navContainer.classList.remove('nav-active');
 
-
+            document.body.classList.remove('nav-drawer-open');
 
             if (burger) {
 
-
-
                 burger.classList.remove('toggle');
-
-
 
                 burger.setAttribute('aria-expanded', 'false');
 
-
-
             }
-
-
 
         }
 
-
-
     }
-
-
-
-
 
 
 
     if (burger) {
 
-
-
         burger.setAttribute('aria-expanded', 'false');
-
-
 
         burger.addEventListener('click', (e) => {
 
-
-
             e.stopPropagation();
-
-
 
             const isOpen = navContainer.classList.toggle('nav-active');
 
-
+            document.body.classList.toggle('nav-drawer-open', isOpen);
 
             burger.classList.toggle('toggle');
 
-
-
             burger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-
-
 
         });
 
-
-
     }
+
+    // Auto-close drawer on desktop resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 960) {
+            closeNavDrawer();
+        }
+    }, { passive: true });
 
 
 
